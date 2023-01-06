@@ -30,7 +30,3 @@ Server privileges are extremely limited. This is so many users may safely act as
 ## To do:
 
 - Add time based updates (currently only based on contract logic)
-- Setup a public game loop run by Lucky Machines
-  - charge for registry / usage
-  - we'll run the first few servers
-  - incentivize server nodes with some slice of the pie
