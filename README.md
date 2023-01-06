@@ -25,7 +25,6 @@ Server privileges are extremely limited. This is so many users may safely act as
 
 - No off chain compute, all computations must be done on chain
 - Relies on own server or network of servers to run
-- Gas must be covered by each individual server
 
 ## To do:
 
