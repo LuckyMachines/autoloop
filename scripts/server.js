@@ -43,7 +43,6 @@ class Server {
 }
 
 function main() {
-  console.log(process.argv);
   server = new Server(
     process.argv[2] ? process.argv[2] : null,
     process.argv[3] ? process.argv[3] : null
