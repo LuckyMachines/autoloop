@@ -2,7 +2,7 @@
 pragma solidity ^0.8.7;
 
 // GameLoopCompatible.sol imports the functions from both @chainlink/contracts/src/v0.8/AutomationBase.sol
-// and ./interfaces/AutomationCompatibleInterface.sol
+// and GameLoopCompatibleInterface.sol
 import "../GameLoopCompatible.sol";
 
 contract NumberGoUp is GameLoopCompatibleInterface {
