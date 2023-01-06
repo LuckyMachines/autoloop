@@ -27,4 +27,4 @@ Server privileges are extremely limited. This is so many users may safely act as
 
 ## To do:
 
-- Add time based updates (currently only based on contract logic)
+- Add time based updates / cron jobs (updates currently only based on contract logic)
