@@ -1,26 +1,32 @@
-# Hardhat Starter Project
+# Lucky Machines Game Loop
 
-This is a template to quickly spin up a hardhat project with some standard packages. The sample contract / test / deploy files are left here for reference, but should be deleted from any production project.
+An on-chain game loop for your blockchain game.
 
-Select `Use this template` to create a new repo from this template.
+## Create a game loop
 
-Once your new project is created, clone it with GitHub CLI:
-```shell
-gh repo clone YOUR_GITHUB_REPO
-```
+- Deploy contracts
+- Set registrar on registry (can be wallet or contract)
+- Register game loop compatible contracts with registry (via registrar)
 
-To start run:
+## Run the game loop server
 
-```shell
-yarn
-```
+- Set the game loop provider & wallet credentials
+- Register wallet for server with game loop (via registrar)
+- Set contract ping interval
+- Run the game loop server (or servers) with controller privileges
 
-Some typical hardhat commands:
+Server privileges are extremely limited. This is so many users may safely act as nodes in a distributed game-loop. The most a game loop controller can do is trigger a contract's update function, which will revert and cost the malicious controller some gas if the contract does not want that update.
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+## Limitations over Chainlink Automation
+
+- No off chain compute, all computations must be done on chain
+- Relies on own server or network of servers to run
+- Gas must be covered by each individual server
+
+## To do:
+
+- Add time based updates (currently only based on contract logic)
+- Setup a public game loop run by Lucky Machines
+  - charge for registry / usage
+  - we'll run the first few servers
+  - incentivize server nodes with some slice of the pie
