@@ -16,11 +16,11 @@ An on-chain game loop for your blockchain game.
 
 - Set the game loop provider & wallet credentials
 - Register wallet for server with game loop (via registrar)
-- Set contract ping interval
+- Set contract ping interval & expiration
 - Run the game loop server (or servers) with controller privileges
 
 ```shell
-yarn server
+yarn server [PING_INTERVAL] [EXPIRATION]
 ```
 
 Server privileges are extremely limited. This is so many users may safely act as nodes in a distributed game-loop. The most a game loop controller can do is trigger a contract's update function, which will revert and cost the malicious controller some gas if the contract does not want that update.
