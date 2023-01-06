@@ -34,9 +34,10 @@ contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
 
     // CONTROLLER //
 
-    // Controller needs to send more gas than is required for tx.
-    // must have enough gas in user's account to pay for update
-    // get loop to progress from registry or queue ahead of time
+    // - Controller needs to send more gas than is required for tx.
+    //   must have enough gas in user's account to pay for update
+    // - Get loop to progress from registry or queue ahead of time
+    //   controller passes as argument
 
     function progressLoop(
         address contractAddress,
