@@ -23,8 +23,7 @@ Server privileges are extremely limited. This is so many users may safely act as
 
 ## Limitations over Chainlink Automation
 
-- No off chain compute, all computations must be done on chain
-- Relies on own server or network of servers to run
+- No off chain compute for hybrid smart contracts, all computations must be done on chain
 
 ## To do:
 
