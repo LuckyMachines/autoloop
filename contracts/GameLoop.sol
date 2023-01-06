@@ -54,10 +54,6 @@ contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
 
         uint256 startGas = gasleft();
 
-        // check gas in user's account
-
-        //require(availableGas >= expectedGas);
-
         // progress loop on contract
         (bool success, bytes memory data) = contractAddress.call{
             gas: availableGas
