@@ -10,7 +10,7 @@ contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
     }
 
     uint256 constant MAX_GAS = 1_000_000; //default if no personal max set
-    uint256 constant GAS_THRESHOLD = 15_000_000; // highest a user could potentiall set gas
+    uint256 constant GAS_THRESHOLD = 15_000_000; // highest a user could potentially set gas
     uint256 constant GAS_BUFFER = 20_000;
 
     mapping(address => uint256) public balance; // balance held at this address
