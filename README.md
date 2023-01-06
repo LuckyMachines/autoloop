@@ -19,6 +19,10 @@ An on-chain game loop for your blockchain game.
 - Set contract ping interval
 - Run the game loop server (or servers) with controller privileges
 
+```shell
+yarn server
+```
+
 Server privileges are extremely limited. This is so many users may safely act as nodes in a distributed game-loop. The most a game loop controller can do is trigger a contract's update function, which will revert and cost the malicious controller some gas if the contract does not want that update.
 
 ## Limitations over Chainlink Automation
