@@ -36,8 +36,6 @@ contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
 
     // - Controller needs to send more gas than is required for tx.
     //   must have enough gas in user's account to pay for update
-    // - Get loop to progress from registry or queue ahead of time
-    //   controller passes as argument
 
     function progressLoop(
         address contractAddress,
@@ -56,9 +54,9 @@ contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
         uint256 startGas = gasleft();
 
         // progress loop on contract
-        (bool success, bytes memory data) = contractAddress.call{
-            gas: availableGas
-        }(abi.encodeWithSignature("progressLoop(bytes)", progressWithData));
+        (bool success, ) = contractAddress.call{gas: availableGas}(
+            abi.encodeWithSignature("progressLoop(bytes)", progressWithData)
+        );
 
         require(success, "Unable to progress loop. Call not a success");
 
