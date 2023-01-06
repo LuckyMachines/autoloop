@@ -22,6 +22,7 @@ class Server {
       : Date.now() + DEFAULT_EXPIRATION * 1000;
   }
   async start() {
+    console.log("Starting server...");
     this.running = true;
     while (this.running) {
       // Ping contract here
@@ -43,7 +44,10 @@ class Server {
 
 function main() {
   console.log(process.argv);
-  server = new Server(2, 10); // 2 second ping, 10 second expiration for testing
+  server = new Server(
+    process.argv[2] ? process.argv[2] : null,
+    process.argv[3] ? process.argv[3] : null
+  );
   server.start();
 }
 
