@@ -103,7 +103,7 @@ contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
 
     // Internal
 
-    function _maxGas(address user) internal returns (uint256 gasAmount) {
+    function _maxGas(address user) internal view returns (uint256 gasAmount) {
         gasAmount = maxGas[user] > 0 ? maxGas[user] : MAX_GAS;
         if (gasAmount > balance[user]) {
             gasAmount = balance[user];
