@@ -43,7 +43,7 @@ class Server {
 
 function main() {
   console.log(process.argv);
-  server = new Server(1, 10); // 2 second ping, 30 second expiration for testing
+  server = new Server(2, 10); // 2 second ping, 10 second expiration for testing
   server.start();
 }
 
