@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "./GameLoopRoles.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract GameLoop is AccessControlEnumerable, GameLoopRoles, ReentrancyGuard {
+contract GameLoop is GameLoopRoles, ReentrancyGuard {
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
