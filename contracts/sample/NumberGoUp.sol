@@ -4,6 +4,7 @@ pragma solidity ^0.8.7;
 // GameLoopCompatible.sol imports the functions from both @chainlink/contracts/src/v0.8/AutomationBase.sol
 // and GameLoopCompatibleInterface.sol
 import "../GameLoopCompatible.sol";
+import "../GameLoopRegistrar.sol";
 
 contract NumberGoUp is GameLoopCompatibleInterface {
     uint256 public number;
@@ -12,7 +13,13 @@ contract NumberGoUp is GameLoopCompatibleInterface {
 
     uint256 _loopID;
 
-    constructor(uint256 updateInterval) {
+    constructor(address registrarAddress, uint256 updateInterval) {
+        // Register game loop
+        bool success = GameLoopRegistrar(registrarAddress).registerGameLoop();
+        if (!success) {
+            revert("unable to register game loop");
+        }
+
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
         number = 0;
