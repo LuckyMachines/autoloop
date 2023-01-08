@@ -2,9 +2,18 @@
 
 An on-chain game loop for your blockchain game.
 
+## Set Credentials
+
+- Create a `.env` file with RPC URL & wallet private key (see `.env-example`)
+
 ## Create a game loop
 
 - Deploy contracts
+
+```shell
+yarn deploy
+```
+
 - Set registrar on registry (can be wallet or contract)
 - Register game loop compatible contracts with registry (via registrar)
 
@@ -14,9 +23,13 @@ An on-chain game loop for your blockchain game.
 
 ## Run the game loop server
 
-- Set the game loop provider & wallet credentials
+- Set contract addresses in controller config (`controller.config.json`)
 - Register wallet for server with game loop (via registrar)
-- Set contract ping interval & expiration
+
+```shell
+yarn register-controller
+```
+
 - Run the game loop server (or servers) with controller privileges
 
 ```shell
