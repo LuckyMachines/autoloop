@@ -1,5 +1,6 @@
 {
-  "name": "hardhat-starter",
+  "name": "@luckymachines/game-loop",
+  "version": "0.0.1",
   "devDependencies": {
     "@chainlink/contracts": "^0.5.1",
     "@ethersproject/providers": "^5.4.7",
@@ -27,7 +28,6 @@
     "typescript": ">=4.5.0"
   },
   "description": "This is a template to quickly spin up a hardhat project with some standard packages. The sample contract / test / deploy files are left here for reference, but should be deleted from any production project.",
-  "version": "1.0.0",
   "main": "hardhat.config.js",
   "directories": {
     "test": "test"
@@ -42,7 +42,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/LuckyMachines/hardhat-starter.git"
+    "url": "https://github.com/LuckyMachines/game-loop"
   },
   "keywords": [
     "hardhat",
@@ -54,7 +54,7 @@
   "author": "Max Meier",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/LuckyMachines/hardhat-starter/issues"
+    "url": "https://github.com/LuckyMachines/game-loop/issues"
   },
-  "homepage": "https://github.com/LuckyMachines/hardhat-starter#readme"
+  "homepage": "https://github.com/LuckyMachines/game-loop#readme"
 }
