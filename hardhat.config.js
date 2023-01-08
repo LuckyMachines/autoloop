@@ -5,5 +5,15 @@ require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
+  networks: {
+    test: {
+      url: process.env.RPC_URL_TESTNET,
+      accounts: [process.env.PRIVATE_KEY_TESTNET]
+    },
+    main: {
+      url: process.env.RPC_URL_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET]
+    }
+  },
   solidity: "0.8.17"
 };
