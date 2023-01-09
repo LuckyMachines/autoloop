@@ -19,6 +19,12 @@ yarn deploy-test
 - Make your contract inherit from [GameLoopCompatible.sol](https://github.com/LuckyMachines/game-loop/blob/main/contracts/GameLoopCompatible.sol) (see [example](https://github.com/LuckyMachines/game-loop/blob/main/contracts/sample/NumberGoUp.sol))
 - Register game loop compatible contracts with registry in contract (see [example](https://github.com/LuckyMachines/game-loop/blob/main/contracts/sample/NumberGoUp.sol))
 
+### To deploy sample game:
+
+```shell
+yarn deploy-sample-test
+```
+
 ## Run the game loop server
 
 - Set contract addresses in controller config (`controller.config.json`)
