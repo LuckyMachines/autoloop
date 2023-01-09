@@ -74,7 +74,13 @@ class Server {
       const gameLoop = GameLoop.attach(
         deployments[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP
       );
-      let tx = await gameLoop.progressLoop(contractAddress, progressWithData);
+      // Set gas from contract settings
+      const maxGas = await gameLoop.maxGas(contractAddress);
+      const gasBuffer = await gameLoop.GAS_BUFFER();
+      const gasToSend = Number(maxGas) + Number(gasBuffer);
+      let tx = await gameLoop.progressLoop(contractAddress, progressWithData, {
+        gasLimit: gasToSend
+      });
       let receipt = await tx.wait();
       let gasUsed = receipt.gasUsed;
       console.log(`Progressed loop on contract ${contractAddress}.`);

@@ -9,9 +9,9 @@ contract GameLoop is GameLoopRoles, ReentrancyGuard {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
-    uint256 constant MAX_GAS = 1_000_000; //default if no personal max set
-    uint256 constant GAS_THRESHOLD = 15_000_000; // highest a user could potentially set gas
-    uint256 constant GAS_BUFFER = 20_000;
+    uint256 public constant MAX_GAS = 1_000_000; // default if no personal max set
+    uint256 public constant GAS_BUFFER = 20_000; // potential gas required by controller
+    uint256 constant GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
