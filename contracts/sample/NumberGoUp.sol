@@ -5,25 +5,41 @@ pragma solidity ^0.8.7;
 // and GameLoopCompatibleInterface.sol
 import "../GameLoopCompatible.sol";
 import "../GameLoopRegistrar.sol";
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract NumberGoUp is GameLoopCompatibleInterface {
+contract NumberGoUp is GameLoopCompatibleInterface, AccessControl {
     uint256 public number;
     uint256 public interval;
     uint256 public lastTimeStamp;
 
     uint256 _loopID;
 
-    constructor(address registrarAddress, uint256 updateInterval) {
-        // Register game loop
-        bool success = GameLoopRegistrar(registrarAddress).registerGameLoop();
-        if (!success) {
-            revert("unable to register game loop");
-        }
+    constructor(uint256 updateInterval) {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
         number = 0;
         _loopID = 1;
+    }
+
+    function registerGameLoop(address registrarAddress)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        // Register game loop
+        bool success = GameLoopRegistrar(registrarAddress).registerGameLoop();
+        if (!success) {
+            revert("unable to register game loop");
+        }
+    }
+
+    function unregisterGameLoop(address registrarAddress)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        // Unegister game loop
+        GameLoopRegistrar(registrarAddress).unregisterGameLoop();
     }
 
     // Required functions from GameLoopCompatibleInterface.sol
