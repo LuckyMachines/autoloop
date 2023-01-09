@@ -39,6 +39,8 @@
     "deploy-sample-test": "npx hardhat run scripts/deploy-sample.js --network test",
     "register-controller": "npx hardhat run scripts/register-controller.js --network main",
     "register-controller-test": "npx hardhat run scripts/register-controller.js --network test",
+    "sample-info": "npx hardhat run scripts/sample-game-info.js --network main",
+    "sample-info-test": "npx hardhat run scripts/sample-game-info.js --network test",
     "server": "node scripts/server.js",
     "test": "npx hardhat test"
   },
