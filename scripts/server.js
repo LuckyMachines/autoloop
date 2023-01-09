@@ -1,7 +1,10 @@
 const hre = require("hardhat");
+const deployments = require("../deployments.json");
 require("dotenv").config();
 
 let server;
+let queue;
+
 const DEFAULT_PING_INTERVAL = 10; // seconds
 const oneWeek = 7 * 24 * 60 * 60;
 const DEFAULT_EXPIRATION = oneWeek; // in seconds
@@ -33,14 +36,85 @@ class Server {
     this.wallet = new hre.ethers.Wallet(PRIVATE_KEY, this.provider);
   }
 
+  async checkNeedsUpdate(contractAddress) {
+    const GameLoopCompatibleInterface = await hre.ethers.getContractFactory(
+      "GameLoopCompatibleInterface"
+    );
+    const externalGameLoopContract =
+      GameLoopCompatibleInterface.attach(contractAddress);
+    const needsUpdate = false;
+
+    try {
+      const check = await externalGameLoopContract.shouldProgressLoop();
+      needsUpdate = check.loopIsReady;
+    } catch (err) {
+      console.log(
+        `Error checking game loop compatible contract: ${contractAddress}.`
+      );
+      console.log(err.message);
+    }
+
+    return needsUpdate;
+  }
+
+  async performUpdate(contractAddress) {
+    const GameLoopCompatibleInterface = await hre.ethers.getContractFactory(
+      "GameLoopCompatibleInterface"
+    );
+    const externalGameLoopContract =
+      GameLoopCompatibleInterface.attach(contractAddress);
+
+    // confirm update is still needed and grab update data
+    const check = await externalGameLoopContract.shouldProgressLoop();
+    let needsUpdate = check.loopIsReady;
+    let progressWithData = check.progressWithData;
+
+    if (needsUpdate) {
+      const GameLoop = await hre.ethers.getContractFactory("GameLoop");
+      const gameLoop = GameLoop.attach(
+        deployments[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP
+      );
+      let tx = await gameLoop.progressLoop(contractAddress, progressWithData);
+      let receipt = await tx.wait();
+      let gasUsed = receipt.gasUsed;
+      console.log(`Progressed loop on contract ${contractAddress}.`);
+      console.log(`Gas used: ${gasUsed}`);
+    } else {
+      throw new Error(`Contract no longer needs update: ${contractAddress}`);
+    }
+  }
+
   async start() {
     console.log("Starting server...");
     // console.log("Provider:", this.provider);
     // console.log("Wallet:", this.wallet);
     this.running = true;
     while (this.running) {
-      // Ping contract here
-      console.log("Ping:", Date.now());
+      if (queue.contracts.length == 0) {
+        await queue.download();
+      }
+      let contractsToRemove = [];
+      for (let i = 0; i < queue.contracts.length; i++) {
+        const needsUpdate = await this.checkNeedsUpdate(queue.contracts[i]);
+        if (needsUpdate) {
+          try {
+            await this.performUpdate(queue.contracts[i]);
+            contractsToRemove.push(queue.contracts[i]);
+            break; // only one update per interval
+          } catch (err) {
+            console.log(
+              `Error performing update on game loop compatible contract: ${queue.contracts[i]}`
+            );
+            contractsToRemove.push(queue.contracts[i]);
+          }
+        } else {
+          contractsToRemove.push(queue.contracts[i]);
+        }
+      }
+      contractsToRemove.forEach((contract) => {
+        queue.removeContract(contract);
+      });
+      // console.log("Ping:", Date.now());
       if (Date.now() > this.expirationDate) {
         await this.stop();
       } else {
@@ -56,12 +130,56 @@ class Server {
   }
 }
 
-function main() {
+class Queue {
+  constructor(registryContractFactory) {
+    this.contracts = [];
+    this.contractFactory = registryContractFactory;
+  }
+  addContract(contractAddress) {
+    this.contracts.push(contractAddress);
+  }
+  removeContract(contractAddress) {
+    const index = this.contracts.indexOf(contractAddress);
+    if (index >= 0) {
+      this.contracts.splice(index, 1);
+    }
+  }
+  async download() {
+    // get queue from contracts
+    try {
+      this.contracts = await this.contractFactory.getRegisteredGameLoops();
+      console.log("Downloaded queue:", this.contracts);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+}
+
+async function registryContractFactory() {
+  const GameLoopRegistry = await hre.ethers.getContractFactory(
+    "GameLoopRegistry"
+  );
+  const registry = GameLoopRegistry.attach(
+    deployments[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP_REGISTRY
+  );
+}
+
+async function setup() {
+  const registryFactory = await registryContractFactory();
+  queue = new Queue(registryContractFactory);
   server = new Server(
     process.argv[2] ? process.argv[2] : null,
     process.argv[3] ? process.argv[3] : null
   );
+}
+
+function main() {
   server.start();
 }
 
-main();
+setup()
+  .then(main())
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
