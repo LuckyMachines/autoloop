@@ -12,38 +12,46 @@ contract GameLoopRegistrar is GameLoopRoles {
     }
 
     function registerGameLoop() external returns (bool success) {
-        if (_canRegisterGameLoop(msg.sender)) {
+        if (canRegisterGameLoop(msg.sender)) {
             REGISTRY.registerGameLoop(msg.sender);
             success = true;
         }
     }
 
+    function unregisterGameLoop() external {
+        REGISTRY.unregisterGameLoop(msg.sender);
+    }
+
     function registerController() external returns (bool success) {
-        if (_canRegisterController(msg.sender)) {
+        if (canRegisterController(msg.sender)) {
             REGISTRY.registerController(msg.sender);
             success = true;
         }
     }
 
-    function _canRegisterGameLoop(address registrantAddress)
-        internal
+    function unregisterController() external {
+        REGISTRY.unregisterController(msg.sender);
+    }
+
+    function canRegisterGameLoop(address registrantAddress)
+        public
         view
-        returns (bool canRegister)
+        returns (bool)
     {
         // some logic to determine if address can register
         if (registrantAddress == address(0)) {
             // zero address can't register
-            canRegister == false;
+            return false;
         } else if (REGISTRY.isRegisteredGameLoop(registrantAddress)) {
             // already registered
-            canRegister = false;
+            return false;
         } else {
-            canRegister == true;
+            return true;
         }
     }
 
-    function _canRegisterController(address registrantAddress)
-        internal
+    function canRegisterController(address registrantAddress)
+        public
         view
         returns (bool canRegister)
     {
