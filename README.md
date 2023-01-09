@@ -8,18 +8,16 @@ An on-chain game loop for your blockchain game.
 
 ## Create a game loop
 
-- Deploy contracts
+- Deploy contracts and set registrar
 
 ```shell
 yarn deploy-test
 ```
 
-- Set registrar on registry (can be wallet or contract)
-- Register game loop compatible contracts with registry (via registrar)
-
 ## Integrate with some project
 
 - Make your contract inherit from [GameLoopCompatible.sol](https://github.com/LuckyMachines/game-loop/blob/main/contracts/GameLoopCompatible.sol) (see [example](https://github.com/LuckyMachines/game-loop/blob/main/contracts/sample/NumberGoUp.sol))
+- Register game loop compatible contracts with registry in contract (see [example](https://github.com/LuckyMachines/game-loop/blob/main/contracts/sample/NumberGoUp.sol))
 
 ## Run the game loop server
 
