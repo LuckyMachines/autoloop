@@ -11,7 +11,7 @@ An on-chain game loop for your blockchain game.
 - Deploy contracts
 
 ```shell
-yarn deploy
+yarn deploy-test
 ```
 
 - Set registrar on registry (can be wallet or contract)
@@ -27,7 +27,7 @@ yarn deploy
 - Register wallet for server with game loop (via registrar)
 
 ```shell
-yarn register-controller
+yarn register-controller-test
 ```
 
 - Run the game loop server (or servers) with controller privileges
