@@ -1,0 +1,14 @@
+{
+  "test": {
+    "GAME_LOOP": "",
+    "GAME_LOOP_REGISTRY": "",
+    "GAME_LOOP_REGISTRAR": "",
+    "SAMPLE_GAME": ""
+  },
+  "main": {
+    "GAME_LOOP": "",
+    "GAME_LOOP_REGISTRY": "",
+    "GAME_LOOP_REGISTRAR": "",
+    "SAMPLE_GAME": ""
+  }
+}
