@@ -77,9 +77,8 @@ describe("Game Loop", function () {
     it("Registers GLCI", async function () {
       const updateInterval = 1;
       const Game = await hre.ethers.getContractFactory("NumberGoUp");
-      const SAMPLE_GAME = await Game.deploy(updateInterval);
+      SAMPLE_GAME = await Game.deploy(updateInterval);
       await SAMPLE_GAME.deployed();
-      //   console.log("Game deployed to", SAMPLE_GAME.address);
 
       let isRegistered = await GAME_LOOP_REGISTRY.isRegisteredGameLoop(
         SAMPLE_GAME.address
@@ -91,11 +90,34 @@ describe("Game Loop", function () {
       );
       expect(canRegister).to.equal(true);
 
-      // register game loop
       tx = await SAMPLE_GAME.registerGameLoop(GAME_LOOP_REGISTRAR.address);
       await tx.wait();
       isRegistered = await GAME_LOOP_REGISTRY.isRegisteredGameLoop(
         SAMPLE_GAME.address
+      );
+      expect(isRegistered).to.equal(true);
+    });
+    it("Registers Controller", async function () {
+      const registrarArtifact = require("../artifacts/contracts/GameLoopRegistrar.sol/GameLoopRegistrar.json");
+      const registrarViaController = new ethers.Contract(
+        GAME_LOOP_REGISTRAR.address,
+        registrarArtifact.abi,
+        CONTROLLER_SIGNER
+      );
+      let isRegistered = await GAME_LOOP_REGISTRY.isRegisteredController(
+        CONTROLLER
+      );
+      expect(isRegistered).to.equal(false);
+
+      const canRegister = await GAME_LOOP_REGISTRAR.canRegisterController(
+        CONTROLLER
+      );
+      expect(canRegister).to.equal(true);
+
+      tx = await registrarViaController.registerController();
+      await tx.wait();
+      isRegistered = await GAME_LOOP_REGISTRY.isRegisteredController(
+        CONTROLLER
       );
       expect(isRegistered).to.equal(true);
     });
