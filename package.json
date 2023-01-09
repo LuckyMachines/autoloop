@@ -35,6 +35,8 @@
   "scripts": {
     "deploy": "npx hardhat run scripts/deploy.js --network main",
     "deploy-test": "npx hardhat run scripts/deploy.js --network test",
+    "deploy-sample": "npx hardhat run scripts/deploy-sample.js --network main",
+    "deploy-sample-test": "npx hardhat run scripts/deploy-sample.js --network test",
     "register-controller": "npx hardhat run scripts/register-controller.js --network main",
     "register-controller-test": "npx hardhat run scripts/register-controller.js --network test",
     "server": "node scripts/server.js",
