@@ -53,17 +53,17 @@ contract GameLoopRegistrar is GameLoopRoles {
     function canRegisterController(address registrantAddress)
         public
         view
-        returns (bool canRegister)
+        returns (bool)
     {
         // some logic to determine if address can register
         if (registrantAddress == address(0)) {
             // zero address can't register
-            canRegister == false;
+            return false;
         } else if (REGISTRY.isRegisteredController(registrantAddress)) {
             // already registered
-            canRegister = false;
+            return false;
         } else {
-            canRegister == true;
+            return true;
         }
     }
 }
