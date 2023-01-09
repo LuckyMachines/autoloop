@@ -25,16 +25,30 @@ class Deployment {
 async function main() {
   const deployment = new Deployment();
 
+  let gameLoop;
+  let gameLoopRegistry;
+  let gameLoopRegistrar;
+
+  const GameLoop = await hre.ethers.getContractFactory("GameLoop");
+  const GameLoopRegistry = await hre.ethers.getContractFactory(
+    "GameLoopRegistry"
+  );
+  const GameLoopRegistrar = await hre.ethers.getContractFactory(
+    "GameLoopRegistrar"
+  );
+
   if (!deployment.deployments[hre.network.name].GAME_LOOP) {
     // deploy GameLoop
-    const GameLoop = await hre.ethers.getContractFactory("GameLoop");
     console.log("Deploying Game Loop...");
-    const gameLoop = await GameLoop.deploy();
+    gameLoop = await GameLoop.deploy();
     await gameLoop.deployed();
     console.log("Game Loop deployed to", gameLoop.address);
     deployment.deployments[hre.network.name].GAME_LOOP = gameLoop.address;
     deployment.save();
   } else {
+    gameLoop = GameLoop.attach(
+      deployment.deployments[hre.network.name].GAME_LOOP
+    );
     console.log(
       "Game loop deployed at",
       deployment.deployments[hre.network.name].GAME_LOOP
@@ -43,10 +57,7 @@ async function main() {
 
   if (!deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY) {
     // deploy GameLoopRegistry
-    const GameLoopRegistry = await hre.ethers.getContractFactory(
-      "GameLoopRegistry"
-    );
-    const gameLoopRegistry = await GameLoopRegistry.deploy(
+    gameLoopRegistry = await GameLoopRegistry.deploy(
       process.env.TEST_MODE
         ? process.env.REGISTRY_ADMIN_ADDRESS_TESTNET
         : process.env.REGISTRY_ADMIN_ADDRESS
@@ -57,6 +68,9 @@ async function main() {
       gameLoopRegistry.address;
     deployment.save();
   } else {
+    gameLoopRegistry = GameLoopRegistry.attach(
+      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY
+    );
     console.log(
       "Game loop registry deployed at",
       deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY
@@ -65,21 +79,21 @@ async function main() {
 
   if (!deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR) {
     // deploy GameLoopRegistrar
-    const GameLoopRegistrar = await hre.ethers.getContractFactory(
-      "GameLoopRegistrar"
-    );
-    const gameLoopRegistrar = await GameLoopRegistrar.deploy(
+    gameLoopRegistrar = await GameLoopRegistrar.deploy(
       gameLoopRegistry.address,
       process.env.TEST_MODE
         ? process.env.REGISTRAR_ADMIN_ADDRESS_TESTNET
         : process.env.REGISTRAR_ADMIN_ADDRESS
     );
     await gameLoopRegistrar.deployed();
-    console.log("Registrar deployed to", gameLoopRegistry.address);
+    console.log("Registrar deployed to", gameLoopRegistrar.address);
     deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR =
       gameLoopRegistrar.address;
     deployment.save();
   } else {
+    gameLoopRegistrar = GameLoopRegistrar.attach(
+      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR
+    );
     console.log(
       "Game loop registrar deployed at",
       deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR
