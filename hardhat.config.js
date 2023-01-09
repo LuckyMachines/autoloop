@@ -11,8 +11,8 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY_TESTNET]
     },
     main: {
-      url: process.env.RPC_URL_MAINNET,
-      accounts: [process.env.PRIVATE_KEY_MAINNET]
+      url: process.env.RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
     }
   },
   solidity: "0.8.17"
