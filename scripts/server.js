@@ -1,5 +1,5 @@
 const hre = require("hardhat");
-const deployments = require("../deployments.json");
+const config = require("../controller.config.json");
 require("dotenv").config();
 
 let server;
@@ -72,7 +72,7 @@ class Server {
     if (needsUpdate) {
       const GameLoop = await hre.ethers.getContractFactory("GameLoop");
       const gameLoop = GameLoop.attach(
-        deployments[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP
+        config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP
       );
       // Set gas from contract settings
       const maxGas = await gameLoop.maxGas(contractAddress);
@@ -166,7 +166,7 @@ async function registryContractFactory() {
     "GameLoopRegistry"
   );
   const registry = GameLoopRegistry.attach(
-    deployments[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP_REGISTRY
+    config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP_REGISTRY
   );
 }
 
