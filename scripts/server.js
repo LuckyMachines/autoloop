@@ -1,4 +1,6 @@
 const hre = require("hardhat");
+require("dotenv").config();
+
 let server;
 const DEFAULT_PING_INTERVAL = 10; // seconds
 const oneWeek = 7 * 24 * 60 * 60;
@@ -20,9 +22,21 @@ class Server {
     this.expirationDate = expiration
       ? Date.now() + expiration * 1000
       : Date.now() + DEFAULT_EXPIRATION * 1000;
+
+    const PROVIDER_URL = process.env.TEST_MODE
+      ? process.env.RPC_URL_TESTNET
+      : process.env.RPC_URL_MAINNET;
+    const PRIVATE_KEY = process.env.TEST_MODE
+      ? process.env.PRIVATE_KEY_TESTNET
+      : process.env.PRIVATE_KEY_MAINNET;
+    this.provider = new hre.ethers.providers.JsonRpcProvider(PROVIDER_URL);
+    this.wallet = new hre.ethers.Wallet(PRIVATE_KEY, this.provider);
   }
+
   async start() {
     console.log("Starting server...");
+    console.log("Provider:", this.provider);
+    console.log("Wallet:", this.wallet);
     this.running = true;
     while (this.running) {
       // Ping contract here
