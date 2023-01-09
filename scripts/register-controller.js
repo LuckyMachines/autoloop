@@ -1,5 +1,5 @@
 const hre = require("hardhat");
-const deployments = require("../deployments.json");
+const config = require("../controller.config.json");
 
 async function main() {
   // register controller with registrar contract
@@ -7,7 +7,7 @@ async function main() {
     "GameLoopRegistrar"
   );
   const registrar = GameLoopRegistrar.attach(
-    deployments[hre.network.name].GAME_LOOP_REGISTRAR
+    config[hre.network.name].GAME_LOOP_REGISTRAR
   );
   const tx = await registrar.registerController();
   await tx.wait();
