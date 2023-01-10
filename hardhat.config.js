@@ -1,6 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-web3");
 require("hardhat-contract-sizer");
+require("hardhat-abi-exporter");
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -15,5 +16,17 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY]
     }
   },
-  solidity: "0.8.17"
+  solidity: "0.8.17",
+  abiExporter: {
+    runOnCompile: true,
+    format: "json",
+    only: [
+      "GameLoop.sol",
+      "GameLoopCompatible.sol",
+      "GameLoopCompatibleInterface.sol",
+      "GameLoopRegistrar.sol",
+      "GameLoopRegistry.sol",
+      "GameLoopRoles.sol"
+    ]
+  }
 };
