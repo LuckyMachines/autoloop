@@ -7,7 +7,7 @@ import "../GameLoopCompatible.sol";
 import "../GameLoopRegistrar.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract NumberGoUp is GameLoopCompatibleInterface, AccessControl {
+contract NumberGoUp is GameLoopCompatible, AccessControl {
     uint256 public number;
     uint256 public interval;
     uint256 public lastTimeStamp;
