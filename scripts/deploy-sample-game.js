@@ -30,7 +30,7 @@ async function main() {
       "\nRegistrar not deployed. Run the deployment script or set the address in deployments.json first.\n"
     );
   } else {
-    const UPDATE_INTERVAL = 60; // setting contract to want updates every >= 60 seconds
+    const UPDATE_INTERVAL = 30; // setting contract to want updates every >= 30 seconds
 
     const Game = await hre.ethers.getContractFactory("NumberGoUp");
     console.log("Deploying sample game...");
