@@ -1,3 +1,4 @@
+const { ethers } = require("hardhat");
 const hre = require("hardhat");
 const config = require("../controller.config.json");
 require("dotenv").config();
@@ -37,11 +38,12 @@ class Server {
   }
 
   async checkNeedsUpdate(contractAddress) {
-    const GameLoopCompatibleInterface = await hre.ethers.getContractFactory(
-      "GameLoopCompatibleInterface"
+    const GameLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/GameLoopCompatibleInterface.sol/GameLoopCompatibleInterface.json");
+    const externalGameLoopContract = new ethers.Contract(
+      contractAddress,
+      GameLoopCompatibleInterfaceArtifact.abi,
+      server.wallet
     );
-    const externalGameLoopContract =
-      GameLoopCompatibleInterface.attach(contractAddress);
     const needsUpdate = false;
 
     try {
@@ -58,11 +60,12 @@ class Server {
   }
 
   async performUpdate(contractAddress) {
-    const GameLoopCompatibleInterface = await hre.ethers.getContractFactory(
-      "GameLoopCompatibleInterface"
+    const GameLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/GameLoopCompatibleInterface.sol/GameLoopCompatibleInterface.json");
+    const externalGameLoopContract = new ethers.Contract(
+      contractAddress,
+      GameLoopCompatibleInterfaceArtifact.abi,
+      server.wallet
     );
-    const externalGameLoopContract =
-      GameLoopCompatibleInterface.attach(contractAddress);
 
     // confirm update is still needed and grab update data
     const check = await externalGameLoopContract.shouldProgressLoop();
@@ -70,10 +73,14 @@ class Server {
     let progressWithData = check.progressWithData;
 
     if (needsUpdate) {
-      const GameLoop = await hre.ethers.getContractFactory("GameLoop");
-      const gameLoop = GameLoop.attach(
-        config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP
+      // const GameLoop = await hre.ethers.getContractFactory("GameLoop");
+      const GameLoopArtifact = require("../artifacts/contracts/GameLoop.sol/GameLoop.json");
+      const gameLoop = new hre.ethers.Contract(
+        config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP,
+        GameLoopArtifact.abi,
+        server.wallet
       );
+
       // Set gas from contract settings
       const maxGas = await gameLoop.maxGas(contractAddress);
       const gasBuffer = await gameLoop.GAS_BUFFER();
@@ -97,6 +104,7 @@ class Server {
     this.running = true;
     while (this.running) {
       if (queue.contracts.length == 0) {
+        console.log("Downloading queue...");
         await queue.download();
       }
       let contractsToRemove = [];
@@ -152,9 +160,13 @@ class Queue {
   }
   async download() {
     // get queue from contracts
+
     try {
-      this.contracts = await this.contractFactory.getRegisteredGameLoops();
-      console.log("Downloaded queue:", this.contracts);
+      console.log("registry:", this.contractFactory.address);
+      let registeredLoops = await this.contractFactory.getRegisteredGameLoops();
+      console.log("Downloaded queue:", registeredLoops);
+      // this.contracts = await
+      // console.log("Downloaded queue:", this.contracts);
     } catch (err) {
       console.error(err);
     }
@@ -162,21 +174,24 @@ class Queue {
 }
 
 async function registryContractFactory() {
-  const GameLoopRegistry = await hre.ethers.getContractFactory(
-    "GameLoopRegistry"
+  const GameLoopRegistryArtifact = require("../artifacts/contracts/GameLoopRegistry.sol/GameLoopRegistry.json");
+
+  const registry = new hre.ethers.Contract(
+    config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP_REGISTRY,
+    GameLoopRegistryArtifact.abi,
+    server.wallet
   );
-  const registry = GameLoopRegistry.attach(
-    config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP_REGISTRY
-  );
+  return registry;
 }
 
 async function setup() {
-  const registryFactory = await registryContractFactory();
-  queue = new Queue(registryContractFactory);
   server = new Server(
     process.argv[2] ? process.argv[2] : null,
     process.argv[3] ? process.argv[3] : null
   );
+  const registryFactory = await registryContractFactory();
+  queue = new Queue(registryFactory);
+  //console.log("Server:", server);
 }
 
 function main() {
@@ -184,7 +199,9 @@ function main() {
 }
 
 setup()
-  .then(main())
+  .then(() => {
+    main();
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);
