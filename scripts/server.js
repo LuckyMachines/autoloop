@@ -82,10 +82,12 @@ class Server {
       );
 
       // Set gas from contract settings
-      const extraGas = 100000;
-      const maxGas = await gameLoop.maxGas(contractAddress);
+      let maxGas = await gameLoop.maxGas(contractAddress);
+      if (Number(maxGas) == 0) {
+        maxGas = await gameLoop.MAX_GAS();
+      }
       const gasBuffer = await gameLoop.GAS_BUFFER();
-      const gasToSend = Number(maxGas) + Number(gasBuffer) + extraGas;
+      const gasToSend = Number(maxGas) + Number(gasBuffer);
       let tx = await gameLoop.progressLoop(contractAddress, progressWithData, {
         gasLimit: gasToSend
       });
