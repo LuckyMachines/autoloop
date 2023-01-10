@@ -12,15 +12,12 @@ contract NumberGoUp is GameLoopCompatibleInterface, AccessControl {
     uint256 public interval;
     uint256 public lastTimeStamp;
 
-    uint256 _loopID;
-
     constructor(uint256 updateInterval) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
         number = 0;
-        _loopID = 1;
     }
 
     function registerGameLoop(address registrarAddress)
@@ -47,18 +44,14 @@ contract NumberGoUp is GameLoopCompatibleInterface, AccessControl {
         external
         view
         override
-        returns (bool loopIsReady, bytes memory progressWithData)
+        returns (bool loopIsReady)
     {
         loopIsReady = (block.timestamp - lastTimeStamp) > interval;
-        // we pass a loop ID to avoid running the same update twice
-        progressWithData = bytes(abi.encode(_loopID));
     }
 
-    function progressLoop(bytes calldata progressWithData) external override {
-        // Decode data sent from shouldProgressLoop()
-        uint256 loopID = abi.decode(progressWithData, (uint256));
+    function progressLoop() public override {
         // Re-check logic from shouldProgressLoop()
-        if ((block.timestamp - lastTimeStamp) > interval && loopID == _loopID) {
+        if ((block.timestamp - lastTimeStamp) > interval) {
             updateGame();
         }
     }
@@ -67,6 +60,5 @@ contract NumberGoUp is GameLoopCompatibleInterface, AccessControl {
         // this is what gets called on each game loop cycle
         lastTimeStamp = block.timestamp;
         ++number;
-        ++_loopID;
     }
 }

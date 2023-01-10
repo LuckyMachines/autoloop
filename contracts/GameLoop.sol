@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "./GameLoopRoles.sol";
+import "./GameLoopCompatibleInterface.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract GameLoop is GameLoopRoles, ReentrancyGuard {
@@ -21,10 +22,11 @@ contract GameLoop is GameLoopRoles, ReentrancyGuard {
     // - Controller needs to send more gas than is required for tx.
     //   must have enough gas in user's account to pay for update
 
-    function progressLoop(
-        address contractAddress,
-        bytes calldata progressWithData
-    ) external onlyRole(CONTROLLER_ROLE) nonReentrant {
+    function progressLoop(address contractAddress)
+        external
+        onlyRole(CONTROLLER_ROLE)
+        nonReentrant
+    {
         // controller funds first check to make sure they sent enough gas
         uint256 availableGas = _maxGas(contractAddress);
         require(
@@ -38,11 +40,16 @@ contract GameLoop is GameLoopRoles, ReentrancyGuard {
         uint256 startGas = gasleft();
 
         // progress loop on contract
-        (bool success, ) = contractAddress.call{gas: availableGas}(
-            abi.encodeWithSignature("progressLoop(bytes)", progressWithData)
+        GameLoopCompatibleInterface GLCI = GameLoopCompatibleInterface(
+            contractAddress
         );
+        if (GLCI.shouldProgressLoop()) {
+            GLCI.progressLoop{gas: availableGas}();
+        } else {
+            revert("game loop not ready to progress");
+        }
 
-        require(success, "Unable to progress loop. Call not a success");
+        // require(success, "Unable to progress loop. Call not a success");
 
         // get gas used from transaction
         uint256 gasUsed = startGas - gasleft();

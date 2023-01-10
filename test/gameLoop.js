@@ -131,4 +131,5 @@ describe("Game Loop", function () {
       expect(isRegistered).to.equal(true);
     });
   });
+  describe("Controller", function () {});
 });
