@@ -47,7 +47,8 @@ class Server {
     let needsUpdate = false;
 
     try {
-      needsUpdate = await externalGameLoopContract.shouldProgressLoop();
+      const check = await externalGameLoopContract.shouldProgressLoop();
+      needsUpdate = check.loopIsReady;
     } catch (err) {
       console.log(
         `Error checking game loop compatible contract: ${contractAddress}.`
@@ -67,7 +68,9 @@ class Server {
     );
 
     // confirm update is still needed and grab update data
-    const needsUpdate = await externalGameLoopContract.shouldProgressLoop();
+    const check = await externalGameLoopContract.shouldProgressLoop();
+    let needsUpdate = check.loopIsReady;
+    let progressWithData = check.progressWithData;
 
     if (needsUpdate) {
       // const GameLoop = await hre.ethers.getContractFactory("GameLoop");
@@ -85,7 +88,7 @@ class Server {
       }
       const gasBuffer = await gameLoop.GAS_BUFFER();
       const gasToSend = Number(maxGas) + Number(gasBuffer);
-      let tx = await gameLoop.progressLoop(contractAddress, {
+      let tx = await gameLoop.progressLoop(contractAddress, progressWithData, {
         gasLimit: gasToSend
       });
       let receipt = await tx.wait();
@@ -127,7 +130,7 @@ class Server {
         }
       }
       if (contractsToRemove.length > 0) {
-        console.log("Clearing unused contracts...");
+        // console.log("Clearing unused contracts...");
         contractsToRemove.forEach((contract) => {
           queue.removeContract(contract);
         });

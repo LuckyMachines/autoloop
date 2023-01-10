@@ -37,6 +37,7 @@
     "deploy-test": "npx hardhat run scripts/deploy.js --network test",
     "deploy-sample": "npx hardhat run scripts/deploy-sample-game.js --network main",
     "deploy-sample-test": "npx hardhat run scripts/deploy-sample-game.js --network test",
+    "progress-loop": "node scripts/progress-loop.js",
     "register-controller": "npx hardhat run scripts/register-controller.js --network main",
     "register-controller-test": "npx hardhat run scripts/register-controller.js --network test",
     "register-sample": "npx hardhat run scripts/register-sample-game.js --network main",

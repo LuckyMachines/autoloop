@@ -9,11 +9,38 @@ async function main() {
   const registrar = GameLoopRegistrar.attach(
     config[hre.network.name].GAME_LOOP_REGISTRAR
   );
-  const tx = await registrar.registerController();
-  await tx.wait();
+  try {
+    const tx = await registrar.registerController();
+    await tx.wait();
+  } catch (err) {
+    console.log(err.message);
+  }
 
   // TODO: confirm controller is registered with registry
-  console.log("Controller registered.");
+  const GameLoopRegistry = await hre.ethers.getContractFactory(
+    "GameLoopRegistry"
+  );
+  const registry = GameLoopRegistry.attach(
+    config[hre.network.name].GAME_LOOP_REGISTRY
+  );
+
+  let accounts = await ethers.provider.listAccounts();
+  const isRegistered = await registry.isRegisteredController(accounts[0]);
+  if (isRegistered) {
+    console.log("Controller registered.");
+  } else {
+    console.log("Controller not registered");
+  }
+
+  const GameLoop = await hre.ethers.getContractFactory("GameLoop");
+  const gameLoop = GameLoop.attach(config[hre.network.name].GAME_LOOP);
+  const controllerRole = await gameLoop.CONTROLLER_ROLE();
+  const hasControllerRole = await gameLoop.hasRole(controllerRole, accounts[0]);
+  if (hasControllerRole) {
+    console.log("Controller role set on game loop");
+  } else {
+    console.log("Controller role not set on game loop");
+  }
 }
 
 main()
