@@ -51,6 +51,7 @@ describe("Game Loop", function () {
 
     // GameLoopRegistrar
     GAME_LOOP_REGISTRAR = await GameLoopRegistrar.deploy(
+      GAME_LOOP.address,
       GAME_LOOP_REGISTRY.address,
       ADMIN
     );
@@ -68,7 +69,15 @@ describe("Game Loop", function () {
     it("Sets registrar", async function () {
       tx = await GAME_LOOP_REGISTRY.setRegistrar(GAME_LOOP_REGISTRAR.address);
       await tx.wait();
-      const hasRegistrarRole = await GAME_LOOP_REGISTRY.hasRole(
+      let hasRegistrarRole = await GAME_LOOP_REGISTRY.hasRole(
+        REGISTRAR_ROLE,
+        GAME_LOOP_REGISTRAR.address
+      );
+      expect(hasRegistrarRole).to.equal(true);
+
+      tx = await GAME_LOOP.setRegistrar(GAME_LOOP_REGISTRAR.address);
+      await tx.wait();
+      hasRegistrarRole = await GAME_LOOP.hasRole(
         REGISTRAR_ROLE,
         GAME_LOOP_REGISTRAR.address
       );

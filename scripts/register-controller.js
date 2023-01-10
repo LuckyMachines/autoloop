@@ -11,6 +11,8 @@ async function main() {
   );
   const tx = await registrar.registerController();
   await tx.wait();
+
+  // TODO: confirm controller is registered with registry
   console.log("Controller registered.");
 }
 

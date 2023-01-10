@@ -2,11 +2,18 @@
 pragma solidity ^0.8.7;
 
 import "./GameLoopRegistry.sol";
+import "./GameLoop.sol";
 
 contract GameLoopRegistrar is GameLoopRoles {
+    GameLoop GAME_LOOP;
     GameLoopRegistry REGISTRY;
 
-    constructor(address registryAddress, address adminAddress) {
+    constructor(
+        address gameLoopAddress,
+        address registryAddress,
+        address adminAddress
+    ) {
+        GAME_LOOP = GameLoop(gameLoopAddress);
         REGISTRY = GameLoopRegistry(registryAddress);
         _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
@@ -25,12 +32,14 @@ contract GameLoopRegistrar is GameLoopRoles {
     function registerController() external returns (bool success) {
         if (canRegisterController(msg.sender)) {
             REGISTRY.registerController(msg.sender);
+            GAME_LOOP.addController(msg.sender);
             success = true;
         }
     }
 
     function unregisterController() external {
         REGISTRY.unregisterController(msg.sender);
+        GAME_LOOP.removeController(msg.sender);
     }
 
     function canRegisterGameLoop(address registrantAddress)

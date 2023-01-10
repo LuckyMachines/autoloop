@@ -44,7 +44,7 @@ class Server {
       GameLoopCompatibleInterfaceArtifact.abi,
       server.wallet
     );
-    const needsUpdate = false;
+    let needsUpdate = false;
 
     try {
       const check = await externalGameLoopContract.shouldProgressLoop();
@@ -82,9 +82,10 @@ class Server {
       );
 
       // Set gas from contract settings
+      const extraGas = 100000;
       const maxGas = await gameLoop.maxGas(contractAddress);
       const gasBuffer = await gameLoop.GAS_BUFFER();
-      const gasToSend = Number(maxGas) + Number(gasBuffer);
+      const gasToSend = Number(maxGas) + Number(gasBuffer) + extraGas;
       let tx = await gameLoop.progressLoop(contractAddress, progressWithData, {
         gasLimit: gasToSend
       });
@@ -104,7 +105,7 @@ class Server {
     this.running = true;
     while (this.running) {
       if (queue.contracts.length == 0) {
-        console.log("Downloading queue...");
+        // console.log("Downloading queue...");
         await queue.download();
       }
       let contractsToRemove = [];
@@ -119,12 +120,14 @@ class Server {
             console.log(
               `Error performing update on game loop compatible contract: ${queue.contracts[i]}`
             );
+            console.log(err.message);
             contractsToRemove.push(queue.contracts[i]);
           }
         } else {
           contractsToRemove.push(queue.contracts[i]);
         }
       }
+      console.log("Clearing unused contracts...");
       contractsToRemove.forEach((contract) => {
         queue.removeContract(contract);
       });
@@ -154,8 +157,10 @@ class Queue {
   }
   removeContract(contractAddress) {
     const index = this.contracts.indexOf(contractAddress);
+    // console.log("contracts:", this.contracts);
     if (index >= 0) {
-      this.contracts.splice(index, 1);
+      const updatedContracts = [...this.contracts].splice(index, 1);
+      this.contracts = updatedContracts;
     }
   }
   async download() {
@@ -163,10 +168,8 @@ class Queue {
 
     try {
       console.log("registry:", this.contractFactory.address);
-      let registeredLoops = await this.contractFactory.getRegisteredGameLoops();
-      console.log("Downloaded queue:", registeredLoops);
-      // this.contracts = await
-      // console.log("Downloaded queue:", this.contracts);
+      this.contracts = await this.contractFactory.getRegisteredGameLoops();
+      console.log("Queue:", this.contracts);
     } catch (err) {
       console.error(err);
     }

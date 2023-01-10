@@ -16,22 +16,6 @@ contract GameLoop is GameLoopRoles, ReentrancyGuard {
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
 
-    // ADMIN //
-
-    function addController(address controllerAddress)
-        public
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        grantRole(CONTROLLER_ROLE, controllerAddress);
-    }
-
-    function removeController(address controllerAddress)
-        public
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        revokeRole(CONTROLLER_ROLE, controllerAddress);
-    }
-
     // CONTROLLER //
 
     // - Controller needs to send more gas than is required for tx.
@@ -72,6 +56,21 @@ contract GameLoop is GameLoopRoles, ReentrancyGuard {
     }
 
     // REGISTRAR //
+
+    function addController(address controllerAddress)
+        public
+        onlyRole(REGISTRAR_ROLE)
+    {
+        _grantRole(CONTROLLER_ROLE, controllerAddress);
+    }
+
+    function removeController(address controllerAddress)
+        public
+        onlyRole(REGISTRAR_ROLE)
+    {
+        _revokeRole(CONTROLLER_ROLE, controllerAddress);
+    }
+
     function deposit(address registeredUser)
         external
         payable

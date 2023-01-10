@@ -80,6 +80,7 @@ async function main() {
   if (!deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR) {
     // deploy GameLoopRegistrar
     gameLoopRegistrar = await GameLoopRegistrar.deploy(
+      gameLoop.address,
       gameLoopRegistry.address,
       process.env.TEST_MODE
         ? process.env.REGISTRAR_ADMIN_ADDRESS_TESTNET
@@ -99,10 +100,13 @@ async function main() {
       deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR
     );
   }
-
+  // set registrar on game loop
+  console.log("setting registrar on game loop");
+  let tx = await gameLoop.setRegistrar(gameLoopRegistrar.address);
+  await tx.wait();
   // set registrar on registry
   console.log("Setting registrar on registry");
-  let tx = await gameLoopRegistry.setRegistrar(gameLoopRegistrar.address);
+  tx = await gameLoopRegistry.setRegistrar(gameLoopRegistrar.address);
   await tx.wait();
   console.log("Registrar set.");
 

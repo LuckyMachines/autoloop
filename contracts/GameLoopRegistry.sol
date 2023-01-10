@@ -40,22 +40,6 @@ contract GameLoopRegistry is GameLoopRoles {
         _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
-    // Admin
-
-    function setRegistrar(address registrarAddress)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        grantRole(REGISTRAR_ROLE, registrarAddress);
-    }
-
-    function removeRegistrar(address registrarAddress)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        revokeRole(REGISTRAR_ROLE, registrarAddress);
-    }
-
     // Public
     function getRegisteredGameLoops()
         public
