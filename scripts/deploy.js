@@ -1,5 +1,6 @@
 const hre = require("hardhat");
 const fs = require("fs");
+const config = require("../controller.config.json");
 require("dotenv").config();
 
 class Deployment {
@@ -58,7 +59,7 @@ async function main() {
   if (!deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY) {
     // deploy AutoLoopRegistry
     autoLoopRegistry = await AutoLoopRegistry.deploy(
-      process.env.TEST_MODE
+      config.testMode
         ? process.env.REGISTRY_ADMIN_ADDRESS_TESTNET
         : process.env.REGISTRY_ADMIN_ADDRESS
     );
@@ -82,7 +83,7 @@ async function main() {
     autoLoopRegistrar = await AutoLoopRegistrar.deploy(
       autoLoop.address,
       autoLoopRegistry.address,
-      process.env.TEST_MODE
+      config.testMode
         ? process.env.REGISTRAR_ADMIN_ADDRESS_TESTNET
         : process.env.REGISTRAR_ADMIN_ADDRESS
     );

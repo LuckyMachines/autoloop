@@ -27,10 +27,10 @@ class Server {
       ? Date.now() + expiration * 1000
       : Date.now() + DEFAULT_EXPIRATION * 1000;
 
-    const PROVIDER_URL = process.env.TEST_MODE
+    const PROVIDER_URL = config.testMode
       ? process.env.RPC_URL_TESTNET
       : process.env.RPC_URL;
-    const PRIVATE_KEY = process.env.TEST_MODE
+    const PRIVATE_KEY = config.testMode
       ? process.env.PRIVATE_KEY_TESTNET
       : process.env.PRIVATE_KEY;
     this.provider = new hre.ethers.providers.JsonRpcProvider(PROVIDER_URL);
@@ -76,7 +76,7 @@ class Server {
       // const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
       const AutoLoopArtifact = require("../artifacts/contracts/AutoLoop.sol/AutoLoop.json");
       const autoLoop = new hre.ethers.Contract(
-        config[process.env.TEST_MODE ? "test" : "main"].AUTO_LOOP,
+        config[config.testMode ? "test" : "main"].AUTO_LOOP,
         AutoLoopArtifact.abi,
         server.wallet
       );
@@ -184,7 +184,7 @@ async function registryContractFactory() {
   const AutoLoopRegistryArtifact = require("../artifacts/contracts/AutoLoopRegistry.sol/AutoLoopRegistry.json");
 
   const registry = new hre.ethers.Contract(
-    config[process.env.TEST_MODE ? "test" : "main"].AUTO_LOOP_REGISTRY,
+    config[config.testMode ? "test" : "main"].AUTO_LOOP_REGISTRY,
     AutoLoopRegistryArtifact.abi,
     server.wallet
   );

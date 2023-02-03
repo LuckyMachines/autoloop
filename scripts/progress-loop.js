@@ -9,10 +9,10 @@ async function main() {
   const contractAddress = process.argv[2] ? process.argv[2] : null;
   if (contractAddress) {
     const AutoLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/AutoLoopCompatibleInterface.sol/AutoLoopCompatibleInterface.json");
-    const PROVIDER_URL = process.env.TEST_MODE
+    const PROVIDER_URL = config.testMode
       ? process.env.RPC_URL_TESTNET
       : process.env.RPC_URL;
-    const PRIVATE_KEY = process.env.TEST_MODE
+    const PRIVATE_KEY = config.testMode
       ? process.env.PRIVATE_KEY_TESTNET
       : process.env.PRIVATE_KEY;
     const provider = new hre.ethers.providers.JsonRpcProvider(PROVIDER_URL);
@@ -29,7 +29,7 @@ async function main() {
     if (needsUpdate) {
       const AutoLoopArtifact = require("../artifacts/contracts/AutoLoop.sol/AutoLoop.json");
       const autoLoop = new hre.ethers.Contract(
-        config[process.env.TEST_MODE ? "test" : "main"].AUTO_LOOP,
+        config[config.testMode ? "test" : "main"].AUTO_LOOP,
         AutoLoopArtifact.abi,
         wallet
       );
