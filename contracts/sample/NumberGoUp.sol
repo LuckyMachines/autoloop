@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// GameLoopCompatible.sol imports the functions from both @chainlink/contracts/src/v0.8/AutomationBase.sol
-// and GameLoopCompatibleInterface.sol
-import "../GameLoopCompatible.sol";
-import "../GameLoopRegistrar.sol";
+// AutoLoopCompatible.sol imports the functions from both @chainlink/contracts/src/v0.8/AutomationBase.sol
+// and AutoLoopCompatibleInterface.sol
+import "../AutoLoopCompatible.sol";
+import "../AutoLoopRegistrar.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract NumberGoUp is GameLoopCompatible, AccessControl {
+contract NumberGoUp is AutoLoopCompatible, AccessControl {
     uint256 public number;
     uint256 public interval;
     uint256 public lastTimeStamp;
@@ -23,26 +23,26 @@ contract NumberGoUp is GameLoopCompatible, AccessControl {
         _loopID = 1;
     }
 
-    function registerGameLoop(address registrarAddress)
+    function registerAutoLoop(address registrarAddress)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        // Register game loop
-        bool success = GameLoopRegistrar(registrarAddress).registerGameLoop();
+        // Register auto loop
+        bool success = AutoLoopRegistrar(registrarAddress).registerAutoLoop();
         if (!success) {
-            revert("unable to register game loop");
+            revert("unable to register auto loop");
         }
     }
 
-    function unregisterGameLoop(address registrarAddress)
+    function unregisterAutoLoop(address registrarAddress)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        // Unegister game loop
-        GameLoopRegistrar(registrarAddress).unregisterGameLoop();
+        // Unegister auto loop
+        AutoLoopRegistrar(registrarAddress).unregisterAutoLoop();
     }
 
-    // Required functions from GameLoopCompatibleInterface.sol
+    // Required functions from AutoLoopCompatibleInterface.sol
     function shouldProgressLoop()
         external
         view
@@ -64,7 +64,7 @@ contract NumberGoUp is GameLoopCompatible, AccessControl {
     }
 
     function updateGame() internal {
-        // this is what gets called on each game loop cycle
+        // this is what gets called on each auto loop cycle
         lastTimeStamp = block.timestamp;
         ++number;
         ++_loopID;

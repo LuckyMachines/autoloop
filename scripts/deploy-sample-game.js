@@ -25,7 +25,7 @@ class Deployment {
 
 async function main() {
   const deployment = new Deployment();
-  if (!deployments[hre.network.name].GAME_LOOP_REGISTRAR) {
+  if (!deployments[hre.network.name].AUTO_LOOP_REGISTRAR) {
     console.log(
       "\nRegistrar not deployed. Run the deployment script or set the address in deployments.json first.\n"
     );
@@ -38,12 +38,12 @@ async function main() {
     await game.deployed();
     console.log("Game deployed to", game.address);
 
-    // Register game loop...
-    let tx = await game.registerGameLoop(
-      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR
+    // Register auto loop...
+    let tx = await game.registerAutoLoop(
+      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR
     );
     await tx.wait();
-    console.log("Game loop registered.");
+    console.log("auto loop registered.");
 
     deployment.deployments[hre.network.name].SAMPLE_GAME = game.address;
     deployment.save();

@@ -4,7 +4,7 @@ const deployments = require("../deployments.json");
 require("dotenv").config();
 
 async function main() {
-  if (!deployments[hre.network.name].GAME_LOOP_REGISTRAR) {
+  if (!deployments[hre.network.name].AUTO_LOOP_REGISTRAR) {
     console.log(
       "\nRegistrar not deployed. Run the deployment script or set the address in deployments.json first.\n"
     );
@@ -12,13 +12,13 @@ async function main() {
     console.log("\n Sample game not deployed.\n");
   } else {
     console.log(
-      "Registering game loop:",
+      "Registering auto loop:",
       deployments[hre.network.name].SAMPLE_GAME
     );
     const Game = await hre.ethers.getContractFactory("NumberGoUp");
     const game = Game.attach(deployments[hre.network.name].SAMPLE_GAME);
-    await game.registerGameLoop(
-      deployments[hre.network.name].GAME_LOOP_REGISTRAR
+    await game.registerAutoLoop(
+      deployments[hre.network.name].AUTO_LOOP_REGISTRAR
     );
   }
 }

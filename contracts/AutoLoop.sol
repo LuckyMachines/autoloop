@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./GameLoopRoles.sol";
+import "./AutoLoopRoles.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract GameLoop is GameLoopRoles, ReentrancyGuard {
+contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }

@@ -1,48 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./GameLoopRegistry.sol";
-import "./GameLoop.sol";
+import "./AutoLoopRegistry.sol";
+import "./AutoLoop.sol";
 
-contract GameLoopRegistrar is GameLoopRoles {
-    GameLoop GAME_LOOP;
-    GameLoopRegistry REGISTRY;
+contract AutoLoopRegistrar is AutoLoopRoles {
+    AutoLoop AUTO_LOOP;
+    AutoLoopRegistry REGISTRY;
 
     constructor(
-        address gameLoopAddress,
+        address autoLoopAddress,
         address registryAddress,
         address adminAddress
     ) {
-        GAME_LOOP = GameLoop(gameLoopAddress);
-        REGISTRY = GameLoopRegistry(registryAddress);
+        AUTO_LOOP = AutoLoop(autoLoopAddress);
+        REGISTRY = AutoLoopRegistry(registryAddress);
         _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
-    function registerGameLoop() external returns (bool success) {
-        if (canRegisterGameLoop(msg.sender)) {
-            REGISTRY.registerGameLoop(msg.sender);
+    function registerAutoLoop() external returns (bool success) {
+        if (canRegisterAutoLoop(msg.sender)) {
+            REGISTRY.registerAutoLoop(msg.sender);
             success = true;
         }
     }
 
-    function unregisterGameLoop() external {
-        REGISTRY.unregisterGameLoop(msg.sender);
+    function unregisterAutoLoop() external {
+        REGISTRY.unregisterAutoLoop(msg.sender);
     }
 
     function registerController() external returns (bool success) {
         if (canRegisterController(msg.sender)) {
             REGISTRY.registerController(msg.sender);
-            GAME_LOOP.addController(msg.sender);
+            AUTO_LOOP.addController(msg.sender);
             success = true;
         }
     }
 
     function unregisterController() external {
         REGISTRY.unregisterController(msg.sender);
-        GAME_LOOP.removeController(msg.sender);
+        AUTO_LOOP.removeController(msg.sender);
     }
 
-    function canRegisterGameLoop(address registrantAddress)
+    function canRegisterAutoLoop(address registrantAddress)
         public
         view
         returns (bool)
@@ -51,7 +51,7 @@ contract GameLoopRegistrar is GameLoopRoles {
         if (registrantAddress == address(0)) {
             // zero address can't register
             return false;
-        } else if (REGISTRY.isRegisteredGameLoop(registrantAddress)) {
+        } else if (REGISTRY.isRegisteredAutoLoop(registrantAddress)) {
             // already registered
             return false;
         } else {

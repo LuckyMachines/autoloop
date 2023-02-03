@@ -1,5 +1,5 @@
 {
-  "name": "@luckymachines/game-loop",
+  "name": "@luckymachines/autoloop",
   "version": "0.0.1",
   "devDependencies": {
     "@chainlink/contracts": "^0.5.1",
@@ -52,7 +52,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/LuckyMachines/game-loop"
+    "url": "https://github.com/LuckyMachines/autoloop"
   },
   "keywords": [
     "hardhat",
@@ -64,7 +64,7 @@
   "author": "Max Meier",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/LuckyMachines/game-loop/issues"
+    "url": "https://github.com/LuckyMachines/autoloop/issues"
   },
-  "homepage": "https://github.com/LuckyMachines/game-loop#readme"
+  "homepage": "https://github.com/LuckyMachines/autoloop#readme"
 }

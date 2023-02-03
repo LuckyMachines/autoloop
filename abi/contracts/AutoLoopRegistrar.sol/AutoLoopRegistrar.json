@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "gameLoopAddress",
+        "name": "autoLoopAddress",
         "type": "address"
       },
       {
@@ -155,7 +155,7 @@
         "type": "address"
       }
     ],
-    "name": "canRegisterController",
+    "name": "canRegisterAutoLoop",
     "outputs": [
       {
         "internalType": "bool",
@@ -174,7 +174,7 @@
         "type": "address"
       }
     ],
-    "name": "canRegisterGameLoop",
+    "name": "canRegisterController",
     "outputs": [
       {
         "internalType": "bool",
@@ -291,7 +291,7 @@
   },
   {
     "inputs": [],
-    "name": "registerController",
+    "name": "registerAutoLoop",
     "outputs": [
       {
         "internalType": "bool",
@@ -304,7 +304,7 @@
   },
   {
     "inputs": [],
-    "name": "registerGameLoop",
+    "name": "registerController",
     "outputs": [
       {
         "internalType": "bool",
@@ -398,14 +398,14 @@
   },
   {
     "inputs": [],
-    "name": "unregisterController",
+    "name": "unregisterAutoLoop",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "unregisterGameLoop",
+    "name": "unregisterController",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

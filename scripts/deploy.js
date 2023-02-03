@@ -25,88 +25,88 @@ class Deployment {
 async function main() {
   const deployment = new Deployment();
 
-  let gameLoop;
-  let gameLoopRegistry;
-  let gameLoopRegistrar;
+  let autoLoop;
+  let autoLoopRegistry;
+  let autoLoopRegistrar;
 
-  const GameLoop = await hre.ethers.getContractFactory("GameLoop");
-  const GameLoopRegistry = await hre.ethers.getContractFactory(
-    "GameLoopRegistry"
+  const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
+  const AutoLoopRegistry = await hre.ethers.getContractFactory(
+    "AutoLoopRegistry"
   );
-  const GameLoopRegistrar = await hre.ethers.getContractFactory(
-    "GameLoopRegistrar"
+  const AutoLoopRegistrar = await hre.ethers.getContractFactory(
+    "AutoLoopRegistrar"
   );
 
-  if (!deployment.deployments[hre.network.name].GAME_LOOP) {
-    // deploy GameLoop
-    console.log("Deploying Game Loop...");
-    gameLoop = await GameLoop.deploy();
-    await gameLoop.deployed();
-    console.log("Game Loop deployed to", gameLoop.address);
-    deployment.deployments[hre.network.name].GAME_LOOP = gameLoop.address;
+  if (!deployment.deployments[hre.network.name].AUTO_LOOP) {
+    // deploy AutoLoop
+    console.log("Deploying Auto Loop...");
+    autoLoop = await AutoLoop.deploy();
+    await autoLoop.deployed();
+    console.log("Auto Loop deployed to", autoLoop.address);
+    deployment.deployments[hre.network.name].AUTO_LOOP = autoLoop.address;
     deployment.save();
   } else {
-    gameLoop = GameLoop.attach(
-      deployment.deployments[hre.network.name].GAME_LOOP
+    autoLoop = AutoLoop.attach(
+      deployment.deployments[hre.network.name].AUTO_LOOP
     );
     console.log(
-      "Game loop deployed at",
-      deployment.deployments[hre.network.name].GAME_LOOP
+      "Auto loop deployed at",
+      deployment.deployments[hre.network.name].AUTO_LOOP
     );
   }
 
-  if (!deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY) {
-    // deploy GameLoopRegistry
-    gameLoopRegistry = await GameLoopRegistry.deploy(
+  if (!deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY) {
+    // deploy AutoLoopRegistry
+    autoLoopRegistry = await AutoLoopRegistry.deploy(
       process.env.TEST_MODE
         ? process.env.REGISTRY_ADMIN_ADDRESS_TESTNET
         : process.env.REGISTRY_ADMIN_ADDRESS
     );
-    await gameLoopRegistry.deployed();
-    console.log("Registry deployed to", gameLoopRegistry.address);
-    deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY =
-      gameLoopRegistry.address;
+    await autoLoopRegistry.deployed();
+    console.log("Registry deployed to", autoLoopRegistry.address);
+    deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY =
+      autoLoopRegistry.address;
     deployment.save();
   } else {
-    gameLoopRegistry = GameLoopRegistry.attach(
-      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY
+    autoLoopRegistry = AutoLoopRegistry.attach(
+      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY
     );
     console.log(
-      "Game loop registry deployed at",
-      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRY
+      "Auto loop registry deployed at",
+      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY
     );
   }
 
-  if (!deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR) {
-    // deploy GameLoopRegistrar
-    gameLoopRegistrar = await GameLoopRegistrar.deploy(
-      gameLoop.address,
-      gameLoopRegistry.address,
+  if (!deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR) {
+    // deploy AutoLoopRegistrar
+    autoLoopRegistrar = await AutoLoopRegistrar.deploy(
+      autoLoop.address,
+      autoLoopRegistry.address,
       process.env.TEST_MODE
         ? process.env.REGISTRAR_ADMIN_ADDRESS_TESTNET
         : process.env.REGISTRAR_ADMIN_ADDRESS
     );
-    await gameLoopRegistrar.deployed();
-    console.log("Registrar deployed to", gameLoopRegistrar.address);
-    deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR =
-      gameLoopRegistrar.address;
+    await autoLoopRegistrar.deployed();
+    console.log("Registrar deployed to", autoLoopRegistrar.address);
+    deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR =
+      autoLoopRegistrar.address;
     deployment.save();
   } else {
-    gameLoopRegistrar = GameLoopRegistrar.attach(
-      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR
+    autoLoopRegistrar = AutoLoopRegistrar.attach(
+      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR
     );
     console.log(
-      "Game loop registrar deployed at",
-      deployment.deployments[hre.network.name].GAME_LOOP_REGISTRAR
+      "Auto loop registrar deployed at",
+      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR
     );
   }
-  // set registrar on game loop
-  console.log("setting registrar on game loop");
-  let tx = await gameLoop.setRegistrar(gameLoopRegistrar.address);
+  // set registrar on auto loop
+  console.log("setting registrar on auto loop");
+  let tx = await autoLoop.setRegistrar(autoLoopRegistrar.address);
   await tx.wait();
   // set registrar on registry
   console.log("Setting registrar on registry");
-  tx = await gameLoopRegistry.setRegistrar(gameLoopRegistrar.address);
+  tx = await autoLoopRegistry.setRegistrar(autoLoopRegistrar.address);
   await tx.wait();
   console.log("Registrar set.");
 

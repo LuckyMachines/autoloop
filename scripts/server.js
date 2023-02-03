@@ -38,20 +38,20 @@ class Server {
   }
 
   async checkNeedsUpdate(contractAddress) {
-    const GameLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/GameLoopCompatibleInterface.sol/GameLoopCompatibleInterface.json");
-    const externalGameLoopContract = new ethers.Contract(
+    const AutoLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/AutoLoopCompatibleInterface.sol/AutoLoopCompatibleInterface.json");
+    const externalAutoLoopContract = new ethers.Contract(
       contractAddress,
-      GameLoopCompatibleInterfaceArtifact.abi,
+      AutoLoopCompatibleInterfaceArtifact.abi,
       server.wallet
     );
     let needsUpdate = false;
 
     try {
-      const check = await externalGameLoopContract.shouldProgressLoop();
+      const check = await externalAutoLoopContract.shouldProgressLoop();
       needsUpdate = check.loopIsReady;
     } catch (err) {
       console.log(
-        `Error checking game loop compatible contract: ${contractAddress}.`
+        `Error checking auto loop compatible contract: ${contractAddress}.`
       );
       console.log(err.message);
     }
@@ -60,35 +60,35 @@ class Server {
   }
 
   async performUpdate(contractAddress) {
-    const GameLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/GameLoopCompatibleInterface.sol/GameLoopCompatibleInterface.json");
-    const externalGameLoopContract = new ethers.Contract(
+    const AutoLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/AutoLoopCompatibleInterface.sol/AutoLoopCompatibleInterface.json");
+    const externalAutoLoopContract = new ethers.Contract(
       contractAddress,
-      GameLoopCompatibleInterfaceArtifact.abi,
+      AutoLoopCompatibleInterfaceArtifact.abi,
       server.wallet
     );
 
     // confirm update is still needed and grab update data
-    const check = await externalGameLoopContract.shouldProgressLoop();
+    const check = await externalAutoLoopContract.shouldProgressLoop();
     let needsUpdate = check.loopIsReady;
     let progressWithData = check.progressWithData;
 
     if (needsUpdate) {
-      // const GameLoop = await hre.ethers.getContractFactory("GameLoop");
-      const GameLoopArtifact = require("../artifacts/contracts/GameLoop.sol/GameLoop.json");
-      const gameLoop = new hre.ethers.Contract(
-        config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP,
-        GameLoopArtifact.abi,
+      // const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
+      const AutoLoopArtifact = require("../artifacts/contracts/AutoLoop.sol/AutoLoop.json");
+      const autoLoop = new hre.ethers.Contract(
+        config[process.env.TEST_MODE ? "test" : "main"].AUTO_LOOP,
+        AutoLoopArtifact.abi,
         server.wallet
       );
 
       // Set gas from contract settings
-      let maxGas = await gameLoop.maxGas(contractAddress);
+      let maxGas = await autoLoop.maxGas(contractAddress);
       if (Number(maxGas) == 0) {
-        maxGas = await gameLoop.MAX_GAS();
+        maxGas = await autoLoop.MAX_GAS();
       }
-      const gasBuffer = await gameLoop.GAS_BUFFER();
+      const gasBuffer = await autoLoop.GAS_BUFFER();
       const gasToSend = Number(maxGas) + Number(gasBuffer);
-      let tx = await gameLoop.progressLoop(contractAddress, progressWithData, {
+      let tx = await autoLoop.progressLoop(contractAddress, progressWithData, {
         gasLimit: gasToSend
       });
       let receipt = await tx.wait();
@@ -120,7 +120,7 @@ class Server {
             break; // only one update per interval
           } catch (err) {
             console.log(
-              `Error performing update on game loop compatible contract: ${queue.contracts[i]}`
+              `Error performing update on auto loop compatible contract: ${queue.contracts[i]}`
             );
             console.log(err.message);
             contractsToRemove.push(queue.contracts[i]);
@@ -172,7 +172,7 @@ class Queue {
 
     try {
       console.log("registry:", this.contractFactory.address);
-      this.contracts = await this.contractFactory.getRegisteredGameLoops();
+      this.contracts = await this.contractFactory.getRegisteredAutoLoops();
       console.log("Queue:", this.contracts);
     } catch (err) {
       console.error(err);
@@ -181,11 +181,11 @@ class Queue {
 }
 
 async function registryContractFactory() {
-  const GameLoopRegistryArtifact = require("../artifacts/contracts/GameLoopRegistry.sol/GameLoopRegistry.json");
+  const AutoLoopRegistryArtifact = require("../artifacts/contracts/AutoLoopRegistry.sol/AutoLoopRegistry.json");
 
   const registry = new hre.ethers.Contract(
-    config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP_REGISTRY,
-    GameLoopRegistryArtifact.abi,
+    config[process.env.TEST_MODE ? "test" : "main"].AUTO_LOOP_REGISTRY,
+    AutoLoopRegistryArtifact.abi,
     server.wallet
   );
   return registry;

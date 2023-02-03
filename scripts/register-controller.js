@@ -3,11 +3,11 @@ const config = require("../controller.config.json");
 
 async function main() {
   // register controller with registrar contract
-  const GameLoopRegistrar = await hre.ethers.getContractFactory(
-    "GameLoopRegistrar"
+  const AutoLoopRegistrar = await hre.ethers.getContractFactory(
+    "AutoLoopRegistrar"
   );
-  const registrar = GameLoopRegistrar.attach(
-    config[hre.network.name].GAME_LOOP_REGISTRAR
+  const registrar = AutoLoopRegistrar.attach(
+    config[hre.network.name].AUTO_LOOP_REGISTRAR
   );
   try {
     const tx = await registrar.registerController();
@@ -17,11 +17,11 @@ async function main() {
   }
 
   // TODO: confirm controller is registered with registry
-  const GameLoopRegistry = await hre.ethers.getContractFactory(
-    "GameLoopRegistry"
+  const AutoLoopRegistry = await hre.ethers.getContractFactory(
+    "AutoLoopRegistry"
   );
-  const registry = GameLoopRegistry.attach(
-    config[hre.network.name].GAME_LOOP_REGISTRY
+  const registry = AutoLoopRegistry.attach(
+    config[hre.network.name].AUTO_LOOP_REGISTRY
   );
 
   let accounts = await ethers.provider.listAccounts();
@@ -32,14 +32,14 @@ async function main() {
     console.log("Controller not registered");
   }
 
-  const GameLoop = await hre.ethers.getContractFactory("GameLoop");
-  const gameLoop = GameLoop.attach(config[hre.network.name].GAME_LOOP);
-  const controllerRole = await gameLoop.CONTROLLER_ROLE();
-  const hasControllerRole = await gameLoop.hasRole(controllerRole, accounts[0]);
+  const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
+  const autoLoop = AutoLoop.attach(config[hre.network.name].AUTO_LOOP);
+  const controllerRole = await autoLoop.CONTROLLER_ROLE();
+  const hasControllerRole = await autoLoop.hasRole(controllerRole, accounts[0]);
   if (hasControllerRole) {
-    console.log("Controller role set on game loop");
+    console.log("Controller role set on AutoLoop");
   } else {
-    console.log("Controller role not set on game loop");
+    console.log("Controller role not set on AutoLoop");
   }
 }
 

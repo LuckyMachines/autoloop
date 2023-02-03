@@ -21,12 +21,12 @@ module.exports = {
     runOnCompile: true,
     format: "json",
     only: [
-      "GameLoop.sol",
-      "GameLoopCompatible.sol",
-      "GameLoopCompatibleInterface.sol",
-      "GameLoopRegistrar.sol",
-      "GameLoopRegistry.sol",
-      "GameLoopRoles.sol"
+      "AutoLoop.sol",
+      "AutoLoopCompatible.sol",
+      "AutoLoopCompatibleInterface.sol",
+      "AutoLoopRegistrar.sol",
+      "AutoLoopRegistry.sol",
+      "AutoLoopRoles.sol"
     ]
   }
 };

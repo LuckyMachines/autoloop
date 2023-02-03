@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./GameLoopRoles.sol";
+import "./AutoLoopRoles.sol";
 
-contract GameLoopRegistry is GameLoopRoles {
-    mapping(address => bool) public isRegisteredGameLoop;
+contract AutoLoopRegistry is AutoLoopRoles {
+    mapping(address => bool) public isRegisteredAutoLoop;
     mapping(address => bool) public isRegisteredController;
 
-    mapping(address => uint256) _registeredGameLoopIndex;
+    mapping(address => uint256) _registeredAutoLoopIndex;
     mapping(address => uint256) _registeredControllerIndex;
-    address[] _registeredGameLoops;
+    address[] _registeredAutoLoops;
     address[] _registeredControllers;
 
-    event GameLoopRegistered(
-        address gameLoopAddress,
+    event AutoLoopRegistered(
+        address autoLoopAddress,
         address registrarAddress,
         uint256 timeStamp
     );
 
-    event GameLoopUnregistered(
-        address gameLoopAddress,
+    event AutoLoopUnregistered(
+        address autoLoopAddress,
         address registrarAddress,
         uint256 timeStamp
     );
@@ -41,22 +41,22 @@ contract GameLoopRegistry is GameLoopRoles {
     }
 
     // Public
-    function getRegisteredGameLoops()
+    function getRegisteredAutoLoops()
         public
         view
-        returns (address[] memory gameLoops)
+        returns (address[] memory autoLoops)
     {
         uint256 nonZeroAddresses = 0;
-        for (uint256 i = 0; i < _registeredGameLoops.length; i++) {
-            if (_registeredGameLoops[i] != address(0)) {
+        for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
+            if (_registeredAutoLoops[i] != address(0)) {
                 ++nonZeroAddresses;
             }
         }
-        gameLoops = new address[](nonZeroAddresses);
+        autoLoops = new address[](nonZeroAddresses);
         uint256 offset = 0;
-        for (uint256 i = 0; i < _registeredGameLoops.length; i++) {
-            if (_registeredGameLoops[i] != address(0)) {
-                gameLoops[offset] = _registeredGameLoops[i];
+        for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
+            if (_registeredAutoLoops[i] != address(0)) {
+                autoLoops[offset] = _registeredAutoLoops[i];
                 ++offset;
             }
         }
@@ -87,32 +87,32 @@ contract GameLoopRegistry is GameLoopRoles {
     // TODO: remove zero addresses from registration lists
     function cleanControllerList() public {}
 
-    function cleanGameLoopList() public {}
+    function cleanAutoLoopList() public {}
 
     // Registrar
-    function registerGameLoop(address registrantAddress)
+    function registerAutoLoop(address registrantAddress)
         external
         onlyRole(REGISTRAR_ROLE)
     {
         // Will be pre-verified by registrar to prevent duplicate registrations
-        isRegisteredGameLoop[registrantAddress] = true;
-        _registeredGameLoops.push(registrantAddress);
-        _registeredGameLoopIndex[registrantAddress] =
-            _registeredGameLoops.length -
+        isRegisteredAutoLoop[registrantAddress] = true;
+        _registeredAutoLoops.push(registrantAddress);
+        _registeredAutoLoopIndex[registrantAddress] =
+            _registeredAutoLoops.length -
             1;
-        emit GameLoopRegistered(registrantAddress, msg.sender, block.timestamp);
+        emit AutoLoopRegistered(registrantAddress, msg.sender, block.timestamp);
     }
 
-    function unregisterGameLoop(address registrantAddress)
+    function unregisterAutoLoop(address registrantAddress)
         external
         onlyRole(REGISTRAR_ROLE)
     {
-        isRegisteredGameLoop[registrantAddress] = false;
-        delete _registeredGameLoops[
-            _registeredGameLoopIndex[registrantAddress]
+        isRegisteredAutoLoop[registrantAddress] = false;
+        delete _registeredAutoLoops[
+            _registeredAutoLoopIndex[registrantAddress]
         ];
-        delete _registeredGameLoopIndex[registrantAddress];
-        emit GameLoopUnregistered(
+        delete _registeredAutoLoopIndex[registrantAddress];
+        emit AutoLoopUnregistered(
             registrantAddress,
             msg.sender,
             block.timestamp

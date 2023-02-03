@@ -8,7 +8,7 @@ require("dotenv").config();
 async function main() {
   const contractAddress = process.argv[2] ? process.argv[2] : null;
   if (contractAddress) {
-    const GameLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/GameLoopCompatibleInterface.sol/GameLoopCompatibleInterface.json");
+    const AutoLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/AutoLoopCompatibleInterface.sol/AutoLoopCompatibleInterface.json");
     const PROVIDER_URL = process.env.TEST_MODE
       ? process.env.RPC_URL_TESTNET
       : process.env.RPC_URL;
@@ -17,32 +17,32 @@ async function main() {
       : process.env.PRIVATE_KEY;
     const provider = new hre.ethers.providers.JsonRpcProvider(PROVIDER_URL);
     const wallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-    const externalGameLoopContract = new hre.ethers.Contract(
+    const externalAutoLoopContract = new hre.ethers.Contract(
       contractAddress,
-      GameLoopCompatibleInterfaceArtifact.abi,
+      AutoLoopCompatibleInterfaceArtifact.abi,
       wallet
     );
-    const check = await externalGameLoopContract.shouldProgressLoop();
+    const check = await externalAutoLoopContract.shouldProgressLoop();
     let needsUpdate = check.loopIsReady;
     let progressWithData = check.progressWithData;
     console.log(`Contract ${contractAddress} needs update: ${needsUpdate}`);
     if (needsUpdate) {
-      const GameLoopArtifact = require("../artifacts/contracts/GameLoop.sol/GameLoop.json");
-      const gameLoop = new hre.ethers.Contract(
-        config[process.env.TEST_MODE ? "test" : "main"].GAME_LOOP,
-        GameLoopArtifact.abi,
+      const AutoLoopArtifact = require("../artifacts/contracts/AutoLoop.sol/AutoLoop.json");
+      const autoLoop = new hre.ethers.Contract(
+        config[process.env.TEST_MODE ? "test" : "main"].AUTO_LOOP,
+        AutoLoopArtifact.abi,
         wallet
       );
 
       // Set gas from contract settings
-      let maxGas = await gameLoop.maxGas(contractAddress);
+      let maxGas = await autoLoop.maxGas(contractAddress);
       if (Number(maxGas) == 0) {
-        maxGas = await gameLoop.MAX_GAS();
+        maxGas = await autoLoop.MAX_GAS();
       }
-      const gasBuffer = await gameLoop.GAS_BUFFER();
+      const gasBuffer = await autoLoop.GAS_BUFFER();
       const gasToSend = Number(maxGas) + Number(gasBuffer);
-      console.log("Calling progress loop on:", gameLoop.address);
-      let tx = await gameLoop.progressLoop(contractAddress, progressWithData, {
+      console.log("Calling progress loop on:", autoLoop.address);
+      let tx = await autoLoop.progressLoop(contractAddress, progressWithData, {
         gasLimit: gasToSend
       });
       let receipt = await tx.wait();
