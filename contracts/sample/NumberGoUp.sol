@@ -5,9 +5,8 @@ pragma solidity ^0.8.7;
 // and AutoLoopCompatibleInterface.sol
 import "../AutoLoopCompatible.sol";
 import "../AutoLoopRegistrar.sol";
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract NumberGoUp is AutoLoopCompatible, AccessControl {
+contract NumberGoUp is AutoLoopCompatible {
     uint256 public number;
     uint256 public interval;
     uint256 public lastTimeStamp;
