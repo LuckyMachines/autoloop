@@ -153,6 +153,11 @@
         "internalType": "address",
         "name": "registrantAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoLoopCompatibleContract",
+        "type": "address"
       }
     ],
     "name": "canRegisterAutoLoop",
@@ -303,6 +308,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "autoLoopCompatibleContract",
+        "type": "address"
+      }
+    ],
+    "name": "registerAutoLoopFor",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "registerController",
     "outputs": [
@@ -399,7 +423,32 @@
   {
     "inputs": [],
     "name": "unregisterAutoLoop",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "autoLoopCompatibleContract",
+        "type": "address"
+      }
+    ],
+    "name": "unregisterAutoLoopFor",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
