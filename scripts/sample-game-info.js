@@ -4,7 +4,7 @@ const deployments = require("../deployments.json");
 require("dotenv").config();
 
 async function main() {
-  if (!deployments[hre.network.name].GAME_LOOP_REGISTRAR) {
+  if (!deployments[hre.network.name].AUTO_LOOP_REGISTRAR) {
     console.log(
       "\nRegistrar not deployed. Run the deployment script or set the address in deployments.json first.\n"
     );

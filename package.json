@@ -50,7 +50,9 @@
     "sample-info": "npx hardhat run scripts/sample-game-info.js --network main",
     "sample-info-test": "npx hardhat run scripts/sample-game-info.js --network test",
     "server": "node scripts/server.js",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "unregister-contract": "npx hardhat run scripts/unregister-contract.js --network main",
+    "unregister-contract-test": "npx hardhat run scripts/unregister-contract.js --network test"
   },
   "repository": {
     "type": "git",
