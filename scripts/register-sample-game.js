@@ -1,3 +1,4 @@
+// Example of contract that internally registers itself
 const hre = require("hardhat");
 const fs = require("fs");
 const deployments = require("../deployments.json");
