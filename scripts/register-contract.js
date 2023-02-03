@@ -1,11 +1,12 @@
 // Register a contract externally. Must have DEFAULT_ADMIN_ROLE on AutoLoop compatible contract.
 const inquirer = require("inquirer");
 const hre = require("hardhat");
+const config = require("../controller.config.json");
 require("dotenv").config();
 
 async function main() {
   let signers = await hre.ethers.getSigners();
-  let registrant = signers[0];
+  let registrant = signers[0].address;
   console.log("Registrant:", registrant);
   let tx;
   const questions = [];
@@ -23,12 +24,10 @@ async function main() {
   );
   const Registrar = await hre.ethers.getContractFactory("AutoLoopRegistrar");
   const registrar = Registrar.attach(
-    deployments[hre.network.name].AUTO_LOOP_REGISTRAR
+    config[hre.network.name].AUTO_LOOP_REGISTRAR
   );
   const Registry = await hre.ethers.getContractFactory("AutoLoopRegistry");
-  const registry = Registry.attach(
-    deployments[hre.network.name].AUTO_LOOP_REGISTRY
-  );
+  const registry = Registry.attach(config[hre.network.name].AUTO_LOOP_REGISTRY);
 
   // check if contract is already registered
   let isRegistered = await registry.isRegisteredAutoLoop(autoLoopContract);
