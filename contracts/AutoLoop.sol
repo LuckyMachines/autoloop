@@ -9,12 +9,37 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
-    uint256 public constant MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 public constant GAS_BUFFER = 20_000; // potential gas required by controller
+    uint256 constant MAX_GAS = 1_000_000; // default if no personal max set
+    uint256 constant GAS_BUFFER = 20_000; // potential gas required by controller, TODO: update to accurate amount
     uint256 constant GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
-    mapping(address => uint256) public balance; // balance held at this address
-    mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
+    mapping(address => uint256) balance; // balance held at this address
+    mapping(address => uint256) maxGas; // max gas a user is willing to spend on tx
+
+    // PUBLIC //
+    function getGasBuffer() public pure returns (uint256) {
+        return GAS_BUFFER;
+    }
+
+    function getGasThreshold() public pure returns (uint256) {
+        return GAS_THRESHOLD;
+    }
+
+    function getMaxGas() public pure returns (uint256) {
+        return MAX_GAS;
+    }
+
+    function getMaxGasFor(address userAddress) public view returns (uint256) {
+        if (maxGas[userAddress] == 0) {
+            return MAX_GAS;
+        } else {
+            return maxGas[userAddress];
+        }
+    }
+
+    function getBalance(address userAddress) public view returns (uint256) {
+        return balance[userAddress];
+    }
 
     // CONTROLLER //
 
@@ -89,9 +114,7 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         nonReentrant
     {
         require(balance[registeredUser] > 0, "User balance is zero.");
-        (bool sent, bytes memory data) = registeredUser.call{
-            value: balance[registeredUser]
-        }("");
+        (bool sent, ) = registeredUser.call{value: balance[registeredUser]}("");
         require(sent, "Failed to send refund");
     }
 

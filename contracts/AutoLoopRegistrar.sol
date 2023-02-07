@@ -19,76 +19,19 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
-    /**
-     * @notice AutoLoop compatible contract registers itself
-     * @return success - whether the registration was successful or not
-     */
-    function registerAutoLoop() external returns (bool success) {
-        // pass msg.sender as both arguments since it is both registrant and contract being registered
-        if (canRegisterAutoLoop(msg.sender, msg.sender)) {
-            _registerAutoLoop(msg.sender);
-            success = true;
-        }
+    // IN PROGRESS
+    // Draft functions:
+    function deposit(address registeredContract) external payable {}
+
+    function requestRefund(address toAddress) external {
+        // controller
+        // contract
+        // admin
     }
 
-    /**
-     * @notice AutoLoop compatible contract unregisters itself
-     * @return success - whether the unregistration was successful or not
-     */
-    function unregisterAutoLoop() external returns (bool success) {
-        if (canRegisterAutoLoop(msg.sender, msg.sender)) {
-            _unregisterAutoLoop(msg.sender);
-            success = true;
-        }
-    }
+    function setMaxGas(uint256 maxGasPerUpdate) external {}
 
-    /**
-     * @notice register an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being registered)
-     * @param autoLoopCompatibleContract the address of the contract to register
-     * @return success - whether or not the contract was registered
-     */
-    function registerAutoLoopFor(address autoLoopCompatibleContract)
-        external
-        returns (bool success)
-    {
-        if (canRegisterAutoLoop(msg.sender, autoLoopCompatibleContract)) {
-            _registerAutoLoop(autoLoopCompatibleContract);
-            success = true;
-        }
-    }
-
-    /**
-     * @notice unregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being unregistered)
-     * @param autoLoopCompatibleContract the address of the contract to unregister
-     * @return success - whether or not the contract was unregistered
-     */
-    function unregisterAutoLoopFor(address autoLoopCompatibleContract)
-        external
-        returns (bool success)
-    {
-        if (canRegisterAutoLoop(msg.sender, autoLoopCompatibleContract)) {
-            _unregisterAutoLoop(autoLoopCompatibleContract);
-            success = true;
-        }
-    }
-
-    /**
-     * @notice register an AutoLoop controller
-     * @return success - whether or not the controller was registered
-     */
-    function registerController() external returns (bool success) {
-        if (canRegisterController(msg.sender)) {
-            _registerController(msg.sender);
-            success = true;
-        }
-    }
-
-    /**
-     * @notice uregister an AutoLoop controller
-     */
-    function unregisterController() external {
-        _unregisterController(msg.sender);
-    }
+    function setMaxGasFor(uint256 maxGasPerUpdate) external {}
 
     /**
      * @notice check if a contract can be registered
@@ -104,16 +47,12 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         if (registrantAddress == address(0)) {
             // zero address can't register
             return false;
-        } else if (REGISTRY.isRegisteredAutoLoop(registrantAddress)) {
+        } else if (REGISTRY.isRegisteredAutoLoop(autoLoopCompatibleContract)) {
             // already registered
             return false;
         } else if (registrantAddress != autoLoopCompatibleContract) {
             // check if registrant is admin on contract
-            return
-                AutoLoopCompatible(autoLoopCompatibleContract).hasRole(
-                    DEFAULT_ADMIN_ROLE,
-                    registrantAddress
-                );
+            return _isAdmin(registrantAddress, autoLoopCompatibleContract);
         } else {
             return true;
         }
@@ -141,7 +80,97 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         }
     }
 
+    /**
+     * @notice AutoLoop compatible contract registers itself
+     * @return success - whether the registration was successful or not
+     */
+    function registerAutoLoop() external returns (bool success) {
+        // pass msg.sender as both arguments since it is both registrant and contract being registered
+        if (canRegisterAutoLoop(msg.sender, msg.sender)) {
+            _registerAutoLoop(msg.sender);
+            success = true;
+        }
+    }
+
+    /**
+     * @notice register an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being registered)
+     * @param autoLoopCompatibleContract the address of the contract to register
+     * @return success - whether or not the contract was registered
+     */
+    function registerAutoLoopFor(
+        address autoLoopCompatibleContract,
+        uint256 maxGasPerUpdate
+    ) external payable returns (bool success) {
+        if (canRegisterAutoLoop(msg.sender, autoLoopCompatibleContract)) {
+            _registerAutoLoop(autoLoopCompatibleContract);
+            if (msg.value > 0) {
+                AUTO_LOOP.deposit{value: msg.value}(autoLoopCompatibleContract);
+            }
+            if (maxGasPerUpdate > 0) {
+                AUTO_LOOP.setMaxGas(
+                    autoLoopCompatibleContract,
+                    maxGasPerUpdate
+                );
+            }
+            success = true;
+        }
+    }
+
+    /**
+     * @notice register an AutoLoop controller
+     * @return success - whether or not the controller was registered
+     */
+    function registerController() external returns (bool success) {
+        if (canRegisterController(msg.sender)) {
+            _registerController(msg.sender);
+            success = true;
+        }
+    }
+
+    /**
+     * @notice AutoLoop compatible contract unregisters itself
+     * @return success - whether the unregistration was successful or not
+     */
+    function unregisterAutoLoop() external returns (bool success) {
+        _unregisterAutoLoop(msg.sender);
+        success = true;
+    }
+
+    /**
+     * @notice unregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being unregistered)
+     * @param autoLoopCompatibleContract the address of the contract to unregister
+     * @return success - whether or not the contract was unregistered
+     */
+    function unregisterAutoLoopFor(address autoLoopCompatibleContract)
+        external
+        returns (bool success)
+    {
+        if (_isAdmin(msg.sender, autoLoopCompatibleContract)) {
+            _unregisterAutoLoop(autoLoopCompatibleContract);
+            success = true;
+        }
+    }
+
+    /**
+     * @notice uregister an AutoLoop controller
+     */
+    function unregisterController() external {
+        _unregisterController(msg.sender);
+    }
+
     // internal
+    function _isAdmin(address testAddress, address contractAddress)
+        internal
+        view
+        returns (bool)
+    {
+        return
+            AutoLoopCompatible(contractAddress).hasRole(
+                DEFAULT_ADMIN_ROLE,
+                testAddress
+            );
+    }
+
     /**
      * @dev registers AutoLoop compatible contract. This should not be called unless a pre-check has been made to verify the contract can be registered.
      */

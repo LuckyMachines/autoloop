@@ -43,7 +43,11 @@ async function main() {
     );
     if (canRegister) {
       try {
-        tx = await registrar.registerAutoLoopFor(autoLoopContract);
+        // set maxGas to "0" to use default value
+        // fund this with nothing immediately
+        tx = await registrar.registerAutoLoopFor(autoLoopContract, "0", {
+          value: 0
+        });
         await tx.wait();
 
         // check registry to see if it has been registered
