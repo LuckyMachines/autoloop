@@ -21,6 +21,11 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     // - Controller needs to send more gas than is required for tx.
     //   must have enough gas in user's account to pay for update
 
+    /**
+     * @notice progresses loop on AutoLoop compatible contract
+     * @param contractAddress the address of the contract receiving update
+     * @param progressWithData some data to pass along with update
+     */
     function progressLoop(
         address contractAddress,
         bytes calldata progressWithData
@@ -56,7 +61,6 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     }
 
     // REGISTRAR //
-
     function addController(address controllerAddress)
         public
         onlyRole(REGISTRAR_ROLE)
