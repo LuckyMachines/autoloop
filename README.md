@@ -19,10 +19,10 @@ yarn deploy-test
 - Make your contract inherit from [AutoLoopCompatible.sol](https://github.com/LuckyMachines/autoloop/blob/main/contracts/AutoLoopCompatible.sol) (see [example](https://github.com/LuckyMachines/autoloop/blob/main/contracts/sample/NumberGoUp.sol))
 - Register AutoLoop compatible contracts with registry in contract (see [example](https://github.com/LuckyMachines/autoloop/blob/main/contracts/sample/NumberGoUp.sol))
 
-### To deploy + register sample game:
+## Register AutoLoop compatible contract:
 
 ```shell
-yarn deploy-sample-test
+yarn register-contract-test
 ```
 
 ## Run the AutoLoop server
