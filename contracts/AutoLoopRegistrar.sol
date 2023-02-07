@@ -21,17 +21,51 @@ contract AutoLoopRegistrar is AutoLoopRoles {
 
     // IN PROGRESS
     // Draft functions:
-    function deposit(address registeredContract) external payable {}
-
-    function requestRefund(address toAddress) external {
-        // controller
-        // contract
-        // admin
+    function deposit(address registeredContract) external payable {
+        require(msg.value > 0, "no value deposited");
+        require(
+            REGISTRY.isRegisteredAutoLoop(registeredContract),
+            "cannot deposit to unregistered contract"
+        );
+        AUTO_LOOP.deposit{value: msg.value}(registeredContract);
     }
 
-    function setMaxGas(uint256 maxGasPerUpdate) external {}
+    function requestRefund(address toAddress) external {
+        // controller or contract
+        AUTO_LOOP.requestRefund(msg.sender, toAddress);
+    }
 
-    function setMaxGasFor(uint256 maxGasPerUpdate) external {}
+    function requestRefundFor(address registeredContract, address toAddress)
+        external
+    {
+        require(
+            _isAdmin(msg.sender, registeredContract),
+            "Cannot request refund. Caller is not admin on contract."
+        );
+        AUTO_LOOP.requestRefund(registeredContract, toAddress);
+    }
+
+    function setMaxGas(uint256 maxGasPerUpdate) external {
+        require(
+            REGISTRY.isRegisteredAutoLoop(msg.sender),
+            "cannot set max gas on unregistered contract"
+        );
+        AUTO_LOOP.setMaxGas(msg.sender, maxGasPerUpdate);
+    }
+
+    function setMaxGasFor(address registeredContract, uint256 maxGasPerUpdate)
+        external
+    {
+        require(
+            _isAdmin(msg.sender, registeredContract),
+            "Cannot set gas, caller is not admin on contract"
+        );
+        require(
+            REGISTRY.isRegisteredAutoLoop(registeredContract),
+            "cannot set max gas on unregistered contract"
+        );
+        AUTO_LOOP.setMaxGas(registeredContract, maxGasPerUpdate);
+    }
 
     /**
      * @notice check if a contract can be registered

@@ -108,13 +108,13 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         balance[registeredUser] += msg.value;
     }
 
-    function requestRefund(address registeredUser)
+    function requestRefund(address registeredUser, address toAddress)
         external
         onlyRole(REGISTRAR_ROLE)
         nonReentrant
     {
         require(balance[registeredUser] > 0, "User balance is zero.");
-        (bool sent, ) = registeredUser.call{value: balance[registeredUser]}("");
+        (bool sent, ) = toAddress.call{value: balance[registeredUser]}("");
         require(sent, "Failed to send refund");
     }
 
