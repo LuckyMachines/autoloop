@@ -107,16 +107,18 @@ contract AutoLoopRegistry is AutoLoopRoles {
         external
         onlyRole(REGISTRAR_ROLE)
     {
-        isRegisteredAutoLoop[registrantAddress] = false;
-        delete _registeredAutoLoops[
-            _registeredAutoLoopIndex[registrantAddress]
-        ];
-        delete _registeredAutoLoopIndex[registrantAddress];
-        emit AutoLoopUnregistered(
-            registrantAddress,
-            msg.sender,
-            block.timestamp
-        );
+        if (isRegisteredAutoLoop[registrantAddress]) {
+            isRegisteredAutoLoop[registrantAddress] = false;
+            delete _registeredAutoLoops[
+                _registeredAutoLoopIndex[registrantAddress]
+            ];
+            delete _registeredAutoLoopIndex[registrantAddress];
+            emit AutoLoopUnregistered(
+                registrantAddress,
+                msg.sender,
+                block.timestamp
+            );
+        }
     }
 
     function registerController(address registrantAddress)
@@ -139,15 +141,17 @@ contract AutoLoopRegistry is AutoLoopRoles {
         external
         onlyRole(REGISTRAR_ROLE)
     {
-        isRegisteredController[registrantAddress] = false;
-        delete _registeredControllers[
-            _registeredControllerIndex[registrantAddress]
-        ];
-        delete _registeredControllerIndex[registrantAddress];
-        emit ControllerUnregistered(
-            registrantAddress,
-            msg.sender,
-            block.timestamp
-        );
+        if (isRegisteredController[registrantAddress]) {
+            isRegisteredController[registrantAddress] = false;
+            delete _registeredControllers[
+                _registeredControllerIndex[registrantAddress]
+            ];
+            delete _registeredControllerIndex[registrantAddress];
+            emit ControllerUnregistered(
+                registrantAddress,
+                msg.sender,
+                block.timestamp
+            );
+        }
     }
 }
