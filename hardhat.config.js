@@ -2,6 +2,7 @@ require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-web3");
 require("hardhat-contract-sizer");
 require("hardhat-abi-exporter");
+require("solidity-docgen");
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */

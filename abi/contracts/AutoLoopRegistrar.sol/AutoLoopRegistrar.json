@@ -164,7 +164,7 @@
     "outputs": [
       {
         "internalType": "bool",
-        "name": "",
+        "name": "canRegister",
         "type": "bool"
       }
     ],
@@ -183,7 +183,7 @@
     "outputs": [
       {
         "internalType": "bool",
-        "name": "",
+        "name": "canRegister",
         "type": "bool"
       }
     ],
