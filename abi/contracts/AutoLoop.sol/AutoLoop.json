@@ -406,6 +406,11 @@
         "internalType": "address",
         "name": "registeredUser",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "toAddress",
+        "type": "address"
       }
     ],
     "name": "requestRefund",

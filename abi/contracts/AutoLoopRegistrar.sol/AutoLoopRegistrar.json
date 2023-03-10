@@ -193,6 +193,19 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "registeredContract",
+        "type": "address"
+      }
+    ],
+    "name": "deposit",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -313,6 +326,11 @@
         "internalType": "address",
         "name": "autoLoopCompatibleContract",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxGasPerUpdate",
+        "type": "uint256"
       }
     ],
     "name": "registerAutoLoopFor",
@@ -323,7 +341,7 @@
         "type": "bool"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -373,6 +391,37 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "toAddress",
+        "type": "address"
+      }
+    ],
+    "name": "requestRefund",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "registeredContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "toAddress",
+        "type": "address"
+      }
+    ],
+    "name": "requestRefundFor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -384,6 +433,37 @@
       }
     ],
     "name": "revokeRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "maxGasPerUpdate",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxGas",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "registeredContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxGasPerUpdate",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxGasFor",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

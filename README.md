@@ -42,11 +42,6 @@ yarn server [PING_INTERVAL] [EXPIRATION]
 
 Server privileges are extremely limited. This is so many users may safely act as nodes in a distributed AutoLoop. The most an AutoLoop controller can do is trigger a contract's update function, which will revert and cost the malicious controller some gas if the contract does not want that update.
 
-## Limitations over Chainlink Automation
+## Coming soon:
 
-- No off chain compute for hybrid smart contracts, all computations must be done on chain
-
-## To do:
-
-- Create p2p network for nodes to communicate
-- Add time based updates / cron jobs (updates currently only based on contract logic)
+- Time based updates / cron jobs (updates currently only based on contract logic)
