@@ -10,8 +10,5 @@ typechain-types
 cache
 artifacts
 
-# Deployments
-deployments.json
-
 # Controller config
 controller.config.json
