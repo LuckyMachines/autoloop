@@ -291,6 +291,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adminAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getRegisteredAutoLoopsFor",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "autoLoops",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getRegisteredControllers",
     "outputs": [
@@ -516,6 +535,24 @@
       }
     ],
     "name": "revokeRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "autoLoopCompatibleContract",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "adminAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setNewAdmin",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
