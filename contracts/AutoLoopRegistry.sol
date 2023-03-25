@@ -18,7 +18,7 @@ contract AutoLoopRegistry is AutoLoopRoles {
         uint256 timeStamp
     );
 
-    event AutoLoopUnregistered(
+    event AutoLoopDeregistered(
         address autoLoopAddress,
         address registrarAddress,
         uint256 timeStamp
@@ -30,7 +30,7 @@ contract AutoLoopRegistry is AutoLoopRoles {
         uint256 timeStamp
     );
 
-    event ControllerUnregistered(
+    event ControllerDeregistered(
         address controllerAddress,
         address registrarAddress,
         uint256 timeStamp
@@ -90,10 +90,9 @@ contract AutoLoopRegistry is AutoLoopRoles {
     function cleanAutoLoopList() public {}
 
     // Registrar
-    function registerAutoLoop(address registrantAddress)
-        external
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function registerAutoLoop(
+        address registrantAddress
+    ) external onlyRole(REGISTRAR_ROLE) {
         // Will be pre-verified by registrar to prevent duplicate registrations
         isRegisteredAutoLoop[registrantAddress] = true;
         _registeredAutoLoops.push(registrantAddress);
@@ -103,17 +102,16 @@ contract AutoLoopRegistry is AutoLoopRoles {
         emit AutoLoopRegistered(registrantAddress, msg.sender, block.timestamp);
     }
 
-    function unregisterAutoLoop(address registrantAddress)
-        external
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function deregisterAutoLoop(
+        address registrantAddress
+    ) external onlyRole(REGISTRAR_ROLE) {
         if (isRegisteredAutoLoop[registrantAddress]) {
             isRegisteredAutoLoop[registrantAddress] = false;
             delete _registeredAutoLoops[
                 _registeredAutoLoopIndex[registrantAddress]
             ];
             delete _registeredAutoLoopIndex[registrantAddress];
-            emit AutoLoopUnregistered(
+            emit AutoLoopDeregistered(
                 registrantAddress,
                 msg.sender,
                 block.timestamp
@@ -121,10 +119,9 @@ contract AutoLoopRegistry is AutoLoopRoles {
         }
     }
 
-    function registerController(address registrantAddress)
-        external
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function registerController(
+        address registrantAddress
+    ) external onlyRole(REGISTRAR_ROLE) {
         isRegisteredController[registrantAddress] = true;
         _registeredControllers.push(registrantAddress);
         _registeredControllerIndex[registrantAddress] =
@@ -137,17 +134,16 @@ contract AutoLoopRegistry is AutoLoopRoles {
         );
     }
 
-    function unregisterController(address registrantAddress)
-        external
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function deregisterController(
+        address registrantAddress
+    ) external onlyRole(REGISTRAR_ROLE) {
         if (isRegisteredController[registrantAddress]) {
             isRegisteredController[registrantAddress] = false;
             delete _registeredControllers[
                 _registeredControllerIndex[registrantAddress]
             ];
             delete _registeredControllerIndex[registrantAddress];
-            emit ControllerUnregistered(
+            emit ControllerDeregistered(
                 registrantAddress,
                 msg.sender,
                 block.timestamp

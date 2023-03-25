@@ -13,12 +13,12 @@ async function main() {
     console.log("\n Sample game not deployed.\n");
   } else {
     console.log(
-      "Unregistering auto loop:",
+      "deregistering auto loop:",
       deployments[hre.network.name].SAMPLE_GAME
     );
     const Game = await hre.ethers.getContractFactory("NumberGoUp");
     const game = Game.attach(deployments[hre.network.name].SAMPLE_GAME);
-    await game.unregisterAutoLoop(
+    await game.deregisterAutoLoop(
       deployments[hre.network.name].AUTO_LOOP_REGISTRAR
     );
   }

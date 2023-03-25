@@ -162,25 +162,25 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     }
 
     /**
-     * @notice AutoLoop compatible contract unregisters itself
+     * @notice AutoLoop compatible contract deregisters itself
      * @return success - whether the unregistration was successful or not
      */
-    function unregisterAutoLoop() external returns (bool success) {
-        _unregisterAutoLoop(msg.sender);
+    function deregisterAutoLoop() external returns (bool success) {
+        _deregisterAutoLoop(msg.sender);
         success = true;
     }
 
     /**
-     * @notice unregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being unregistered)
-     * @param autoLoopCompatibleContract the address of the contract to unregister
-     * @return success - whether or not the contract was unregistered
+     * @notice deregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being deregistered)
+     * @param autoLoopCompatibleContract the address of the contract to deregister
+     * @return success - whether or not the contract was deregistered
      */
-    function unregisterAutoLoopFor(address autoLoopCompatibleContract)
+    function deregisterAutoLoopFor(address autoLoopCompatibleContract)
         external
         returns (bool success)
     {
         if (_isAdmin(msg.sender, autoLoopCompatibleContract)) {
-            _unregisterAutoLoop(autoLoopCompatibleContract);
+            _deregisterAutoLoop(autoLoopCompatibleContract);
             success = true;
         }
     }
@@ -188,8 +188,8 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     /**
      * @notice uregister an AutoLoop controller
      */
-    function unregisterController() external {
-        _unregisterController(msg.sender);
+    function deregisterController() external {
+        _deregisterController(msg.sender);
     }
 
     // internal
@@ -213,10 +213,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     }
 
     /**
-     * @dev unregisters AutoLoop compatible contract if possible. No pre-checks are required although they can save gas on a redundant call to unregister.
+     * @dev deregisters AutoLoop compatible contract if possible. No pre-checks are required although they can save gas on a redundant call to deregister.
      */
-    function _unregisterAutoLoop(address registrant) internal {
-        REGISTRY.unregisterAutoLoop(registrant);
+    function _deregisterAutoLoop(address registrant) internal {
+        REGISTRY.deregisterAutoLoop(registrant);
     }
 
     /**
@@ -228,10 +228,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     }
 
     /**
-     * @dev unregisters controller if possible. No pre-checks are required although they can save gas on a redundant call to unregister.
+     * @dev deregisters controller if possible. No pre-checks are required although they can save gas on a redundant call to deregister.
      */
-    function _unregisterController(address registrant) internal {
-        REGISTRY.unregisterController(registrant);
+    function _deregisterController(address registrant) internal {
+        REGISTRY.deregisterController(registrant);
         AUTO_LOOP.removeController(registrant);
     }
 }

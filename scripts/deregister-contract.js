@@ -20,7 +20,7 @@ async function main() {
   const answers = await inquirer.prompt(questions);
   const autoLoopContract = answers.autoLoopContract;
   console.log(
-    `Unegistering contract on ${hre.network.name}: ${autoLoopContract}`
+    `Deregistering contract on ${hre.network.name}: ${autoLoopContract}`
   );
   const Registrar = await hre.ethers.getContractFactory("AutoLoopRegistrar");
   const registrar = Registrar.attach(
@@ -33,28 +33,28 @@ async function main() {
   let isRegistered = await registry.isRegisteredAutoLoop(autoLoopContract);
   if (!isRegistered) {
     console.log(
-      `AutoLoop compatible contract ${autoLoopContract} is unregistered.`
+      `AutoLoop compatible contract ${autoLoopContract} is deregistered.`
     );
   } else {
-    // check if we can register / unregister this contract
+    // check if we can register / deregister this contract
     let canRegister = await registrar.canRegisterAutoLoop(
       registrant,
       autoLoopContract
     );
     if (canRegister) {
       try {
-        tx = await registrar.unregisterAutoLoopFor(autoLoopContract);
+        tx = await registrar.deregisterAutoLoopFor(autoLoopContract);
         await tx.wait();
 
-        // check registry to see if it has been unregistered
+        // check registry to see if it has been deregistered
         isRegistered = await registry.isRegisteredAutoLoop(autoLoopContract);
         if (!isRegistered) {
           console.log(
-            `AutoLoop compatible contract ${autoLoopContract} is unregistered.`
+            `AutoLoop compatible contract ${autoLoopContract} is deregistered.`
           );
         } else {
           console.log(
-            `Unable to unregister AutoLoop compatible contract. Try again.`
+            `Unable to deregister AutoLoop compatible contract. Try again.`
           );
         }
       } catch (err) {
@@ -64,7 +64,7 @@ async function main() {
       }
     } else {
       console.log(
-        "Registrant cannot unregister contract. Make sure you have DEFAULT_ADMIN_ROLE on AutoLoop compatible contract."
+        "Registrant cannot deregister contract. Make sure you have DEFAULT_ADMIN_ROLE on AutoLoop compatible contract."
       );
     }
   }

@@ -33,12 +33,12 @@ contract NumberGoUp is AutoLoopCompatible {
         }
     }
 
-    function unregisterAutoLoop(address registrarAddress)
+    function deregisterAutoLoop(address registrarAddress)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         // Unegister auto loop
-        AutoLoopRegistrar(registrarAddress).unregisterAutoLoop();
+        AutoLoopRegistrar(registrarAddress).deregisterAutoLoop();
     }
 
     // Required functions from AutoLoopCompatibleInterface.sol

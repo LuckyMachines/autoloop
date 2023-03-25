@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "devDependencies": {
     "@chainlink/contracts": "^0.5.1",
     "@ethersproject/providers": "^5.4.7",
@@ -46,14 +46,14 @@
     "register-controller-test": "npx hardhat run scripts/register-controller.js --network test",
     "register-sample": "npx hardhat run scripts/register-sample-game.js --network main",
     "register-sample-test": "npx hardhat run scripts/register-sample-game.js --network test",
-    "unregister-sample": "npx hardhat run scripts/unregister-sample-game.js --network main",
-    "unregister-sample-test": "npx hardhat run scripts/unregister-sample-game.js --network main",
+    "deregister-sample": "npx hardhat run scripts/deregister-sample-game.js --network main",
+    "deregister-sample-test": "npx hardhat run scripts/deregister-sample-game.js --network main",
     "sample-info": "npx hardhat run scripts/sample-game-info.js --network main",
     "sample-info-test": "npx hardhat run scripts/sample-game-info.js --network test",
     "server": "node scripts/server.js",
     "test": "npx hardhat test",
-    "unregister-contract": "npx hardhat run scripts/unregister-contract.js --network main",
-    "unregister-contract-test": "npx hardhat run scripts/unregister-contract.js --network test"
+    "deregister-contract": "npx hardhat run scripts/deregister-contract.js --network main",
+    "deregister-contract-test": "npx hardhat run scripts/deregister-contract.js --network test"
   },
   "repository": {
     "type": "git",

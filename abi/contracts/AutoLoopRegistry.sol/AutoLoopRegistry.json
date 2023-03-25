@@ -32,7 +32,7 @@
         "type": "uint256"
       }
     ],
-    "name": "AutoLoopRegistered",
+    "name": "AutoLoopDeregistered",
     "type": "event"
   },
   {
@@ -57,7 +57,32 @@
         "type": "uint256"
       }
     ],
-    "name": "AutoLoopUnregistered",
+    "name": "AutoLoopRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "controllerAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "registrarAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timeStamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "ControllerDeregistered",
     "type": "event"
   },
   {
@@ -83,31 +108,6 @@
       }
     ],
     "name": "ControllerRegistered",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "controllerAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "registrarAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timeStamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "ControllerUnregistered",
     "type": "event"
   },
   {
@@ -247,6 +247,32 @@
   {
     "inputs": [],
     "name": "cleanControllerList",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "registrantAddress",
+        "type": "address"
+      }
+    ],
+    "name": "deregisterAutoLoop",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "registrantAddress",
+        "type": "address"
+      }
+    ],
+    "name": "deregisterController",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -524,32 +550,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "registrantAddress",
-        "type": "address"
-      }
-    ],
-    "name": "unregisterAutoLoop",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "registrantAddress",
-        "type": "address"
-      }
-    ],
-    "name": "unregisterController",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

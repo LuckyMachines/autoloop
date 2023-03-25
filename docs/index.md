@@ -139,13 +139,13 @@ AutoLoop compatible contract registers itself
 | ------- | ---- | ------------------------------------------------ |
 | success | bool | - whether the registration was successful or not |
 
-### unregisterAutoLoop
+### deregisterAutoLoop
 
 ```solidity
-function unregisterAutoLoop() external returns (bool success)
+function deregisterAutoLoop() external returns (bool success)
 ```
 
-AutoLoop compatible contract unregisters itself
+AutoLoop compatible contract deregisters itself
 
 #### Return Values
 
@@ -173,25 +173,25 @@ register an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contra
 | ------- | ---- | -------------------------------------------- |
 | success | bool | - whether or not the contract was registered |
 
-### unregisterAutoLoopFor
+### deregisterAutoLoopFor
 
 ```solidity
-function unregisterAutoLoopFor(address autoLoopCompatibleContract) external returns (bool success)
+function deregisterAutoLoopFor(address autoLoopCompatibleContract) external returns (bool success)
 ```
 
-unregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being unregistered)
+deregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being deregistered)
 
 #### Parameters
 
 | Name                       | Type    | Description                               |
 | -------------------------- | ------- | ----------------------------------------- |
-| autoLoopCompatibleContract | address | the address of the contract to unregister |
+| autoLoopCompatibleContract | address | the address of the contract to deregister |
 
 #### Return Values
 
 | Name    | Type | Description                                    |
 | ------- | ---- | ---------------------------------------------- |
-| success | bool | - whether or not the contract was unregistered |
+| success | bool | - whether or not the contract was deregistered |
 
 ### registerController
 
@@ -207,10 +207,10 @@ register an AutoLoop controller
 | ------- | ---- | ---------------------------------------------- |
 | success | bool | - whether or not the controller was registered |
 
-### unregisterController
+### deregisterController
 
 ```solidity
-function unregisterController() external
+function deregisterController() external
 ```
 
 uregister an AutoLoop controller
@@ -264,13 +264,13 @@ function _registerAutoLoop(address registrant) internal
 
 _registers AutoLoop compatible contract. This should not be called unless a pre-check has been made to verify the contract can be registered._
 
-### \_unregisterAutoLoop
+### \_deregisterAutoLoop
 
 ```solidity
-function _unregisterAutoLoop(address registrant) internal
+function _deregisterAutoLoop(address registrant) internal
 ```
 
-_unregisters AutoLoop compatible contract if possible. No pre-checks are required although they can save gas on a redundant call to unregister._
+_deregisters AutoLoop compatible contract if possible. No pre-checks are required although they can save gas on a redundant call to deregister._
 
 ### \_registerController
 
@@ -280,13 +280,13 @@ function _registerController(address registrant) internal
 
 _registers controller. This should not be called unless a pre-check has been made to verify the controller can be registered._
 
-### \_unregisterController
+### \_deregisterController
 
 ```solidity
-function _unregisterController(address registrant) internal
+function _deregisterController(address registrant) internal
 ```
 
-_unregisters controller if possible. No pre-checks are required although they can save gas on a redundant call to unregister._
+_deregisters controller if possible. No pre-checks are required although they can save gas on a redundant call to deregister._
 
 ## AutoLoopRegistry
 
@@ -332,10 +332,10 @@ address[] _registeredControllers
 event AutoLoopRegistered(address autoLoopAddress, address registrarAddress, uint256 timeStamp)
 ```
 
-### AutoLoopUnregistered
+### AutoLoopDeregistered
 
 ```solidity
-event AutoLoopUnregistered(address autoLoopAddress, address registrarAddress, uint256 timeStamp)
+event AutoLoopDeregistered(address autoLoopAddress, address registrarAddress, uint256 timeStamp)
 ```
 
 ### ControllerRegistered
@@ -344,10 +344,10 @@ event AutoLoopUnregistered(address autoLoopAddress, address registrarAddress, ui
 event ControllerRegistered(address controllerAddress, address registrarAddress, uint256 timeStamp)
 ```
 
-### ControllerUnregistered
+### ControllerDeregistered
 
 ```solidity
-event ControllerUnregistered(address controllerAddress, address registrarAddress, uint256 timeStamp)
+event ControllerDeregistered(address controllerAddress, address registrarAddress, uint256 timeStamp)
 ```
 
 ### constructor
@@ -386,10 +386,10 @@ function cleanAutoLoopList() public
 function registerAutoLoop(address registrantAddress) external
 ```
 
-### unregisterAutoLoop
+### deregisterAutoLoop
 
 ```solidity
-function unregisterAutoLoop(address registrantAddress) external
+function deregisterAutoLoop(address registrantAddress) external
 ```
 
 ### registerController
@@ -398,10 +398,10 @@ function unregisterAutoLoop(address registrantAddress) external
 function registerController(address registrantAddress) external
 ```
 
-### unregisterController
+### deregisterController
 
 ```solidity
-function unregisterController(address registrantAddress) external
+function deregisterController(address registrantAddress) external
 ```
 
 ## AutoLoopRoles
@@ -474,10 +474,10 @@ constructor(uint256 updateInterval) public
 function registerAutoLoop(address registrarAddress) public
 ```
 
-### unregisterAutoLoop
+### deregisterAutoLoop
 
 ```solidity
-function unregisterAutoLoop(address registrarAddress) public
+function deregisterAutoLoop(address registrarAddress) public
 ```
 
 ### shouldProgressLoop
