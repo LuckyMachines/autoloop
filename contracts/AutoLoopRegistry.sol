@@ -127,6 +127,28 @@ contract AutoLoopRegistry is AutoLoopRoles {
         }
     }
 
+    function primaryAdmin(
+        address autoLoopCompatibleAddress
+    ) public view returns (address) {
+        return
+            AutoLoopCompatible(autoLoopCompatibleAddress).getRoleMember(
+                DEFAULT_ADMIN_ROLE,
+                0
+            );
+    }
+
+    function allAdmins(
+        address autoLoopCompatibleAddress
+    ) public view returns (address[] memory) {
+        AutoLoopCompatible alcc = AutoLoopCompatible(autoLoopCompatibleAddress);
+        uint256 totalAdmins = alcc.getRoleMemberCount(DEFAULT_ADMIN_ROLE);
+        address[] memory admins = new address[](totalAdmins);
+        for (uint256 i = 0; i < totalAdmins; i++) {
+            admins[i] = alcc.getRoleMember(DEFAULT_ADMIN_ROLE, i);
+        }
+        return admins;
+    }
+
     // Cleanup
     // TODO: remove zero addresses from registration lists
     // Careful here, will need to re-map any registered autoloops to new indices
