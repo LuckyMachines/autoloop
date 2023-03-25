@@ -39,12 +39,13 @@ async function main() {
     console.log("Game deployed to", game.address);
 
     // Register auto loop...
+    /*
     let tx = await game.registerAutoLoop(
       deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR
     );
     await tx.wait();
     console.log("auto loop registered.");
-
+    */
     deployment.deployments[hre.network.name].SAMPLE_GAME = game.address;
     deployment.save();
   }
