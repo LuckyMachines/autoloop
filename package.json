@@ -47,7 +47,7 @@
     "register-sample": "npx hardhat run scripts/register-sample-game.js --network main",
     "register-sample-test": "npx hardhat run scripts/register-sample-game.js --network test",
     "deregister-sample": "npx hardhat run scripts/deregister-sample-game.js --network main",
-    "deregister-sample-test": "npx hardhat run scripts/deregister-sample-game.js --network main",
+    "deregister-sample-test": "npx hardhat run scripts/deregister-sample-game.js --network test",
     "sample-info": "npx hardhat run scripts/sample-game-info.js --network main",
     "sample-info-test": "npx hardhat run scripts/sample-game-info.js --network test",
     "server": "node scripts/server.js",

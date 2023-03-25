@@ -70,6 +70,12 @@ contract AutoLoopRegistry is AutoLoopRoles {
         }
     }
 
+    function getRegisteredAutoLoopIndicesFor(
+        address adminAddress
+    ) public view returns (uint256[] memory) {
+        return _registeredAutoLoopsForAddress[adminAddress];
+    }
+
     function getRegisteredAutoLoopsFor(
         address adminAddress
     ) public view returns (address[] memory autoLoops) {
@@ -130,7 +136,8 @@ contract AutoLoopRegistry is AutoLoopRoles {
 
     // Registrar
     function registerAutoLoop(
-        address registrantAddress
+        address registrantAddress,
+        address adminAddress
     ) external onlyRole(REGISTRAR_ROLE) {
         // Will be pre-verified by registrar to prevent duplicate registrations
         isRegisteredAutoLoop[registrantAddress] = true;
@@ -138,6 +145,10 @@ contract AutoLoopRegistry is AutoLoopRoles {
         _registeredAutoLoopIndex[registrantAddress] =
             _registeredAutoLoops.length -
             1;
+        _registeredAutoLoopsForAddress[registrantAddress].push(
+            _registeredAutoLoopIndex[registrantAddress]
+        );
+        _setNewAdmin(registrantAddress, adminAddress);
         emit AutoLoopRegistered(registrantAddress, msg.sender, block.timestamp);
     }
 
@@ -166,9 +177,6 @@ contract AutoLoopRegistry is AutoLoopRoles {
         _registeredControllerIndex[registrantAddress] =
             _registeredControllers.length -
             1;
-        _registeredAutoLoopsForAddress[registrantAddress].push(
-            _registeredControllerIndex[registrantAddress]
-        );
         emit ControllerRegistered(
             registrantAddress,
             msg.sender,
@@ -197,6 +205,13 @@ contract AutoLoopRegistry is AutoLoopRoles {
         address autoLoopCompatibleContract,
         address adminAddress
     ) external onlyRole(REGISTRAR_ROLE) {
+        _setNewAdmin(autoLoopCompatibleContract, adminAddress);
+    }
+
+    function _setNewAdmin(
+        address autoLoopCompatibleContract,
+        address adminAddress
+    ) internal {
         uint256 autoLoopIndex = _registeredAutoLoopIndex[
             autoLoopCompatibleContract
         ];

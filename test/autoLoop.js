@@ -88,18 +88,19 @@ describe("Auto Loop", function () {
       const Game = await hre.ethers.getContractFactory("NumberGoUp");
       SAMPLE_GAME = await Game.deploy(updateInterval);
       await SAMPLE_GAME.deployed();
-
       let isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredAutoLoop(
         SAMPLE_GAME.address
       );
       expect(isRegistered).to.equal(false);
-
       const canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
+        ADMIN,
         SAMPLE_GAME.address
       );
       expect(canRegister).to.equal(true);
-
-      tx = await SAMPLE_GAME.registerAutoLoop(AUTO_LOOP_REGISTRAR.address);
+      tx = await AUTO_LOOP_REGISTRAR.registerAutoLoopFor(
+        SAMPLE_GAME.address,
+        "100000"
+      );
       await tx.wait();
       isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredAutoLoop(
         SAMPLE_GAME.address
@@ -129,6 +130,19 @@ describe("Auto Loop", function () {
         CONTROLLER
       );
       expect(isRegistered).to.equal(true);
+    });
+    it("Returns list of all registered contracts", async function () {
+      const allContracts = await AUTO_LOOP_REGISTRY.getRegisteredAutoLoops();
+      console.log("All registered autoloops:", allContracts);
+      expect(allContracts).to.contain.members([SAMPLE_GAME.address]);
+    });
+    it("Returns list of admin registered contracts", async function () {
+      const adminRegisteredContracts =
+        await AUTO_LOOP_REGISTRY.getRegisteredAutoLoopsFor(ADMIN);
+      console.log("Admin registered AutoLoops:", adminRegisteredContracts);
+      const adminRegisteredLoopIndices =
+        await AUTO_LOOP_REGISTRY.getRegisteredAutoLoopIndicesFor(ADMIN);
+      console.log("Admin registered indices:", adminRegisteredLoopIndices);
     });
   });
   describe("Controller", function () {});

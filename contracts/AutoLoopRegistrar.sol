@@ -35,9 +35,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         AUTO_LOOP.requestRefund(msg.sender, toAddress);
     }
 
-    function requestRefundFor(address registeredContract, address toAddress)
-        external
-    {
+    function requestRefundFor(
+        address registeredContract,
+        address toAddress
+    ) external {
         require(
             _isAdmin(msg.sender, registeredContract),
             "Cannot request refund. Caller is not admin on contract."
@@ -53,9 +54,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         AUTO_LOOP.setMaxGas(msg.sender, maxGasPerUpdate);
     }
 
-    function setMaxGasFor(address registeredContract, uint256 maxGasPerUpdate)
-        external
-    {
+    function setMaxGasFor(
+        address registeredContract,
+        uint256 maxGasPerUpdate
+    ) external {
         require(
             _isAdmin(msg.sender, registeredContract),
             "Cannot set gas, caller is not admin on contract"
@@ -97,11 +99,9 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      * @param registrantAddress the address of the controller to be registered
      * @return canRegister - whether or not the controller can be registered
      */
-    function canRegisterController(address registrantAddress)
-        public
-        view
-        returns (bool canRegister)
-    {
+    function canRegisterController(
+        address registrantAddress
+    ) public view returns (bool canRegister) {
         // some logic to determine if address can register
         if (registrantAddress == address(0)) {
             // zero address can't register
@@ -115,19 +115,23 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     }
 
     /**
-     * @notice AutoLoop compatible contract registers itself
+     * @notice AutoLoop compatible contract registers itself. ACCs can have multiple admins, admin at 0 is indexed.
      * @return success - whether the registration was successful or not
      */
     function registerAutoLoop() external returns (bool success) {
         // pass msg.sender as both arguments since it is both registrant and contract being registered
         if (canRegisterAutoLoop(msg.sender, msg.sender)) {
-            _registerAutoLoop(msg.sender);
+            address adminAddress = AutoLoopCompatible(msg.sender).getRoleMember(
+                DEFAULT_ADMIN_ROLE,
+                0
+            );
+            _registerAutoLoop(msg.sender, adminAddress);
             success = true;
         }
     }
 
     /**
-     * @notice register an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being registered)
+     * @notice register an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being registered). This will associate this particular admin with this contract instead of the default admin at the first index.
      * @param autoLoopCompatibleContract the address of the contract to register
      * @return success - whether or not the contract was registered
      */
@@ -136,7 +140,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         uint256 maxGasPerUpdate
     ) external payable returns (bool success) {
         if (canRegisterAutoLoop(msg.sender, autoLoopCompatibleContract)) {
-            _registerAutoLoop(autoLoopCompatibleContract);
+            _registerAutoLoop(autoLoopCompatibleContract, msg.sender);
             if (msg.value > 0) {
                 AUTO_LOOP.deposit{value: msg.value}(autoLoopCompatibleContract);
             }
@@ -175,10 +179,9 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      * @param autoLoopCompatibleContract the address of the contract to deregister
      * @return success - whether or not the contract was deregistered
      */
-    function deregisterAutoLoopFor(address autoLoopCompatibleContract)
-        external
-        returns (bool success)
-    {
+    function deregisterAutoLoopFor(
+        address autoLoopCompatibleContract
+    ) external returns (bool success) {
         if (_isAdmin(msg.sender, autoLoopCompatibleContract)) {
             _deregisterAutoLoop(autoLoopCompatibleContract);
             success = true;
@@ -193,11 +196,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     }
 
     // internal
-    function _isAdmin(address testAddress, address contractAddress)
-        internal
-        view
-        returns (bool)
-    {
+    function _isAdmin(
+        address testAddress,
+        address contractAddress
+    ) internal view returns (bool) {
         return
             AutoLoopCompatible(contractAddress).hasRole(
                 DEFAULT_ADMIN_ROLE,
@@ -208,8 +210,11 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     /**
      * @dev registers AutoLoop compatible contract. This should not be called unless a pre-check has been made to verify the contract can be registered.
      */
-    function _registerAutoLoop(address registrant) internal {
-        REGISTRY.registerAutoLoop(registrant);
+    function _registerAutoLoop(
+        address registrant,
+        address adminAddress
+    ) internal {
+        REGISTRY.registerAutoLoop(registrant, adminAddress);
     }
 
     /**

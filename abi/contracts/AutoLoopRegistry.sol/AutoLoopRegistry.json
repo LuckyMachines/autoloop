@@ -278,6 +278,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "adminAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getRegisteredAutoLoopIndicesFor",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getRegisteredAutoLoops",
     "outputs": [
@@ -469,6 +488,11 @@
       {
         "internalType": "address",
         "name": "registrantAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "adminAddress",
         "type": "address"
       }
     ],
