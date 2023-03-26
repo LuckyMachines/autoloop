@@ -8,12 +8,12 @@ abstract contract AutoLoopCompatible is
     AutoLoopCompatibleInterface,
     AccessControlEnumerable
 {
-    address _adminTransferRequestOrigin;
-    address _adminTransferRequest;
+    address public adminTransferRequestOrigin;
+    address public adminTransferRequest;
 
     function safeTransferAdmin(address newAdminAddress) public {
         require(
-            _adminTransferRequest == address(0),
+            adminTransferRequest == address(0),
             "current request in progress. can't transfer until complete or cancelled."
         );
         require(
@@ -24,19 +24,19 @@ abstract contract AutoLoopCompatible is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
             "Only current admin can transfer their role"
         );
-        _adminTransferRequestOrigin = _msgSender();
-        _adminTransferRequest = newAdminAddress;
+        adminTransferRequestOrigin = _msgSender();
+        adminTransferRequest = newAdminAddress;
     }
 
     function acceptTransferAdminRequest() public {
         require(
-            _msgSender() == _adminTransferRequest,
+            _msgSender() == adminTransferRequest,
             "Only new admin can accept transfer request"
         );
-        _revokeRole(DEFAULT_ADMIN_ROLE, _adminTransferRequestOrigin);
-        _setupRole(DEFAULT_ADMIN_ROLE, _adminTransferRequest);
-        _adminTransferRequestOrigin = address(0);
-        _adminTransferRequest = address(0);
+        _revokeRole(DEFAULT_ADMIN_ROLE, adminTransferRequestOrigin);
+        _setupRole(DEFAULT_ADMIN_ROLE, adminTransferRequest);
+        adminTransferRequestOrigin = address(0);
+        adminTransferRequest = address(0);
     }
 
     function cancelTransferAdminRequest() public {
@@ -44,7 +44,7 @@ abstract contract AutoLoopCompatible is
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
             "Only current admin can cancel transfer request"
         );
-        _adminTransferRequest = address(0);
-        _adminTransferRequestOrigin = address(0);
+        adminTransferRequest = address(0);
+        adminTransferRequestOrigin = address(0);
     }
 }
