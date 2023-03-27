@@ -120,6 +120,40 @@ contract AutoLoopRegistry is AutoLoopRoles {
         }
     }
 
+    function getAdminTransferPendingAutoLoopsFor(
+        address pendingAdminAddress
+    ) public view returns (address[] memory autoLoops) {
+        uint256 totalContracts = 0;
+        uint256[] memory registeredLoops = _registeredAutoLoopsForAddress[
+            pendingAdminAddress
+        ];
+        for (uint256 i = 0; i < registeredLoops.length; i++) {
+            AutoLoopCompatible compatibleContract = AutoLoopCompatible(
+                _registeredAutoLoops[registeredLoops[i]]
+            );
+            if (
+                compatibleContract.adminTransferRequest() == pendingAdminAddress
+            ) {
+                ++totalContracts;
+            }
+        }
+        autoLoops = new address[](totalContracts);
+        uint256 outputIndex = 0;
+        for (uint256 i = 0; i < registeredLoops.length; i++) {
+            AutoLoopCompatible compatibleContract = AutoLoopCompatible(
+                _registeredAutoLoops[registeredLoops[i]]
+            );
+            if (
+                compatibleContract.adminTransferRequest() == pendingAdminAddress
+            ) {
+                autoLoops[outputIndex] = _registeredAutoLoops[
+                    registeredLoops[i]
+                ];
+                ++outputIndex;
+            }
+        }
+    }
+
     function getRegisteredControllers()
         public
         view

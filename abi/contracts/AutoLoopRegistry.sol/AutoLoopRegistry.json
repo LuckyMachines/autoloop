@@ -300,6 +300,25 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "pendingAdminAddress",
+        "type": "address"
+      }
+    ],
+    "name": "getAdminTransferPendingAutoLoopsFor",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "autoLoops",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "adminAddress",
         "type": "address"
       }

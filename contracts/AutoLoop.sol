@@ -9,7 +9,8 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         address indexed autoLoopCompatibleContract,
         uint256 indexed timeStamp,
         address controller,
-        uint256 gasUsed
+        uint256 gasUsed,
+        uint256 gasPrice
     );
 
     constructor() {
@@ -83,19 +84,20 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
 
         // get gas used from transaction
         uint256 gasUsed = startGas - gasleft() + 91473; // 91,473 extra used beyond this calculated number
-
+        uint256 gasCost = gasUsed * _gasPrice();
         // update user balance based on gas used
         // Controller also funds this, if this fails user account is not updated
         // and lots of gas is wasted.
-        balance[contractAddress] = balance[contractAddress] > gasUsed
-            ? balance[contractAddress] - gasUsed
+        balance[contractAddress] = balance[contractAddress] > gasCost
+            ? balance[contractAddress] - gasCost
             : 0;
 
         emit AutoLoopProgressed(
             contractAddress,
             block.timestamp,
             _msgSender(),
-            gasUsed
+            gasUsed,
+            _gasPrice()
         );
     }
 
@@ -141,8 +143,16 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
 
     function _maxGas(address user) internal view returns (uint256 gasAmount) {
         gasAmount = maxGas[user] > 0 ? maxGas[user] : MAX_GAS;
-        if (gasAmount > balance[user]) {
-            gasAmount = balance[user];
+        if (gasAmount * _gasPrice() > balance[user]) {
+            gasAmount = balance[user] / _gasPrice();
         }
+    }
+
+    function _gasPrice() internal view returns (uint256) {
+        uint256 gasPrice;
+        assembly {
+            gasPrice := gasprice()
+        }
+        return gasPrice;
     }
 }

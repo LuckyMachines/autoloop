@@ -30,6 +30,12 @@
         "internalType": "uint256",
         "name": "gasUsed",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "gasPrice",
+        "type": "uint256"
       }
     ],
     "name": "AutoLoopProgressed",
