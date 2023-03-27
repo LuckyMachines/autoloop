@@ -10,11 +10,13 @@ module.exports = {
   networks: {
     test: {
       url: process.env.RPC_URL_TESTNET,
-      accounts: [process.env.PRIVATE_KEY_TESTNET]
+      accounts: [process.env.PRIVATE_KEY_TESTNET],
+      chainId: Number(process.env.CHAIN_ID_TESTNET)
     },
     main: {
       url: process.env.RPC_URL,
-      accounts: [process.env.PRIVATE_KEY]
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: Number(process.env.CHAIN_ID)
     }
   },
   solidity: "0.8.17",

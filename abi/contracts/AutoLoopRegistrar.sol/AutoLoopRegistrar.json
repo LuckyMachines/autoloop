@@ -194,6 +194,19 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "autoLoopCompatibleContract",
+        "type": "address"
+      }
+    ],
+    "name": "claimAutoLoop",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "registeredContract",
         "type": "address"
       }
