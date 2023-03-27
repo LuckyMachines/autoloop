@@ -82,7 +82,7 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         require(success, "Unable to progress loop. Call not a success");
 
         // get gas used from transaction
-        uint256 gasUsed = startGas - gasleft();
+        uint256 gasUsed = startGas - gasleft() + 91288; // 91,288 extra used beyond this number
 
         // update user balance based on gas used
         // Controller also funds this, if this fails user account is not updated
