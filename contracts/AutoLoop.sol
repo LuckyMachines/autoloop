@@ -5,6 +5,13 @@ import "./AutoLoopRoles.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
+    event AutoLoopProgressed(
+        address indexed autoLoopCompatibleContract,
+        uint256 indexed timeStamp,
+        address controller,
+        uint256 gasUsed
+    );
+
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
@@ -83,6 +90,13 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         balance[contractAddress] = balance[contractAddress] > gasUsed
             ? balance[contractAddress] - gasUsed
             : 0;
+
+        emit AutoLoopProgressed(
+            contractAddress,
+            block.timestamp,
+            _msgSender(),
+            gasUsed
+        );
     }
 
     // REGISTRAR //

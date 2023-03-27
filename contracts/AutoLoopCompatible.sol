@@ -33,6 +33,10 @@ abstract contract AutoLoopCompatible is
             _msgSender() == adminTransferRequest,
             "Only new admin can accept transfer request"
         );
+        require(
+            adminTransferRequestOrigin != address(0),
+            "No pending transfer request to accept."
+        );
         _revokeRole(DEFAULT_ADMIN_ROLE, adminTransferRequestOrigin);
         _setupRole(DEFAULT_ADMIN_ROLE, adminTransferRequest);
         adminTransferRequestOrigin = address(0);
