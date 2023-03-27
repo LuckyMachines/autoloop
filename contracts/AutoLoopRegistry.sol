@@ -8,6 +8,8 @@ contract AutoLoopRegistry is AutoLoopRoles {
     // Mappings from registered AutoLoop or Controller Addresses
     mapping(address => bool) public isRegisteredAutoLoop;
     mapping(address => bool) public isRegisteredController;
+    mapping(address => bool) public wasRegisteredAutoLoop;
+    mapping(address => bool) public wasRegisteredController;
 
     mapping(address => uint256) _registeredAutoLoopIndex;
     mapping(address => uint256) _registeredControllerIndex;
@@ -54,16 +56,22 @@ contract AutoLoopRegistry is AutoLoopRoles {
         view
         returns (address[] memory autoLoops)
     {
-        uint256 nonZeroAddresses = 0;
+        uint256 availableLoops = 0;
         for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
-            if (_registeredAutoLoops[i] != address(0)) {
-                ++nonZeroAddresses;
+            if (
+                _registeredAutoLoops[i] != address(0) &&
+                isRegisteredAutoLoop[_registeredAutoLoops[i]]
+            ) {
+                ++availableLoops;
             }
         }
-        autoLoops = new address[](nonZeroAddresses);
+        autoLoops = new address[](availableLoops);
         uint256 offset = 0;
         for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
-            if (_registeredAutoLoops[i] != address(0)) {
+            if (
+                _registeredAutoLoops[i] != address(0) &&
+                isRegisteredAutoLoop[_registeredAutoLoops[i]]
+            ) {
                 autoLoops[offset] = _registeredAutoLoops[i];
                 ++offset;
             }
@@ -87,7 +95,10 @@ contract AutoLoopRegistry is AutoLoopRoles {
             AutoLoopCompatible compatibleContract = AutoLoopCompatible(
                 _registeredAutoLoops[registeredLoops[i]]
             );
-            if (compatibleContract.hasRole(DEFAULT_ADMIN_ROLE, adminAddress)) {
+            if (
+                compatibleContract.hasRole(DEFAULT_ADMIN_ROLE, adminAddress) &&
+                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]
+            ) {
                 ++totalRegistrations;
             }
         }
@@ -97,7 +108,10 @@ contract AutoLoopRegistry is AutoLoopRoles {
             AutoLoopCompatible compatibleContract = AutoLoopCompatible(
                 _registeredAutoLoops[registeredLoops[i]]
             );
-            if (compatibleContract.hasRole(DEFAULT_ADMIN_ROLE, adminAddress)) {
+            if (
+                compatibleContract.hasRole(DEFAULT_ADMIN_ROLE, adminAddress) &&
+                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]
+            ) {
                 autoLoops[outputIndex] = _registeredAutoLoops[
                     registeredLoops[i]
                 ];
@@ -111,16 +125,22 @@ contract AutoLoopRegistry is AutoLoopRoles {
         view
         returns (address[] memory controllers)
     {
-        uint256 nonZeroAddresses = 0;
+        uint256 availableAddresses = 0;
         for (uint256 i = 0; i < _registeredControllers.length; i++) {
-            if (_registeredControllers[i] != address(0)) {
-                ++nonZeroAddresses;
+            if (
+                _registeredControllers[i] != address(0) &&
+                isRegisteredController[_registeredControllers[i]]
+            ) {
+                ++availableAddresses;
             }
         }
-        controllers = new address[](nonZeroAddresses);
+        controllers = new address[](availableAddresses);
         uint256 offset = 0;
         for (uint256 i = 0; i < _registeredControllers.length; i++) {
-            if (_registeredControllers[i] != address(0)) {
+            if (
+                _registeredControllers[i] != address(0) &&
+                isRegisteredController[_registeredControllers[i]]
+            ) {
                 controllers[offset] = _registeredControllers[i];
                 ++offset;
             }
@@ -163,14 +183,17 @@ contract AutoLoopRegistry is AutoLoopRoles {
     ) external onlyRole(REGISTRAR_ROLE) {
         // Will be pre-verified by registrar to prevent duplicate registrations
         isRegisteredAutoLoop[registrantAddress] = true;
-        _registeredAutoLoops.push(registrantAddress);
-        _registeredAutoLoopIndex[registrantAddress] =
-            _registeredAutoLoops.length -
-            1;
-        _registeredAutoLoopsForAddress[registrantAddress].push(
-            _registeredAutoLoopIndex[registrantAddress]
-        );
-        _setNewAdmin(registrantAddress, adminAddress);
+        if (!wasRegisteredAutoLoop[registrantAddress]) {
+            wasRegisteredAutoLoop[registrantAddress] = true;
+            _registeredAutoLoops.push(registrantAddress);
+            _registeredAutoLoopIndex[registrantAddress] =
+                _registeredAutoLoops.length -
+                1;
+            _registeredAutoLoopsForAddress[registrantAddress].push(
+                _registeredAutoLoopIndex[registrantAddress]
+            );
+            _setNewAdmin(registrantAddress, adminAddress);
+        }
         emit AutoLoopRegistered(registrantAddress, msg.sender, block.timestamp);
     }
 
@@ -179,10 +202,10 @@ contract AutoLoopRegistry is AutoLoopRoles {
     ) external onlyRole(REGISTRAR_ROLE) {
         if (isRegisteredAutoLoop[registrantAddress]) {
             isRegisteredAutoLoop[registrantAddress] = false;
-            delete _registeredAutoLoops[
-                _registeredAutoLoopIndex[registrantAddress]
-            ];
-            delete _registeredAutoLoopIndex[registrantAddress];
+            // delete _registeredAutoLoops[
+            //     _registeredAutoLoopIndex[registrantAddress]
+            // ];
+            // delete _registeredAutoLoopIndex[registrantAddress];
             emit AutoLoopDeregistered(
                 registrantAddress,
                 msg.sender,
@@ -195,10 +218,13 @@ contract AutoLoopRegistry is AutoLoopRoles {
         address registrantAddress
     ) external onlyRole(REGISTRAR_ROLE) {
         isRegisteredController[registrantAddress] = true;
-        _registeredControllers.push(registrantAddress);
-        _registeredControllerIndex[registrantAddress] =
-            _registeredControllers.length -
-            1;
+        if (!wasRegisteredController[registrantAddress]) {
+            wasRegisteredController[registrantAddress] = true;
+            _registeredControllers.push(registrantAddress);
+            _registeredControllerIndex[registrantAddress] =
+                _registeredControllers.length -
+                1;
+        }
         emit ControllerRegistered(
             registrantAddress,
             msg.sender,
@@ -211,10 +237,10 @@ contract AutoLoopRegistry is AutoLoopRoles {
     ) external onlyRole(REGISTRAR_ROLE) {
         if (isRegisteredController[registrantAddress]) {
             isRegisteredController[registrantAddress] = false;
-            delete _registeredControllers[
-                _registeredControllerIndex[registrantAddress]
-            ];
-            delete _registeredControllerIndex[registrantAddress];
+            // delete _registeredControllers[
+            //     _registeredControllerIndex[registrantAddress]
+            // ];
+            // delete _registeredControllerIndex[registrantAddress];
             emit ControllerDeregistered(
                 registrantAddress,
                 msg.sender,
