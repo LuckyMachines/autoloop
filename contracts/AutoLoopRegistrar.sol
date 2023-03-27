@@ -46,6 +46,17 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         AUTO_LOOP.requestRefund(registeredContract, toAddress);
     }
 
+    function registerSafeTransfer(
+        address autoLoopCompatibleContract,
+        address newAdminAddress
+    ) external {
+        require(
+            _isAdmin(msg.sender, autoLoopCompatibleContract),
+            "Cannot set gas, caller is not admin on contract"
+        );
+        REGISTRY.setNewAdmin(autoLoopCompatibleContract, newAdminAddress);
+    }
+
     function setMaxGas(uint256 maxGasPerUpdate) external {
         require(
             REGISTRY.isRegisteredAutoLoop(msg.sender),
@@ -163,6 +174,17 @@ contract AutoLoopRegistrar is AutoLoopRoles {
             _registerController(msg.sender);
             success = true;
         }
+    }
+
+    /**
+     * @notice Claim an AutoLoop contract for UI access. Useful for contracts with multiple admins.
+     */
+    function claimAutoLoop(address autoLoopCompatibleContract) external {
+        require(
+            _isAdmin(msg.sender, autoLoopCompatibleContract),
+            "Cannot claim contract. Sender is not admin"
+        );
+        REGISTRY.setNewAdmin(autoLoopCompatibleContract, msg.sender);
     }
 
     /**

@@ -86,42 +86,38 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     }
 
     // REGISTRAR //
-    function addController(address controllerAddress)
-        public
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function addController(
+        address controllerAddress
+    ) public onlyRole(REGISTRAR_ROLE) {
         _grantRole(CONTROLLER_ROLE, controllerAddress);
     }
 
-    function removeController(address controllerAddress)
-        public
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function removeController(
+        address controllerAddress
+    ) public onlyRole(REGISTRAR_ROLE) {
         _revokeRole(CONTROLLER_ROLE, controllerAddress);
     }
 
-    function deposit(address registeredUser)
-        external
-        payable
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function deposit(
+        address registeredUser
+    ) external payable onlyRole(REGISTRAR_ROLE) {
         balance[registeredUser] += msg.value;
     }
 
-    function requestRefund(address registeredUser, address toAddress)
-        external
-        onlyRole(REGISTRAR_ROLE)
-        nonReentrant
-    {
+    function requestRefund(
+        address registeredUser,
+        address toAddress
+    ) external onlyRole(REGISTRAR_ROLE) nonReentrant {
         require(balance[registeredUser] > 0, "User balance is zero.");
         (bool sent, ) = toAddress.call{value: balance[registeredUser]}("");
         require(sent, "Failed to send refund");
+        balance[registeredUser] = 0;
     }
 
-    function setMaxGas(address registerdUser, uint256 maxGasAmount)
-        external
-        onlyRole(REGISTRAR_ROLE)
-    {
+    function setMaxGas(
+        address registerdUser,
+        uint256 maxGasAmount
+    ) external onlyRole(REGISTRAR_ROLE) {
         maxGas[registerdUser] = maxGasAmount > GAS_THRESHOLD
             ? GAS_THRESHOLD
             : maxGasAmount;
