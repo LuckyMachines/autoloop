@@ -168,38 +168,20 @@ class Queue {
       console.log("registry:", this.contractFactory.address);
       const allowList = config[config.testMode ? "test" : "main"].allowList;
       const blockList = config[config.testMode ? "test" : "main"].blockList;
-      let contracts;
       if (allowList.length > 0) {
-        console.log("Downloading with allow list", allowList);
-        contracts = await this.contractFactory.getRegisteredAutoLoopsFromList(
-          allowList
-        );
-        const isRegistered1 = await this.contractFactory.isRegisteredAutoLoop(
-          "0x9733BAF00DdfBCeBEB0Fa681971a7aab2183338b"
-        );
-        const isRegistered2 = await this.contractFactory.isRegisteredAutoLoop(
-          "0x7dF310BB51900d8FDAD4133f8Db3D320dA56B2b0"
-        );
-        const registeredLoops =
-          await this.contractFactory.getRegisteredAutoLoopsFor(
-            "0x3804f754C18520726f3FC7eEd8E160dC79d4B7f8"
-          );
-        console.log("1 registered:", isRegistered1);
-        console.log("2 registered:", isRegistered2);
-        console.log("registered loops:", registeredLoops);
+        this.contracts =
+          await this.contractFactory.getRegisteredAutoLoopsFromList(allowList);
       } else {
         if (blockList.length > 0) {
-          console.log("Downloading all registered contracts");
-          contracts = await this.contractFactory.getRegisteredAutoLoops();
+          this.contracts = await this.contractFactory.getRegisteredAutoLoops();
         } else {
-          console.log("Downloading excluding block list");
-          contracts =
+          this.contracts =
             await this.contractFactory.getRegisteredAutoLoopsExcludingList(
               blockList
             );
         }
       }
-      console.log("Queue:", contracts);
+      console.log("Queue:", this.contracts);
     } catch (err) {
       console.error(err);
     }
