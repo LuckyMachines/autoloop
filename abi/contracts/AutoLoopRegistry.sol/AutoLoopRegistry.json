@@ -350,12 +350,50 @@
   {
     "inputs": [
       {
+        "internalType": "address[]",
+        "name": "blockList",
+        "type": "address[]"
+      }
+    ],
+    "name": "getRegisteredAutoLoopsExcludingList",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "autoLoops",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "adminAddress",
         "type": "address"
       }
     ],
     "name": "getRegisteredAutoLoopsFor",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "autoLoops",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "allowList",
+        "type": "address[]"
+      }
+    ],
+    "name": "getRegisteredAutoLoopsFromList",
     "outputs": [
       {
         "internalType": "address[]",
