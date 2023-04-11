@@ -66,14 +66,78 @@ contract AutoLoopRegistry is AutoLoopRoles {
             }
         }
         autoLoops = new address[](availableLoops);
-        uint256 offset = 0;
+        uint256 index = 0;
         for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
             if (
                 _registeredAutoLoops[i] != address(0) &&
                 isRegisteredAutoLoop[_registeredAutoLoops[i]]
             ) {
-                autoLoops[offset] = _registeredAutoLoops[i];
-                ++offset;
+                autoLoops[index] = _registeredAutoLoops[i];
+                ++index;
+            }
+        }
+    }
+
+    function getRegisteredAutoLoopsExcludingList(
+        address[] memory blockList
+    ) public view returns (address[] memory autoLoops) {
+        uint256 availableLoops = 0;
+        for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
+            bool notBlocked = true;
+            for (uint256 j = 0; j < blockList.length; j++) {
+                if (blockList[j] == _registeredAutoLoops[i]) {
+                    notBlocked = false;
+                    break;
+                }
+            }
+            if (
+                notBlocked &&
+                _registeredAutoLoops[i] != address(0) &&
+                isRegisteredAutoLoop[_registeredAutoLoops[i]]
+            ) {
+                ++availableLoops;
+            }
+        }
+        autoLoops = new address[](availableLoops);
+        uint256 index = 0;
+        for (uint256 i = 0; i < _registeredAutoLoops.length; i++) {
+            bool notBlocked = true;
+            for (uint256 j = 0; j < blockList.length; j++) {
+                if (blockList[j] == _registeredAutoLoops[i]) {
+                    notBlocked = false;
+                    break;
+                }
+            }
+            if (
+                notBlocked &&
+                _registeredAutoLoops[i] != address(0) &&
+                isRegisteredAutoLoop[_registeredAutoLoops[i]]
+            ) {
+                autoLoops[index] = _registeredAutoLoops[i];
+                ++index;
+            }
+        }
+    }
+
+    function getRegisteredAutoLoopsFromList(
+        address[] memory allowList
+    ) public view returns (address[] memory autoLoops) {
+        uint256 availableLoops = 0;
+        for (uint256 i = 0; i < allowList.length; i++) {
+            if (
+                allowList[i] != address(0) && isRegisteredAutoLoop[allowList[i]]
+            ) {
+                ++availableLoops;
+            }
+        }
+        autoLoops = new address[](availableLoops);
+        uint256 index = 0;
+        for (uint256 i = 0; i < allowList.length; i++) {
+            if (
+                allowList[i] != address(0) && isRegisteredAutoLoop[allowList[i]]
+            ) {
+                autoLoops[index] = allowList[i];
+                ++index;
             }
         }
     }
@@ -169,14 +233,14 @@ contract AutoLoopRegistry is AutoLoopRoles {
             }
         }
         controllers = new address[](availableAddresses);
-        uint256 offset = 0;
+        uint256 index = 0;
         for (uint256 i = 0; i < _registeredControllers.length; i++) {
             if (
                 _registeredControllers[i] != address(0) &&
                 isRegisteredController[_registeredControllers[i]]
             ) {
-                controllers[offset] = _registeredControllers[i];
-                ++offset;
+                controllers[index] = _registeredControllers[i];
+                ++index;
             }
         }
     }
