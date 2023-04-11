@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "devDependencies": {
     "@chainlink/contracts": "^0.5.1",
     "@ethersproject/providers": "^5.4.7",
@@ -50,7 +50,7 @@
     "deregister-sample-test": "npx hardhat run scripts/deregister-sample-game.js --network test",
     "sample-info": "npx hardhat run scripts/sample-game-info.js --network main",
     "sample-info-test": "npx hardhat run scripts/sample-game-info.js --network test",
-    "server": "node scripts/server.js",
+    "start": "node scripts/worker.js",
     "test": "npx hardhat test",
     "deregister-contract": "npx hardhat run scripts/deregister-contract.js --network main",
     "deregister-contract-test": "npx hardhat run scripts/deregister-contract.js --network test"
