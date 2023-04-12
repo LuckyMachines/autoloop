@@ -6,6 +6,8 @@ require("dotenv").config();
 let worker;
 let queue;
 
+// This is not necessarily called every block. This is how many blocks to wait after
+// queue of addresses needing updates has been processed.
 const DEFAULT_PING_INTERVAL = 1; // # blocks to wait before checking
 const DEFAULT_EXPIRATION = 0; // # updates to wait before shutting down, 0 = never
 
@@ -193,12 +195,12 @@ class Queue {
           await this.contractFactory.getRegisteredAutoLoopsFromList(allowList);
       } else {
         if (blockList.length > 0) {
-          this.contracts = await this.contractFactory.getRegisteredAutoLoops();
-        } else {
           this.contracts =
             await this.contractFactory.getRegisteredAutoLoopsExcludingList(
               blockList
             );
+        } else {
+          this.contracts = await this.contractFactory.getRegisteredAutoLoops();
         }
       }
       console.log("Queue:", this.contracts);

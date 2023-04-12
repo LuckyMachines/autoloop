@@ -29,7 +29,7 @@ yarn register-controller-test
 - Run the AutoLoop server (or servers) with controller privileges
 
 ```shell
-yarn server [PING_INTERVAL] [EXPIRATION]
+yarn start
 ```
 
 Worker privileges are extremely limited. This is so many users may safely act as nodes in a distributed AutoLoop. The most an AutoLoop controller can do is trigger a contract's update function, which will revert and cost the malicious controller some gas if the contract does not want that update.
