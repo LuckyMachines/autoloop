@@ -9,6 +9,8 @@ let queue;
 const DEFAULT_PING_INTERVAL = 1; // # blocks to wait before checking
 const DEFAULT_EXPIRATION = 0; // # updates to wait before shutting down, 0 = never
 
+let nonceOffset = 0;
+
 class Worker {
   constructor(interval, expiration) {
     this.pingInterval = interval ? interval : DEFAULT_PING_INTERVAL;
@@ -73,23 +75,37 @@ class Worker {
       let maxGas = await autoLoop.getMaxGasFor(contractAddress);
       const gasBuffer = await autoLoop.getGasBuffer();
       const gasToSend = Number(maxGas) + Number(gasBuffer);
-      let tx = await autoLoop.progressLoop(contractAddress, progressWithData, {
-        gasLimit: gasToSend
-      });
-      let receipt = await tx.wait();
-      let gasUsed = receipt.gasUsed;
-      console.log(`Progressed loop on contract ${contractAddress}.`);
-      console.log(`Gas used: ${gasUsed}`);
+      let nonce =
+        (await worker.provider.getTransactionCount(this.wallet.address)) +
+        nonceOffset; // accounts for pending updates
+      nonceOffset++;
+      try {
+        let tx = await autoLoop.progressLoop(
+          contractAddress,
+          progressWithData,
+          {
+            gasLimit: gasToSend,
+            nonce: nonce
+          }
+        );
+        let receipt = await tx.wait();
+        nonceOffset--;
+        let gasUsed = receipt.gasUsed;
+        console.log(`Progressed loop on contract ${contractAddress}.`);
+        console.log(`Gas used: ${gasUsed}`);
+      } catch {
+        nonceOffset--;
+      }
     } else {
       throw new Error(`Contract no longer needs update: ${contractAddress}`);
     }
   }
 
   async start() {
-    console.log("Starting worker...");
+    // console.log("Starting worker...");
     // console.log("Provider:", this.provider);
     // console.log("Wallet:", this.wallet);
-    worker.provider.on("block", async (blockNumber) => {
+    worker.provider.once("block", async (blockNumber) => {
       if (this.totalBlocksPassed % this.pingInterval == 0) {
         let contractsToRemove = [];
         try {
@@ -112,17 +128,17 @@ class Worker {
                 contractsToRemove.push(queue.contracts[i]);
               }
             } else {
-              contractsToRemove.push(queue.contracts[i]);
+              // contractsToRemove.push(queue.contracts[i]);
             }
           }
         } catch (err) {
           console.log(`Error at block ${blockNumber}\n${err.message}`);
         }
         if (contractsToRemove.length > 0) {
-          // console.log("Clearing unused contracts...");
-          contractsToRemove.forEach((contract) => {
-            queue.removeContract(contract);
-          });
+          console.log("Clearing unused contracts...");
+          for (let i = 0; i < contractsToRemove.length; i++) {
+            queue.removeContract(contractsToRemove[i]);
+          }
         }
         this.totalUpdates++;
         if (
@@ -133,6 +149,7 @@ class Worker {
         }
       }
       this.totalBlocksPassed++;
+      await this.start();
     });
   }
 
@@ -158,6 +175,9 @@ class Queue {
     const index = this.contracts.indexOf(contractAddress);
     // console.log("contracts:", this.contracts);
     if (index >= 0) {
+      if (Object.isFrozen(this.contracts)) {
+        this.contracts = this.contracts.slice(0);
+      }
       this.contracts.splice(index, 1);
     }
   }
