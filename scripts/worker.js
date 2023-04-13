@@ -74,19 +74,24 @@ class Worker {
       );
 
       // Set gas from contract settings
-      let maxGas = await autoLoop.getMaxGasFor(contractAddress);
-      const gasBuffer = await autoLoop.getGasBuffer();
+      let maxGas = await autoLoop.maxGasFor(contractAddress);
+      const gasBuffer = await autoLoop.gasBuffer();
       const gasToSend = Number(maxGas) + Number(gasBuffer);
       let nonce =
         (await worker.provider.getTransactionCount(this.wallet.address)) +
         nonceOffset; // accounts for pending updates
       nonceOffset++;
       try {
+        const txGas = await autoLoop.estimateGas.progressLoop(
+          contractAddress,
+          progressWithData
+        );
+        console.log("Estimated gas:", txGas);
         let tx = await autoLoop.progressLoop(
           contractAddress,
           progressWithData,
           {
-            gasLimit: gasToSend,
+            gasLimit: (Number(txGas) + Number(gasBuffer)).toString(),
             nonce: nonce
           }
         );
@@ -95,7 +100,8 @@ class Worker {
         let gasUsed = receipt.gasUsed;
         console.log(`Progressed loop on contract ${contractAddress}.`);
         console.log(`Gas used: ${gasUsed}`);
-      } catch {
+      } catch (err) {
+        console.log("Error progressing loop", err.message);
         nonceOffset--;
       }
     } else {
