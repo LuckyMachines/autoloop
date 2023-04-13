@@ -35,8 +35,8 @@ async function main() {
       );
 
       // Set gas from contract settings
-      let maxGas = await autoLoop.getMaxGasFor(contractAddress);
-      const gasBuffer = await autoLoop.getGasBuffer();
+      let maxGas = await autoLoop.maxGasFor(contractAddress);
+      const gasBuffer = await autoLoop.gasBuffer();
       const gasToSend = Number(maxGas) + Number(gasBuffer);
       console.log("Calling progress loop on:", autoLoop.address);
       let tx = await autoLoop.progressLoop(contractAddress, progressWithData, {

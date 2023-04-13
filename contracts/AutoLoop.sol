@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "./AutoLoopRoles.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     event AutoLoopProgressed(
@@ -17,36 +18,41 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
-    uint256 constant MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 constant GAS_BUFFER = 20_000; // potential gas required by controller, TODO: update to accurate amount
-    uint256 constant GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
+    uint256 BASE_FEE = 70; // percentage of gas cost used
+    uint256 PROTOCOL_FEE_PORTION = 40; // percentage of base fee to go to protocol
+    uint256 CONTROLLER_FEE_PORTION = 60; // percentage of base fee to go to controller
+    uint256 MAX_GAS = 1_000_000; // default if no personal max set
+    uint256 GAS_BUFFER = 20_000; // potential gas required by controller, TODO: update to accurate amount
+    uint256 GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
-    mapping(address => uint256) balance; // balance held at this address
-    mapping(address => uint256) maxGas; // max gas a user is willing to spend on tx
+    mapping(address => uint256) public balance; // balance held at this address
+    mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
+
+    uint256 _protocolBalance;
 
     // PUBLIC //
-    function getGasBuffer() public pure returns (uint256) {
+    function baseFee() public view returns (uint256) {
+        return BASE_FEE;
+    }
+
+    function gasBuffer() public view returns (uint256) {
         return GAS_BUFFER;
     }
 
-    function getGasThreshold() public pure returns (uint256) {
+    function gasThreshold() public view returns (uint256) {
         return GAS_THRESHOLD;
     }
 
-    function getMaxGas() public pure returns (uint256) {
+    function maxGasDefault() public view returns (uint256) {
         return MAX_GAS;
     }
 
-    function getMaxGasFor(address userAddress) public view returns (uint256) {
+    function maxGasFor(address userAddress) public view returns (uint256) {
         if (maxGas[userAddress] == 0) {
             return MAX_GAS;
         } else {
             return maxGas[userAddress];
         }
-    }
-
-    function getBalance(address userAddress) public view returns (uint256) {
-        return balance[userAddress];
     }
 
     // CONTROLLER //
@@ -63,8 +69,17 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         address contractAddress,
         bytes calldata progressWithData
     ) external onlyRole(CONTROLLER_ROLE) nonReentrant {
+        console.log("Progressing Loop %s", contractAddress);
         // controller funds first check to make sure they sent enough gas
         uint256 availableGas = _maxGas(contractAddress);
+        uint256 gasPrice = _gasPrice();
+        // console.log("Available gas: %d", availableGas);
+        // console.log("Gas price: %d", gasPrice);
+        // make sure user has enough funding to cover max gas
+        require(
+            balance[contractAddress] >= availableGas * gasPrice,
+            "Underfunded autoLoop compatible contract"
+        );
         require(
             gasleft() > (availableGas + GAS_BUFFER),
             "Controller underfunded gas"
@@ -83,21 +98,40 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         require(success, "Unable to progress loop. Call not a success");
 
         // get gas used from transaction
-        uint256 gasUsed = startGas - gasleft() + 91473; // 91,473 extra used beyond this calculated number
-        uint256 gasCost = gasUsed * _gasPrice();
+        // TODO: remove fee from user balance as well.
+        uint256 gasUsed = startGas - gasleft() + 50142; // 50142 extra used beyond this calculated number
+        uint256 gasCost = gasUsed * gasPrice;
+        uint256 fee = (gasCost * BASE_FEE) / 100; //total fee for controller + protocol
+        uint256 controllerFee = (fee * CONTROLLER_FEE_PORTION) / 100; // controller's portion of fee
+        uint256 totalCost = gasCost + fee; // total cost including fee
+
         // update user balance based on gas used
         // Controller also funds this, if this fails user account is not updated
         // and lots of gas is wasted.
-        balance[contractAddress] = balance[contractAddress] > gasCost
-            ? balance[contractAddress] - gasCost
-            : 0;
+        // console.log("Balance of address: %d", balance[contractAddress]);
+        // console.log("Gas cost: %d", gasCost);
+
+        require(
+            balance[contractAddress] >= totalCost,
+            "AutoLoop balance too low to run update + fee."
+        );
+        balance[contractAddress] -= totalCost;
+        (bool sent, ) = _msgSender().call{value: controllerFee}("");
+        require(sent, "Failed to repay controller");
+
+        _protocolBalance += (fee - controllerFee);
+
+        console.log("Total cost: %d", totalCost);
+        console.log("Fee: %d", fee);
+        console.log("Controller fee: %d", controllerFee);
+        console.log("Protocol fee: %d", fee - controllerFee);
 
         emit AutoLoopProgressed(
             contractAddress,
             block.timestamp,
             _msgSender(),
             gasUsed,
-            _gasPrice()
+            gasPrice
         );
     }
 
@@ -139,17 +173,84 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
             : maxGasAmount;
     }
 
-    // Internal
+    // ADMIN //
+    function setControllerFeePortion(
+        uint256 controllerFeePercentage
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            controllerFeePercentage <= 100,
+            "Percentage should be less than or equal to 100"
+        );
+        CONTROLLER_FEE_PORTION = controllerFeePercentage;
+        PROTOCOL_FEE_PORTION = 100 - CONTROLLER_FEE_PORTION;
+    }
+
+    function setProtocolFeePortion(
+        uint256 protocolFeePortion
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            protocolFeePortion <= 100,
+            "Percentage should be less than or equal to 100"
+        );
+        PROTOCOL_FEE_PORTION = protocolFeePortion;
+        CONTROLLER_FEE_PORTION = 100 - PROTOCOL_FEE_PORTION;
+    }
+
+    function setMaxGasDefault(
+        uint256 maxGasDefaultValue
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        MAX_GAS = maxGasDefaultValue;
+    }
+
+    function setGasBuffer(
+        uint256 gasBufferValue
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        GAS_BUFFER = gasBufferValue;
+    }
+
+    function setGasThreshold(
+        uint256 gasThresholdValue
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        GAS_THRESHOLD = gasThresholdValue;
+    }
+
+    function withdrawProtocolFees(
+        uint256 amount,
+        address toAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        require(
+            _protocolBalance >= amount,
+            "withdraw amount greater than protocol balance"
+        );
+        (bool sent, ) = toAddress.call{value: _protocolBalance}("");
+        require(sent, "Error withdrawing protocol fees");
+        _protocolBalance -= amount;
+    }
+
+    // Internal //
+
+    // returns usable amount of gas given a total gas amount (removes the fee)
+    function _usableGas(
+        uint256 totalGas
+    ) internal view returns (uint256 gasAmount) {
+        gasAmount = (totalGas * 100) / (100 + BASE_FEE);
+    }
 
     function _maxGas(address user) internal view returns (uint256 gasAmount) {
         gasAmount = maxGas[user] > 0 ? maxGas[user] : MAX_GAS;
-        if (gasAmount * _gasPrice() > balance[user]) {
-            gasAmount = balance[user] / _gasPrice();
+        uint256 gasPrice = _gasPrice();
+        // console.log(
+        //     "setting max gas with user balance / gas price (%d)",
+        //     gasPrice
+        // );
+        if (gasAmount * gasPrice > balance[user]) {
+            gasAmount = balance[user] / gasPrice;
         }
     }
 
     function _gasPrice() internal view returns (uint256) {
         uint256 gasPrice;
+        // console.log("Getting _gasPrice()");
         assembly {
             gasPrice := gasprice()
         }
