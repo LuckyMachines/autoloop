@@ -87,11 +87,12 @@ class Worker {
           progressWithData
         );
         console.log("Estimated gas:", txGas);
+        let totalGas = Math.round((Number(txGas) + Number(gasBuffer)) * 1.7);
         let tx = await autoLoop.progressLoop(
           contractAddress,
           progressWithData,
           {
-            gasLimit: (Number(txGas) + Number(gasBuffer)).toString(),
+            gasLimit: totalGas.toString(),
             nonce: nonce
           }
         );

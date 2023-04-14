@@ -116,7 +116,7 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
             "AutoLoop balance too low to run update + fee."
         );
         balance[contractAddress] -= totalCost;
-        (bool sent, ) = _msgSender().call{value: controllerFee}("");
+        (bool sent, ) = _msgSender().call{value: gasCost + controllerFee}("");
         require(sent, "Failed to repay controller");
 
         _protocolBalance += (fee - controllerFee);
