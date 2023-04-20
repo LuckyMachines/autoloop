@@ -2,6 +2,7 @@
 
 An on-chain automation loop for your blockchain automation needs. Perfect for on-chain game loops.
 
+# Run a local worker
 ## Set Credentials
 
 - Create a `.env` file with RPC URL & wallet private key (see `.env-example`)
@@ -31,9 +32,3 @@ yarn register-controller-test
 ```shell
 yarn start
 ```
-
-Worker privileges are extremely limited. This is so many users may safely act as nodes in a distributed AutoLoop. The most an AutoLoop controller can do is trigger a contract's update function, which will revert and cost the malicious controller some gas if the contract does not want that update.
-
-## Coming soon:
-
-- Time based updates / cron jobs (updates currently only based on contract logic)
