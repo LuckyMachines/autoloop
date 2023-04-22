@@ -414,13 +414,6 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@luckymachines/game-core@^0.0.26":
-  version "0.0.26"
-  resolved "https://registry.yarnpkg.com/@luckymachines/game-core/-/game-core-0.0.26.tgz#e5915799d434d45347a178449d93627327a7d895"
-  integrity sha512-6xcS/q238I112JLAJpqrOhU2w7FJhtLaiI+O3Q7YOdPgZHKc8Rk5TjHHBqMtmp+w9jFV7XzVevJ1RQ4Cheep8g==
-  dependencies:
-    "@openzeppelin/contracts" "^4.6.0"
-
 "@metamask/eth-sig-util@^4.0.0":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@metamask/eth-sig-util/-/eth-sig-util-4.0.1.tgz#3ad61f6ea9ad73ba5b19db780d40d9aae5157088"
@@ -723,7 +716,7 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.2.tgz#d81f786fda2871d1eb8a8c5a73e455753ba53527"
   integrity sha512-z0zMCjyhhp4y7XKAcDAi3Vgms4T2PstwBdahiO0+9NaGICQKjynK3wduSRplTgk4LXmoO1yfDGO5RbjKYxtuxA==
 
-"@openzeppelin/contracts@^4.3.3", "@openzeppelin/contracts@^4.6.0":
+"@openzeppelin/contracts@^4.3.3":
   version "4.8.0"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.0.tgz#6854c37df205dd2c056bdfa1b853f5d732109109"
   integrity sha512-AGuwhRRL+NaKx73WKRNzeCxOCOCxpaqF+kp8TJ89QzAipSwZy/NoflkWaL9bywXFRhIzXt8j38sfF7KBKCPWLw==
