@@ -19,17 +19,5 @@ module.exports = {
       chainId: Number(process.env.CHAIN_ID)
     }
   },
-  solidity: "0.8.17",
-  abiExporter: {
-    runOnCompile: true,
-    format: "json",
-    only: [
-      "AutoLoop.sol",
-      "AutoLoopCompatible.sol",
-      "AutoLoopCompatibleInterface.sol",
-      "AutoLoopRegistrar.sol",
-      "AutoLoopRegistry.sol",
-      "AutoLoopRoles.sol"
-    ]
-  }
+  solidity: "0.8.17"
 };

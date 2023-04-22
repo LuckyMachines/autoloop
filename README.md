@@ -1,19 +1,9 @@
-# Lucky Machines AutoLoop
+# Lucky Machines AutoLoop Worker
 
-An on-chain automation loop for your blockchain automation needs. Perfect for on-chain game loops.
-
-# Integrate with your smart contract
-
-- Make your contract inherit from [AutoLoopCompatible.sol](https://github.com/LuckyMachines/autoloop/blob/main/contracts/AutoLoopCompatible.sol) (see [example](https://github.com/LuckyMachines/autoloop/blob/main/contracts/sample/NumberGoUp.sol))
-- Register AutoLoop compatible contracts with registry in contract (see [example](https://github.com/LuckyMachines/autoloop/blob/main/contracts/sample/NumberGoUp.sol))
-
-## Register AutoLoop compatible contract:
-
-```shell
-yarn register-contract-test
-```
+An AutoLoop worker you can run to earn profits and support the AutoLoop network.
 
 # Run a local worker
+
 ## Set Credentials
 
 - Create a `.env` file with RPC URL & wallet private key (see `.env-example`)

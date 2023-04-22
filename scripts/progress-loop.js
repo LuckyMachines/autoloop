@@ -8,7 +8,7 @@ require("dotenv").config();
 async function main() {
   const contractAddress = process.argv[2] ? process.argv[2] : null;
   if (contractAddress) {
-    const AutoLoopCompatibleInterfaceArtifact = require("../artifacts/contracts/AutoLoopCompatibleInterface.sol/AutoLoopCompatibleInterface.json");
+    const AutoLoopCompatibleInterfaceArtifact = require("../../autoloop/artifacts/contracts/AutoLoopCompatibleInterface.sol/AutoLoopCompatibleInterface.json");
     const PROVIDER_URL = config.testMode
       ? process.env.RPC_URL_TESTNET
       : process.env.RPC_URL;
@@ -27,7 +27,7 @@ async function main() {
     let progressWithData = check.progressWithData;
     console.log(`Contract ${contractAddress} needs update: ${needsUpdate}`);
     if (needsUpdate) {
-      const AutoLoopArtifact = require("../artifacts/contracts/AutoLoop.sol/AutoLoop.json");
+      const AutoLoopArtifact = require("../../autoloop/artifacts/contracts/AutoLoop.sol/AutoLoop.json");
       const autoLoop = new hre.ethers.Contract(
         config[config.testMode ? "test" : "main"].AUTO_LOOP,
         AutoLoopArtifact.abi,
