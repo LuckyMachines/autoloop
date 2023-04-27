@@ -29,7 +29,8 @@ module.exports = {
       "AutoLoopCompatibleInterface.sol",
       "AutoLoopRegistrar.sol",
       "AutoLoopRegistry.sol",
-      "AutoLoopRoles.sol"
+      "AutoLoopRoles.sol",
+      "NumberGoUp.sol"
     ]
   }
 };
