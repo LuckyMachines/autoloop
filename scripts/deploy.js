@@ -1,11 +1,12 @@
 const hre = require("hardhat");
 const fs = require("fs");
-const config = require("../controller.config.json");
 require("dotenv").config();
 
 class Deployment {
   constructor(deploymentJSON) {
-    this.deployments = deploymentJSON ? deploymentJSON : { test: {}, main: {} };
+    this.deployments = deploymentJSON
+      ? deploymentJSON
+      : { godwoken_test: {}, godwoken: {}, sepolia: {} };
     this.path = `${process.cwd()}/deployments.json`;
   }
   save() {
@@ -38,6 +39,25 @@ async function main() {
     "AutoLoopRegistrar"
   );
 
+  let registryAdminAddress;
+  let registrarAdminAddress;
+
+  switch (hre.network.name) {
+    case "godwoken_test":
+      registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_GW_TESTNET;
+      registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_GW_TESTNET;
+      break;
+    case "godwoken":
+      registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_GW;
+      registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_GW;
+      break;
+    case "sepolia":
+    default:
+      registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_SEPOLIA;
+      registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_SEPOLIA;
+      break;
+  }
+
   if (!deployment.deployments[hre.network.name].AUTO_LOOP) {
     // deploy AutoLoop
     console.log("Deploying Auto Loop...");
@@ -58,11 +78,7 @@ async function main() {
 
   if (!deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY) {
     // deploy AutoLoopRegistry
-    autoLoopRegistry = await AutoLoopRegistry.deploy(
-      config.testMode
-        ? process.env.REGISTRY_ADMIN_ADDRESS_TESTNET
-        : process.env.REGISTRY_ADMIN_ADDRESS
-    );
+    autoLoopRegistry = await AutoLoopRegistry.deploy(registryAdminAddress);
     await autoLoopRegistry.deployed();
     console.log("Registry deployed to", autoLoopRegistry.address);
     deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY =
@@ -83,9 +99,7 @@ async function main() {
     autoLoopRegistrar = await AutoLoopRegistrar.deploy(
       autoLoop.address,
       autoLoopRegistry.address,
-      config.testMode
-        ? process.env.REGISTRAR_ADMIN_ADDRESS_TESTNET
-        : process.env.REGISTRAR_ADMIN_ADDRESS
+      registrarAdminAddress
     );
     await autoLoopRegistrar.deployed();
     console.log("Registrar deployed to", autoLoopRegistrar.address);

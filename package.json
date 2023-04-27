@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "devDependencies": {
     "@chainlink/contracts": "^0.5.1",
     "@ethersproject/providers": "^5.4.7",
@@ -34,21 +34,14 @@
     "test": "test"
   },
   "scripts": {
-    "deploy": "npx hardhat run scripts/deploy.js --network main",
-    "deploy-test": "npx hardhat run scripts/deploy.js --network test",
-    "deploy-sample": "npx hardhat run scripts/deploy-sample-game.js --network main",
-    "deploy-sample-test": "npx hardhat run scripts/deploy-sample-game.js --network test",
-    "register-contract": "npx hardhat run scripts/register-contract.js --network main",
-    "register-contract-test": "npx hardhat run scripts/register-contract.js --network test",
-    "register-sample": "npx hardhat run scripts/register-sample-game.js --network main",
-    "register-sample-test": "npx hardhat run scripts/register-sample-game.js --network test",
-    "deregister-sample": "npx hardhat run scripts/deregister-sample-game.js --network main",
-    "deregister-sample-test": "npx hardhat run scripts/deregister-sample-game.js --network test",
-    "sample-info": "npx hardhat run scripts/sample-game-info.js --network main",
-    "sample-info-test": "npx hardhat run scripts/sample-game-info.js --network test",
+    "deploy": "npx hardhat run scripts/deploy.js --network",
+    "deploy-sample": "npx hardhat run scripts/deploy-sample-game.js --network",
+    "register-contract": "npx hardhat run scripts/register-contract.js --network",
+    "register-sample": "npx hardhat run scripts/register-sample-game.js --network",
+    "deregister-sample": "npx hardhat run scripts/deregister-sample-game.js --network",
+    "sample-info": "npx hardhat run scripts/sample-game-info.js --network",
     "test": "npx hardhat test",
-    "deregister-contract": "npx hardhat run scripts/deregister-contract.js --network main",
-    "deregister-contract-test": "npx hardhat run scripts/deregister-contract.js --network test"
+    "deregister-contract": "npx hardhat run scripts/deregister-contract.js --network main"
   },
   "repository": {
     "type": "git",

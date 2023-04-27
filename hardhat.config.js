@@ -8,15 +8,20 @@ require("dotenv").config();
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   networks: {
-    test: {
-      url: process.env.RPC_URL_TESTNET,
-      accounts: [process.env.PRIVATE_KEY_TESTNET],
-      chainId: Number(process.env.CHAIN_ID_TESTNET)
+    godwoken_test: {
+      url: process.env.RPC_URL_GW_TESTNET,
+      accounts: [process.env.PRIVATE_KEY_GW_TESTNET],
+      chainId: Number(process.env.CHAIN_ID_GW_TESTNET)
     },
-    main: {
-      url: process.env.RPC_URL,
-      accounts: [process.env.PRIVATE_KEY],
-      chainId: Number(process.env.CHAIN_ID)
+    godwoken: {
+      url: process.env.RPC_URL_GW,
+      accounts: [process.env.PRIVATE_KEY_GW],
+      chainId: Number(process.env.CHAIN_ID_GW)
+    },
+    sepolia: {
+      url: process.env.RPC_URL_SEPOLIA,
+      accounts: [process.env.PRIVATE_KEY_SEPOLIA],
+      chainId: Number(process.env.CHAIN_ID_SEPOLIA)
     }
   },
   solidity: "0.8.17",

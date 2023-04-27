@@ -13,5 +13,5 @@ Your contract should inherit from [AutoLoopCompatible.sol](https://github.com/Lu
 ## Register AutoLoop compatible contract through CLI:
 
 ```shell
-yarn register-contract-test
+yarn register-contract <NETWORK>
 ```
