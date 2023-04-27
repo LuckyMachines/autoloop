@@ -11,6 +11,13 @@ abstract contract AutoLoopCompatible is
     address public adminTransferRequestOrigin;
     address public adminTransferRequest;
 
+    uint256 _loopID;
+
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _loopID = 1;
+    }
+
     function safeTransferAdmin(address newAdminAddress) public {
         require(
             adminTransferRequest == address(0),

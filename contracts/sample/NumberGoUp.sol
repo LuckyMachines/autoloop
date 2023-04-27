@@ -11,15 +11,10 @@ contract NumberGoUp is AutoLoopCompatible {
     uint256 public interval;
     uint256 public lastTimeStamp;
 
-    uint256 _loopID;
-
     constructor(uint256 updateInterval) {
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
         number = 0;
-        _loopID = 1;
     }
 
     function registerAutoLoop(
