@@ -3,7 +3,7 @@ const fs = require("fs");
 const deployments = require("../deployments.json");
 require("dotenv").config();
 
-const sampleGames = ["0x34767eaB7e409C3920723CA4F2285cb7C1AC5B7E"];
+const sampleGames = [""];
 
 async function main() {
   /*

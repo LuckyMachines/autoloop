@@ -7,6 +7,8 @@ import "../AutoLoopCompatible.sol";
 import "../AutoLoopRegistrar.sol";
 
 contract NumberGoUp is AutoLoopCompatible {
+    event GameUpdated(uint256 indexed timeStamp);
+
     uint256 public number;
     uint256 public interval;
     uint256 public lastTimeStamp;
@@ -57,6 +59,7 @@ contract NumberGoUp is AutoLoopCompatible {
 
     function updateGame() internal {
         // this is what gets called on each auto loop cycle
+        emit GameUpdated(block.timestamp);
         lastTimeStamp = block.timestamp;
         ++number;
         ++_loopID;

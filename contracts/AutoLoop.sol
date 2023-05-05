@@ -11,7 +11,9 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         uint256 indexed timeStamp,
         address controller,
         uint256 gasUsed,
-        uint256 gasPrice
+        uint256 gasPrice,
+        uint256 gasCost,
+        uint256 fee
     );
 
     constructor() {
@@ -19,10 +21,10 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     }
 
     uint256 BASE_FEE = 70; // percentage of gas cost used
-    uint256 PROTOCOL_FEE_PORTION = 40; // percentage of base fee to go to protocol
-    uint256 CONTROLLER_FEE_PORTION = 60; // percentage of base fee to go to controller
+    uint256 PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
+    uint256 CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
     uint256 MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 GAS_BUFFER = 20_000; // potential gas required by controller, TODO: update to accurate amount
+    uint256 GAS_BUFFER = 115_891; // gas required to run transaction outside of contract update, TODO: update to accurate amount
     uint256 GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
     mapping(address => uint256) public balance; // balance held at this address
@@ -70,50 +72,32 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         bytes calldata progressWithData
     ) external onlyRole(CONTROLLER_ROLE) nonReentrant {
         console.log("Progressing Loop %s", contractAddress);
-        // controller funds first check to make sure they sent enough gas
-        uint256 availableGas = _maxGas(contractAddress);
-        uint256 gasPrice = _gasPrice();
-        // console.log("Available gas: %d", availableGas);
-        // console.log("Gas price: %d", gasPrice);
-        // make sure user has enough funding to cover max gas
-        require(
-            balance[contractAddress] >= availableGas * gasPrice,
-            "Underfunded autoLoop compatible contract"
-        );
-        require(
-            gasleft() > (availableGas + GAS_BUFFER),
-            "Controller underfunded gas"
-        );
 
-        // should simulate function off-chain first to ensure it will go through
-        // controller is responsible for lost gas
-
+        uint256 gasUsed = GAS_BUFFER;
         uint256 startGas = gasleft();
-
         // progress loop on contract
         (bool success, ) = contractAddress.call(
             abi.encodeWithSignature("progressLoop(bytes)", progressWithData)
         );
+        // Calculate this first to get cost of update + this function
+        gasUsed += (startGas - gasleft());
 
         require(success, "Unable to progress loop. Call not a success");
 
-        // get gas used from transaction
-        // TODO: remove fee from user balance as well.
-        uint256 gasUsed = startGas - gasleft() + 50142; // 50142 extra used beyond this calculated number
-        uint256 gasCost = gasUsed * gasPrice;
+        uint256 gasCost = gasUsed * tx.gasprice;
         uint256 fee = (gasCost * BASE_FEE) / 100; //total fee for controller + protocol
         uint256 controllerFee = (fee * CONTROLLER_FEE_PORTION) / 100; // controller's portion of fee
         uint256 totalCost = gasCost + fee; // total cost including fee
 
         // update user balance based on gas used
-        // Controller also funds this, if this fails user account is not updated
+        // Controller funds this, if this fails user account is not updated
         // and lots of gas is wasted.
         // console.log("Balance of address: %d", balance[contractAddress]);
         // console.log("Gas cost: %d", gasCost);
 
         require(
             balance[contractAddress] >= totalCost,
-            "AutoLoop balance too low to run update + fee."
+            "AutoLoop compatible contract balance too low to run update + fee."
         );
         balance[contractAddress] -= totalCost;
         (bool sent, ) = _msgSender().call{value: gasCost + controllerFee}("");
@@ -121,17 +105,19 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
 
         _protocolBalance += (fee - controllerFee);
 
-        console.log("Total cost: %d", totalCost);
-        console.log("Fee: %d", fee);
-        console.log("Controller fee: %d", controllerFee);
-        console.log("Protocol fee: %d", fee - controllerFee);
+        // console.log("Total cost: %d", totalCost);
+        // console.log("Fee: %d", fee);
+        // console.log("Controller fee: %d", controllerFee);
+        // console.log("Protocol fee: %d", fee - controllerFee);
 
         emit AutoLoopProgressed(
             contractAddress,
             block.timestamp,
             _msgSender(),
             gasUsed,
-            gasPrice
+            tx.gasprice,
+            gasCost,
+            fee
         );
     }
 
@@ -238,22 +224,9 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
 
     function _maxGas(address user) internal view returns (uint256 gasAmount) {
         gasAmount = maxGas[user] > 0 ? maxGas[user] : MAX_GAS;
-        uint256 gasPrice = _gasPrice();
-        // console.log(
-        //     "setting max gas with user balance / gas price (%d)",
-        //     gasPrice
-        // );
-        if (gasAmount * gasPrice > balance[user]) {
-            gasAmount = balance[user] / gasPrice;
-        }
-    }
 
-    function _gasPrice() internal view returns (uint256) {
-        uint256 gasPrice;
-        // console.log("Getting _gasPrice()");
-        assembly {
-            gasPrice := gasprice()
+        if (gasAmount * tx.gasprice > balance[user]) {
+            gasAmount = balance[user] / tx.gasprice;
         }
-        return gasPrice;
     }
 }
