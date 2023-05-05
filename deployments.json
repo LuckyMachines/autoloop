@@ -1,9 +1,9 @@
 {
-    "godwoken_test": {
-        "AUTO_LOOP": "0xf06835F2725F86d5FcA5f763b49da595ddb8f988",
-        "AUTO_LOOP_REGISTRY": "0x7159EcDCa94B5e1e635ddccF2baBB5d857D2fA90",
-        "AUTO_LOOP_REGISTRAR": "0x3baF479571C433bFC381E54183Ff58bc2876fEEf"
-    },
-    "godwoken": {},
-    "sepolia": {}
+  "godwoken_test": {
+    "AUTO_LOOP": "0xf06835F2725F86d5FcA5f763b49da595ddb8f988",
+    "AUTO_LOOP_REGISTRY": "0x7159EcDCa94B5e1e635ddccF2baBB5d857D2fA90",
+    "AUTO_LOOP_REGISTRAR": "0x3baF479571C433bFC381E54183Ff58bc2876fEEf"
+  },
+  "godwoken": {},
+  "sepolia": {}
 }
