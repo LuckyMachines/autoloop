@@ -3,6 +3,7 @@ require("@nomiclabs/hardhat-web3");
 require("hardhat-contract-sizer");
 require("hardhat-abi-exporter");
 require("solidity-docgen");
+require("hardhat-contract-sizer");
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -24,7 +25,19 @@ module.exports = {
       chainId: Number(process.env.CHAIN_ID_SEPOLIA)
     }
   },
-  solidity: "0.8.17",
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000000
+          }
+        }
+      }
+    ]
+  },
   abiExporter: {
     runOnCompile: true,
     format: "json",
