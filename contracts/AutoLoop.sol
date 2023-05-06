@@ -57,11 +57,6 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         }
     }
 
-    // CONTROLLER //
-
-    // - Controller needs to send more gas than is required for tx.
-    //   must have enough gas in user's account to pay for update
-
     /**
      * @notice progresses loop on AutoLoop compatible contract
      * @param contractAddress the address of the contract receiving update
@@ -89,12 +84,6 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         uint256 controllerFee = (fee * CONTROLLER_FEE_PORTION) / 100; // controller's portion of fee
         uint256 totalCost = gasCost + fee; // total cost including fee
 
-        // update user balance based on gas used
-        // Controller funds this, if this fails user account is not updated
-        // and lots of gas is wasted.
-        // console.log("Balance of address: %d", balance[contractAddress]);
-        // console.log("Gas cost: %d", gasCost);
-
         require(
             balance[contractAddress] >= totalCost,
             "AutoLoop compatible contract balance too low to run update + fee."
@@ -104,11 +93,6 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         require(sent, "Failed to repay controller");
 
         _protocolBalance += (fee - controllerFee);
-
-        // console.log("Total cost: %d", totalCost);
-        // console.log("Fee: %d", fee);
-        // console.log("Controller fee: %d", controllerFee);
-        // console.log("Protocol fee: %d", fee - controllerFee);
 
         emit AutoLoopProgressed(
             contractAddress,
