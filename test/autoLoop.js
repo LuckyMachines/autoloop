@@ -9,26 +9,36 @@ describe("Auto Loop", function () {
   let ADMIN;
   let CONTROLLER;
   let CONTROLLER_SIGNER;
+  let ADMIN_2;
+  let ADMIN_2_SIGNER;
 
   // Contract Factories
   let AUTO_LOOP;
   let AUTO_LOOP_REGISTRY;
   let AUTO_LOOP_REGISTRAR;
-  let SAMPLE_GAME;
+  let SAMPLE_GAME; // ADMIN's game
+  let SAMPLE_GAME_2; // ADMIN_2's game
 
   // Access Roles
   let CONTROLLER_ROLE;
   let REGISTRY_ROLE;
   let REGISTRAR_ROLE;
 
+  let Game;
+
   before(async function () {
     let tx;
     let receipt;
 
     ACCOUNTS = await ethers.provider.listAccounts();
+    console.log("Accounts:", ACCOUNTS);
     ADMIN = ACCOUNTS[0];
     CONTROLLER = ACCOUNTS[1];
     CONTROLLER_SIGNER = ethers.provider.getSigner(ACCOUNTS[1]);
+    ADMIN_2 = ACCOUNTS[2];
+    ADMIN_2_SIGNER = ethers.provider.getSigner(ACCOUNTS[2]);
+
+    Game = await hre.ethers.getContractFactory("NumberGoUp");
 
     const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
     const AutoLoopRegistry = await hre.ethers.getContractFactory(
@@ -65,7 +75,7 @@ describe("Auto Loop", function () {
     console.log("Controller role:", CONTROLLER_ROLE);
   });
 
-  describe("Registration", function () {
+  describe("Registration + Admin", function () {
     it("Sets registrar", async function () {
       tx = await AUTO_LOOP_REGISTRY.setRegistrar(AUTO_LOOP_REGISTRAR.address);
       await tx.wait();
@@ -83,9 +93,8 @@ describe("Auto Loop", function () {
       );
       expect(hasRegistrarRole).to.equal(true);
     });
-    it("Registers GLCI", async function () {
+    it("Registers AutoLoop compatible interface", async function () {
       const updateInterval = 1;
-      const Game = await hre.ethers.getContractFactory("NumberGoUp");
       SAMPLE_GAME = await Game.deploy(updateInterval);
       await SAMPLE_GAME.deployed();
       let isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredAutoLoop(
@@ -99,7 +108,7 @@ describe("Auto Loop", function () {
       expect(canRegister).to.equal(true);
       tx = await AUTO_LOOP_REGISTRAR.registerAutoLoopFor(
         SAMPLE_GAME.address,
-        "100000"
+        "2000000"
       );
       await tx.wait();
       isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredAutoLoop(
@@ -131,7 +140,43 @@ describe("Auto Loop", function () {
       );
       expect(isRegistered).to.equal(true);
     });
+    it("Safe transfers ALCC", async function () {
+      const updateInterval = 1;
+      SAMPLE_GAME_2 = await Game.deploy(updateInterval);
+      await SAMPLE_GAME_2.deployed();
+      console.log("Admin2 address:", ADMIN_2);
+      tx = await SAMPLE_GAME_2.safeTransferAdmin(ADMIN_2);
+      await tx.wait();
+      let canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
+        ADMIN,
+        SAMPLE_GAME_2.address
+      );
+      expect(canRegister).to.equal(true);
+      canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
+        ADMIN_2,
+        SAMPLE_GAME_2.address
+      );
+      expect(canRegister).to.equal(false);
+      SAMPLE_GAME_2 = SAMPLE_GAME_2.connect(ADMIN_2_SIGNER);
+      tx = await SAMPLE_GAME_2.acceptTransferAdminRequest();
+      await tx.wait();
+      canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
+        ADMIN_2,
+        SAMPLE_GAME_2.address
+      );
+      expect(canRegister).to.equal(true);
+      canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
+        ADMIN,
+        SAMPLE_GAME_2.address
+      );
+      expect(canRegister).to.equal(false);
+    });
     it("Returns list of all registered contracts", async function () {
+      tx = await AUTO_LOOP_REGISTRAR.registerAutoLoopFor(
+        SAMPLE_GAME_2.address,
+        "2000000"
+      );
+      await tx.wait();
       const allContracts = await AUTO_LOOP_REGISTRY.getRegisteredAutoLoops();
       console.log("All registered autoloops:", allContracts);
       expect(allContracts).to.contain.members([SAMPLE_GAME.address]);
@@ -145,5 +190,14 @@ describe("Auto Loop", function () {
       console.log("Admin registered indices:", adminRegisteredLoopIndices);
     });
   });
-  describe("Controller", function () {});
+  describe("Worker + Updates", function () {
+    // charges user correctly
+    it("Registers worker", async function () {});
+    // worker is compensated for cost of tx
+    it("Registers worker", async function () {});
+    // worker receives refund for gas + fee
+    it("Registers worker", async function () {});
+    // protocol wallet receives fee from each tx
+    it("Registers worker", async function () {});
+  });
 });
