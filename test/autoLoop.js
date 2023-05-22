@@ -190,14 +190,13 @@ describe("Auto Loop", function () {
       console.log("Admin registered indices:", adminRegisteredLoopIndices);
     });
   });
-  describe("Worker + Updates", function () {
-    // charges user correctly
-    it("Registers worker", async function () {});
-    // worker is compensated for cost of tx
-    it("Registers worker", async function () {});
-    // worker receives refund for gas + fee
-    it("Registers worker", async function () {});
-    // protocol wallet receives fee from each tx
-    it("Registers worker", async function () {});
+  describe("Controller + Updates", function () {
+    it("charges autoloop compatible contract correctly", async function () {});
+
+    it("controller is compensated for cost of tx", async function () {});
+
+    it("controller receives refund for gas + fee", async function () {});
+
+    it("protocol receives fee from each tx", async function () {});
   });
 });
