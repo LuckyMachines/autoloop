@@ -14,6 +14,7 @@ describe("Auto Loop", function () {
 
   // Contract Factories
   let AUTO_LOOP;
+  let AUTO_LOOP_VIA_CONTROLLER;
   let AUTO_LOOP_REGISTRY;
   let AUTO_LOOP_REGISTRAR;
   let SAMPLE_GAME; // ADMIN's game
@@ -139,6 +140,8 @@ describe("Auto Loop", function () {
         CONTROLLER
       );
       expect(isRegistered).to.equal(true);
+
+      AUTO_LOOP_VIA_CONTROLLER = AUTO_LOOP.connect(CONTROLLER_SIGNER);
     });
     it("Safe transfers ALCC", async function () {
       const updateInterval = 1;
@@ -191,12 +194,124 @@ describe("Auto Loop", function () {
     });
   });
   describe("Controller + Updates", function () {
-    it("charges autoloop compatible contract correctly", async function () {});
+    it("ALCI wants update", async function () {
+      const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
+    });
+    it("Underfunded contract cannot progress loop", async function () {
+      const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      await expect(
+        AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+          SAMPLE_GAME.address,
+          shouldProgress.progressWithData
+        )
+      ).to.be.revertedWith(
+        "AutoLoop compatible contract balance too low to run update + fee."
+      );
+    });
+    it("ALCI can fund contract", async function () {
+      const contractBalanceBefore = await AUTO_LOOP.balance(
+        SAMPLE_GAME.address
+      );
+      await AUTO_LOOP_REGISTRAR.deposit(SAMPLE_GAME.address, {
+        value: ethers.utils.parseEther("1.0")
+      });
+      const contractBalanceAfter = await AUTO_LOOP.balance(SAMPLE_GAME.address);
+      expect(contractBalanceAfter).to.equal(ethers.utils.parseEther("1.0"));
+    });
+    it("Controller can progress loop", async function () {
+      const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
+      await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData
+      );
+    });
+    it("Does not progress loop if not enough time has passed", async function () {});
+    it("charges autoloop compatible contract correctly", async function () {
+      const contractBalanceBefore = await AUTO_LOOP.balance(
+        SAMPLE_GAME.address
+      );
+      const startGas = 1;
+      const gasPrice = 1;
 
-    it("controller is compensated for cost of tx", async function () {});
+      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
+      await AUTO_LOOP_VIA_CONTROLLER.progressLoop(SAMPLE_GAME.address, []);
 
-    it("controller receives refund for gas + fee", async function () {});
+      const contractBalanceAfter = await AUTO_LOOP.balance(SAMPLE_GAME.address);
+      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
+      const gasCost = gasUsed * gasPrice;
+      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
+      const totalCost = gasCost + fee;
 
-    it("protocol receives fee from each tx", async function () {});
+      expect(contractBalanceAfter).to.equal(contractBalanceBefore - totalCost);
+    });
+
+    it("controller is compensated for cost of tx", async function () {
+      const controllerBalanceBefore = await ethers.provider.getBalance(
+        CONTROLLER
+      );
+      const startGas = 1;
+      const gasPrice = 1;
+
+      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
+      await AUTO_LOOP.progressLoop(SAMPLE_GAME.address, []);
+
+      const controllerBalanceAfter = await ethers.provider.getBalance(
+        CONTROLLER
+      );
+      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
+      const gasCost = gasUsed * gasPrice;
+      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
+      const controllerFee = (fee * AUTO_LOOP.CONTROLLER_FEE_PORTION) / 100;
+      const totalCost = gasCost + controllerFee;
+
+      expect(controllerBalanceAfter).to.equal(
+        controllerBalanceBefore + totalCost
+      );
+    });
+
+    it("controller receives refund for gas + fee", async function () {
+      const controllerBalanceBefore = await ethers.provider.getBalance(
+        CONTROLLER
+      );
+      const startGas = 1;
+      const gasPrice = 1;
+
+      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
+      await AUTO_LOOP.progressLoop(SAMPLE_GAME.address, []);
+
+      const controllerBalanceAfter = await ethers.provider.getBalance(
+        CONTROLLER
+      );
+      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
+      const gasCost = gasUsed * gasPrice;
+      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
+      const controllerFee = (fee * AUTO_LOOP.CONTROLLER_FEE_PORTION) / 100;
+      const totalRefund = gasCost + controllerFee;
+
+      expect(controllerBalanceAfter).to.equal(
+        controllerBalanceBefore + totalRefund
+      );
+    });
+
+    it("protocol receives fee from each tx", async function () {
+      const protocolBalanceBefore = await AUTO_LOOP._protocolBalance();
+      const startGas = 1;
+      const gasPrice = 1;
+
+      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
+      await AUTO_LOOP.progressLoop(SAMPLE_GAME.address, []);
+
+      const protocolBalanceAfter = await AUTO_LOOP._protocolBalance();
+      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
+      const gasCost = gasUsed * gasPrice;
+      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
+      const protocolFee = (fee * AUTO_LOOP.PROTOCOL_FEE_PORTION) / 100;
+
+      expect(protocolBalanceAfter).to.equal(
+        protocolBalanceBefore + protocolFee
+      );
+    });
   });
 });

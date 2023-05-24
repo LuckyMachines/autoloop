@@ -30,6 +30,8 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
 
+    mapping(address => mapping(uint256 => bool)) _hadUpdate; // mapping of contract address to block number to bool
+
     uint256 _protocolBalance;
 
     // PUBLIC //
@@ -66,8 +68,11 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         address contractAddress,
         bytes calldata progressWithData
     ) external onlyRole(CONTROLLER_ROLE) nonReentrant {
-        console.log("Progressing Loop %s", contractAddress);
-
+        // console.log("Progressing Loop %s", contractAddress);
+        require(
+            !(_hadUpdate[contractAddress][block.number]),
+            "Contract already updated this block"
+        );
         uint256 gasUsed = GAS_BUFFER;
         uint256 startGas = gasleft();
         // progress loop on contract
@@ -93,6 +98,8 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         require(sent, "Failed to repay controller");
 
         _protocolBalance += (fee - controllerFee);
+
+        _hadUpdate[contractAddress][block.number] = true;
 
         emit AutoLoopProgressed(
             contractAddress,
