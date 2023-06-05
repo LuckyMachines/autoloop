@@ -24,7 +24,7 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     uint256 PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
     uint256 CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
     uint256 MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 GAS_BUFFER = 122_100; // gas required to run transaction outside of contract update
+    uint256 GAS_BUFFER = 77_255; // gas required to run transaction outside of contract update
     uint256 GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
     mapping(address => uint256) public balance; // balance held at this address
@@ -59,6 +59,10 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         }
     }
 
+    function protocolBalance() public view returns (uint256) {
+        return _protocolBalance;
+    }
+
     /**
      * @notice progresses loop on AutoLoop compatible contract
      * @param contractAddress the address of the contract receiving update
@@ -73,19 +77,18 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
             !(_hadUpdate[contractAddress][block.number]),
             "Contract already updated this block"
         );
-        uint256 gasUsed = GAS_BUFFER;
         uint256 startGas = gasleft();
         // progress loop on contract
         (bool success, ) = contractAddress.call(
             abi.encodeWithSignature("progressLoop(bytes)", progressWithData)
         );
         // Calculate this first to get cost of update + this function
-        gasUsed += (startGas - gasleft());
-
+        uint256 txGas = startGas - gasleft();
         require(success, "Unable to progress loop. Call not a success");
-
+        uint256 gasUsed = GAS_BUFFER + txGas;
         uint256 gasCost = gasUsed * tx.gasprice;
-        uint256 fee = (gasCost * BASE_FEE) / 100; //total fee for controller + protocol
+        // get fee from contract update gas, not total gas
+        uint256 fee = (txGas * tx.gasprice * BASE_FEE) / 100; //total fee for controller + protocol
         uint256 controllerFee = (fee * CONTROLLER_FEE_PORTION) / 100; // controller's portion of fee
         uint256 totalCost = gasCost + fee; // total cost including fee
 
@@ -107,7 +110,7 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
             _msgSender(),
             gasUsed,
             tx.gasprice,
-            gasCost,
+            totalCost,
             fee
         );
     }

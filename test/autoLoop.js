@@ -3,6 +3,10 @@ const { ethers } = require("hardhat");
 const fs = require("fs");
 const exp = require("constants");
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe("Auto Loop", function () {
   // Accounts
   let ACCOUNTS;
@@ -95,7 +99,7 @@ describe("Auto Loop", function () {
       expect(hasRegistrarRole).to.equal(true);
     });
     it("Registers AutoLoop compatible interface", async function () {
-      const updateInterval = 1;
+      const updateInterval = 0;
       SAMPLE_GAME = await Game.deploy(updateInterval);
       await SAMPLE_GAME.deployed();
       let isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredAutoLoop(
@@ -144,7 +148,7 @@ describe("Auto Loop", function () {
       AUTO_LOOP_VIA_CONTROLLER = AUTO_LOOP.connect(CONTROLLER_SIGNER);
     });
     it("Safe transfers ALCC", async function () {
-      const updateInterval = 1;
+      const updateInterval = 0;
       SAMPLE_GAME_2 = await Game.deploy(updateInterval);
       await SAMPLE_GAME_2.deployed();
       console.log("Admin2 address:", ADMIN_2);
@@ -218,100 +222,179 @@ describe("Auto Loop", function () {
       });
       const contractBalanceAfter = await AUTO_LOOP.balance(SAMPLE_GAME.address);
       expect(contractBalanceAfter).to.equal(ethers.utils.parseEther("1.0"));
+      // check balance of AUTO_LOOP is correct
+      const autoLoopBalance = await ethers.provider.getBalance(
+        AUTO_LOOP.address
+      );
+      expect(autoLoopBalance).to.equal(contractBalanceAfter);
     });
     it("Controller can progress loop", async function () {
+      let initialNumber = await SAMPLE_GAME.number();
       const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
       expect(shouldProgress.loopIsReady).to.equal(true);
       await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
         SAMPLE_GAME.address,
         shouldProgress.progressWithData
       );
+      let finalNumber = await SAMPLE_GAME.number();
+      expect(finalNumber).to.equal(initialNumber + 1);
     });
-    it("Does not progress loop if not enough time has passed", async function () {});
     it("charges autoloop compatible contract correctly", async function () {
+      // do something to move hh onto next block
+      let gasBuffer = await AUTO_LOOP.gasBuffer();
+      tx = await AUTO_LOOP.setGasBuffer(gasBuffer);
+      await tx.wait();
+
       const contractBalanceBefore = await AUTO_LOOP.balance(
         SAMPLE_GAME.address
       );
-      const startGas = 1;
-      const gasPrice = 1;
+      // console.log("ALCC balance before:", contractBalanceBefore.toString());
+      const _gasPrice = "20000000000"; //20 gwei
+      const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
 
-      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
-      await AUTO_LOOP_VIA_CONTROLLER.progressLoop(SAMPLE_GAME.address, []);
+      tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData,
+        {
+          gasPrice: _gasPrice
+        }
+      );
+      receipt = await tx.wait();
+
+      // get latest AutoLoopProgressed event from AUTO_LOOP
+      /*
+      event AutoLoopProgressed(
+        address indexed autoLoopCompatibleContract,
+        uint256 indexed timeStamp,
+        address controller,
+        uint256 gasUsed,
+        uint256 gasPrice,
+        uint256 gasCost,
+        uint256 fee
+    );
+      */
+      const events = await AUTO_LOOP.queryFilter(
+        AUTO_LOOP.filters.AutoLoopProgressed()
+      );
+      expect(events.length).to.equal(2);
+      const event = events[events.length - 1];
+      const gasUsed = event.args.gasUsed;
+      const gasPrice = event.args.gasPrice;
+      const gasCost = event.args.gasCost;
+      const fee = event.args.fee;
+      // console.log("Gas used:", gasUsed.toString());
+      // console.log("Gas price:", gasPrice.toString());
+      // console.log("Gas cost (total):", gasCost.toString());
+      // console.log("Fee:", fee.toString());
+      const contractGasUsed = gasUsed - gasBuffer;
+      // console.log("Contract gas used:", contractGasUsed.toString());
+      const contractTxCost = contractGasUsed * gasPrice;
+      // console.log("Contract tx cost:", contractTxCost.toString());
+      const feeCharged = ((fee / contractTxCost) * 100).toString() + "%";
+      expect(feeCharged).to.equal("70%");
+      // console.log("Fee charged:", feeCharged);
 
       const contractBalanceAfter = await AUTO_LOOP.balance(SAMPLE_GAME.address);
-      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
-      const gasCost = gasUsed * gasPrice;
-      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
-      const totalCost = gasCost + fee;
-
-      expect(contractBalanceAfter).to.equal(contractBalanceBefore - totalCost);
+      expect(Number(contractBalanceAfter)).to.equal(
+        Number(contractBalanceBefore) - Number(gasCost)
+      );
+      // console.log("ALCC balance after:", contractBalanceAfter.toString());
     });
 
-    it("controller is compensated for cost of tx", async function () {
+    it("controller receives exact refund for gas + fee", async function () {
+      // do something to move hh onto next block
+      let gasBuffer = await AUTO_LOOP.gasBuffer();
+      tx = await AUTO_LOOP.setGasBuffer(gasBuffer);
+      await tx.wait();
+
       const controllerBalanceBefore = await ethers.provider.getBalance(
         CONTROLLER
       );
-      const startGas = 1;
-      const gasPrice = 1;
+      console.log("Controller balance before:", controllerBalanceBefore);
+      const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
 
-      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
-      await AUTO_LOOP.progressLoop(SAMPLE_GAME.address, []);
+      const _gasPrice = "20000000000"; //20 gwei
+
+      tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData,
+        {
+          gasPrice: _gasPrice
+        }
+      );
+      receipt = await tx.wait();
+      const actualGasUsed = receipt.gasUsed;
+
+      // get latest AutoLoopProgressed event from AUTO_LOOP
+      const events = await AUTO_LOOP.queryFilter(
+        AUTO_LOOP.filters.AutoLoopProgressed()
+      );
+      expect(events.length).to.equal(3);
+      const event = events[events.length - 1];
+      const gasUsed = event.args.gasUsed;
+      const fee = event.args.fee;
 
       const controllerBalanceAfter = await ethers.provider.getBalance(
         CONTROLLER
       );
-      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
-      const gasCost = gasUsed * gasPrice;
-      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
-      const controllerFee = (fee * AUTO_LOOP.CONTROLLER_FEE_PORTION) / 100;
-      const totalCost = gasCost + controllerFee;
 
-      expect(controllerBalanceAfter).to.equal(
-        controllerBalanceBefore + totalCost
+      // check on-chain gas used is correct
+      // console.log("Gas reported:", gasUsed.toString());
+      // console.log("Actual gas used:", actualGasUsed);
+      // console.log("Difference:", actualGasUsed - gasUsed);
+      expect(gasUsed).to.equal(actualGasUsed);
+
+      // check that gas has been refunded
+      // console.log("Controller balance after:", controllerBalanceAfter);
+      expect(controllerBalanceAfter).to.be.greaterThanOrEqual(
+        controllerBalanceBefore
       );
-    });
 
-    it("controller receives refund for gas + fee", async function () {
-      const controllerBalanceBefore = await ethers.provider.getBalance(
-        CONTROLLER
-      );
-      const startGas = 1;
-      const gasPrice = 1;
-
-      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
-      await AUTO_LOOP.progressLoop(SAMPLE_GAME.address, []);
-
-      const controllerBalanceAfter = await ethers.provider.getBalance(
-        CONTROLLER
-      );
-      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
-      const gasCost = gasUsed * gasPrice;
-      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
-      const controllerFee = (fee * AUTO_LOOP.CONTROLLER_FEE_PORTION) / 100;
-      const totalRefund = gasCost + controllerFee;
-
-      expect(controllerBalanceAfter).to.equal(
-        controllerBalanceBefore + totalRefund
-      );
+      // check that correct fee has been received
+      const txProfit = controllerBalanceAfter - controllerBalanceBefore;
+      const feeReceived = Math.floor((txProfit / fee) * 100).toString() + "%";
+      // console.log("Fee received:", feeReceived);
+      expect(feeReceived).to.equal("40%");
     });
 
     it("protocol receives fee from each tx", async function () {
-      const protocolBalanceBefore = await AUTO_LOOP._protocolBalance();
-      const startGas = 1;
-      const gasPrice = 1;
+      // do something to move hh onto next block
+      let gasBuffer = await AUTO_LOOP.gasBuffer();
+      tx = await AUTO_LOOP.setGasBuffer(gasBuffer);
+      await tx.wait();
 
-      // emulate a transaction to progressLoop() which would be normally called by a CONTROLLER
-      await AUTO_LOOP.progressLoop(SAMPLE_GAME.address, []);
+      const protocolBalanceBefore = await AUTO_LOOP.protocolBalance();
+      const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
 
-      const protocolBalanceAfter = await AUTO_LOOP._protocolBalance();
-      const gasUsed = startGas + AUTO_LOOP.gasBuffer();
-      const gasCost = gasUsed * gasPrice;
-      const fee = (gasCost * AUTO_LOOP.baseFee()) / 100;
-      const protocolFee = (fee * AUTO_LOOP.PROTOCOL_FEE_PORTION) / 100;
+      const _gasPrice = "20000000000"; //20 gwei
 
-      expect(protocolBalanceAfter).to.equal(
-        protocolBalanceBefore + protocolFee
+      tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData,
+        {
+          gasPrice: _gasPrice
+        }
       );
+      receipt = await tx.wait();
+
+      const protocolBalanceAfter = await AUTO_LOOP.protocolBalance();
+
+      const protocolProfit = protocolBalanceAfter - protocolBalanceBefore;
+
+      const events = await AUTO_LOOP.queryFilter(
+        AUTO_LOOP.filters.AutoLoopProgressed()
+      );
+      expect(events.length).to.equal(4);
+      const event = events[events.length - 1];
+      const fee = event.args.fee;
+
+      const feeReceived =
+        Math.floor((protocolProfit / fee) * 100).toString() + "%";
+      // console.log("Fee received:", feeReceived);
+      expect(feeReceived).to.equal("60%");
     });
   });
 });
