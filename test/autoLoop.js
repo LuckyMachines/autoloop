@@ -138,7 +138,13 @@ describe("Auto Loop", function () {
       );
       expect(canRegister).to.equal(true);
 
-      tx = await registrarViaController.registerController();
+      await expect(
+        registrarViaController.registerController()
+      ).to.be.revertedWith("Insufficient registration fee");
+
+      tx = await registrarViaController.registerController({
+        value: ethers.utils.parseEther("0.0001")
+      });
       await tx.wait();
       isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredController(
         CONTROLLER

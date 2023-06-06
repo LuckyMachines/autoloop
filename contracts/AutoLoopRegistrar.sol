@@ -5,7 +5,7 @@ import "./AutoLoopRegistry.sol";
 import "./AutoLoop.sol";
 import "./AutoLoopCompatible.sol";
 
-contract AutoLoopRegistrar is AutoLoopRoles {
+contract AutoLoopRegistrar is AutoLoopRoles, ReentrancyGuard {
     AutoLoop AUTO_LOOP;
     AutoLoopRegistry REGISTRY;
 
@@ -32,7 +32,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
 
     function requestRefund(address toAddress) external {
         // controller or contract
-        AUTO_LOOP.requestRefund(msg.sender, toAddress);
+        AUTO_LOOP.requestRefund(_msgSender(), toAddress);
     }
 
     function requestRefundFor(
@@ -40,7 +40,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         address toAddress
     ) external {
         require(
-            _isAdmin(msg.sender, registeredContract),
+            _isAdmin(_msgSender(), registeredContract),
             "Cannot request refund. Caller is not admin on contract."
         );
         AUTO_LOOP.requestRefund(registeredContract, toAddress);
@@ -51,7 +51,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         address newAdminAddress
     ) external {
         require(
-            _isAdmin(msg.sender, autoLoopCompatibleContract),
+            _isAdmin(_msgSender(), autoLoopCompatibleContract),
             "Cannot set gas, caller is not admin on contract"
         );
         REGISTRY.setNewAdmin(autoLoopCompatibleContract, newAdminAddress);
@@ -59,10 +59,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
 
     function setMaxGas(uint256 maxGasPerUpdate) external {
         require(
-            REGISTRY.isRegisteredAutoLoop(msg.sender),
+            REGISTRY.isRegisteredAutoLoop(_msgSender()),
             "cannot set max gas on unregistered contract"
         );
-        AUTO_LOOP.setMaxGas(msg.sender, maxGasPerUpdate);
+        AUTO_LOOP.setMaxGas(_msgSender(), maxGasPerUpdate);
     }
 
     function setMaxGasFor(
@@ -70,7 +70,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         uint256 maxGasPerUpdate
     ) external {
         require(
-            _isAdmin(msg.sender, registeredContract),
+            _isAdmin(_msgSender(), registeredContract),
             "Cannot set gas, caller is not admin on contract"
         );
         require(
@@ -129,14 +129,12 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      * @notice AutoLoop compatible contract registers itself. ACCs can have multiple admins, admin at 0 is indexed.
      * @return success - whether the registration was successful or not
      */
-    function registerAutoLoop() external returns (bool success) {
-        // pass msg.sender as both arguments since it is both registrant and contract being registered
-        if (canRegisterAutoLoop(msg.sender, msg.sender)) {
-            address adminAddress = AutoLoopCompatible(msg.sender).getRoleMember(
-                DEFAULT_ADMIN_ROLE,
-                0
-            );
-            _registerAutoLoop(msg.sender, adminAddress);
+    function registerAutoLoop() external nonReentrant returns (bool success) {
+        // pass _msgSender() as both arguments since it is both registrant and contract being registered
+        if (canRegisterAutoLoop(_msgSender(), _msgSender())) {
+            address adminAddress = AutoLoopCompatible(_msgSender())
+                .getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+            _registerAutoLoop(_msgSender(), adminAddress);
             success = true;
         }
     }
@@ -150,8 +148,8 @@ contract AutoLoopRegistrar is AutoLoopRoles {
         address autoLoopCompatibleContract,
         uint256 maxGasPerUpdate
     ) external payable returns (bool success) {
-        if (canRegisterAutoLoop(msg.sender, autoLoopCompatibleContract)) {
-            _registerAutoLoop(autoLoopCompatibleContract, msg.sender);
+        if (canRegisterAutoLoop(_msgSender(), autoLoopCompatibleContract)) {
+            _registerAutoLoop(autoLoopCompatibleContract, _msgSender());
             if (msg.value > 0) {
                 AUTO_LOOP.deposit{value: msg.value}(autoLoopCompatibleContract);
             }
@@ -169,9 +167,15 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      * @notice register an AutoLoop controller
      * @return success - whether or not the controller was registered
      */
-    function registerController() external returns (bool success) {
-        if (canRegisterController(msg.sender)) {
-            _registerController(msg.sender);
+    function registerController() external payable returns (bool success) {
+        require(msg.value > 0, "Insufficient registration fee");
+        if (canRegisterController(_msgSender())) {
+            (bool sent, ) = _msgSender().call{value: msg.value}("");
+            require(
+                sent,
+                "Registration failed. Controller unable to receive funds."
+            );
+            _registerController(_msgSender());
             success = true;
         }
     }
@@ -181,10 +185,10 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      */
     function claimAutoLoop(address autoLoopCompatibleContract) external {
         require(
-            _isAdmin(msg.sender, autoLoopCompatibleContract),
+            _isAdmin(_msgSender(), autoLoopCompatibleContract),
             "Cannot claim contract. Sender is not admin"
         );
-        REGISTRY.setNewAdmin(autoLoopCompatibleContract, msg.sender);
+        REGISTRY.setNewAdmin(autoLoopCompatibleContract, _msgSender());
     }
 
     /**
@@ -192,7 +196,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      * @return success - whether the unregistration was successful or not
      */
     function deregisterAutoLoop() external returns (bool success) {
-        _deregisterAutoLoop(msg.sender);
+        _deregisterAutoLoop(_msgSender());
         success = true;
     }
 
@@ -204,7 +208,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
     function deregisterAutoLoopFor(
         address autoLoopCompatibleContract
     ) external returns (bool success) {
-        if (_isAdmin(msg.sender, autoLoopCompatibleContract)) {
+        if (_isAdmin(_msgSender(), autoLoopCompatibleContract)) {
             _deregisterAutoLoop(autoLoopCompatibleContract);
             success = true;
         }
@@ -214,7 +218,7 @@ contract AutoLoopRegistrar is AutoLoopRoles {
      * @notice uregister an AutoLoop controller
      */
     function deregisterController() external {
-        _deregisterController(msg.sender);
+        _deregisterController(_msgSender());
     }
 
     // internal
