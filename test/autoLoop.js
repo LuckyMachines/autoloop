@@ -3,8 +3,36 @@ const { ethers } = require("hardhat");
 const fs = require("fs");
 const exp = require("constants");
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function setManualMining() {
+  await network.provider.request({
+    method: "evm_setAutomine",
+    params: [false]
+  });
+  // set interval to 0 to prevent auto mining
+  await network.provider.request({
+    method: "evm_setIntervalMining",
+    params: [0]
+  });
+}
+
+async function setAutoMining() {
+  await network.provider.request({
+    method: "evm_setAutomine",
+    params: [true]
+  });
+}
+
+async function mineBlock() {
+  await network.provider.request({
+    method: "evm_mine",
+    params: []
+  });
+}
+
+async function quickMineBlock() {
+  await setManualMining();
+  await mineBlock();
+  await setAutoMining();
 }
 
 describe("Auto Loop", function () {
@@ -15,10 +43,13 @@ describe("Auto Loop", function () {
   let CONTROLLER_SIGNER;
   let ADMIN_2;
   let ADMIN_2_SIGNER;
+  let CONTROLLER_2;
+  let CONTROLLER_2_SIGNER;
 
   // Contract Factories
   let AUTO_LOOP;
   let AUTO_LOOP_VIA_CONTROLLER;
+  let AUTO_LOOP_VIA_CONTROLLER_2;
   let AUTO_LOOP_REGISTRY;
   let AUTO_LOOP_REGISTRAR;
   let SAMPLE_GAME; // ADMIN's game
@@ -44,6 +75,8 @@ describe("Auto Loop", function () {
     CONTROLLER_SIGNER = ethers.provider.getSigner(ACCOUNTS[1]);
     ADMIN_2 = ACCOUNTS[2];
     ADMIN_2_SIGNER = ethers.provider.getSigner(ACCOUNTS[2]);
+    CONTROLLER_2 = ACCOUNTS[3];
+    CONTROLLER_2_SIGNER = ethers.provider.getSigner(ACCOUNTS[3]);
 
     Game = await hre.ethers.getContractFactory("NumberGoUp");
 
@@ -130,6 +163,11 @@ describe("Auto Loop", function () {
         registrarArtifact.abi,
         CONTROLLER_SIGNER
       );
+      const registrarViaController2 = new ethers.Contract(
+        AUTO_LOOP_REGISTRAR.address,
+        registrarArtifact.abi,
+        CONTROLLER_2_SIGNER
+      );
       let isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredController(
         CONTROLLER
       );
@@ -153,7 +191,17 @@ describe("Auto Loop", function () {
       );
       expect(isRegistered).to.equal(true);
 
+      tx = await registrarViaController2.registerController({
+        value: ethers.utils.parseEther("0.0001")
+      });
+      await tx.wait();
+      isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredController(
+        CONTROLLER_2
+      );
+      expect(isRegistered).to.equal(true);
+
       AUTO_LOOP_VIA_CONTROLLER = AUTO_LOOP.connect(CONTROLLER_SIGNER);
+      AUTO_LOOP_VIA_CONTROLLER_2 = AUTO_LOOP.connect(CONTROLLER_2_SIGNER);
     });
     it("Safe transfers ALCC", async function () {
       const updateInterval = 0;
@@ -185,6 +233,18 @@ describe("Auto Loop", function () {
         SAMPLE_GAME_2.address
       );
       expect(canRegister).to.equal(false);
+
+      // register sg2 via admin2
+      const registrarViaAdmin2 = AUTO_LOOP_REGISTRAR.connect(ADMIN_2_SIGNER);
+      tx = await registrarViaAdmin2.registerAutoLoopFor(
+        SAMPLE_GAME_2.address,
+        "2000000"
+      );
+      await tx.wait();
+      let isRegistered = await AUTO_LOOP_REGISTRY.isRegisteredAutoLoop(
+        SAMPLE_GAME_2.address
+      );
+      expect(isRegistered).to.equal(true);
     });
     it("Returns list of all registered contracts", async function () {
       tx = await AUTO_LOOP_REGISTRAR.registerAutoLoopFor(
@@ -228,16 +288,21 @@ describe("Auto Loop", function () {
       const contractBalanceBefore = await AUTO_LOOP.balance(
         SAMPLE_GAME.address
       );
-      await AUTO_LOOP_REGISTRAR.deposit(SAMPLE_GAME.address, {
+      tx = await AUTO_LOOP_REGISTRAR.deposit(SAMPLE_GAME.address, {
         value: ethers.utils.parseEther("1.0")
       });
+      await tx.wait();
+      tx = await AUTO_LOOP_REGISTRAR.deposit(SAMPLE_GAME_2.address, {
+        value: ethers.utils.parseEther("1.0")
+      });
+      await tx.wait();
       const contractBalanceAfter = await AUTO_LOOP.balance(SAMPLE_GAME.address);
       expect(contractBalanceAfter).to.equal(ethers.utils.parseEther("1.0"));
       // check balance of AUTO_LOOP is correct
       const autoLoopBalance = await ethers.provider.getBalance(
         AUTO_LOOP.address
       );
-      expect(autoLoopBalance).to.equal(contractBalanceAfter);
+      expect(autoLoopBalance).to.equal(ethers.utils.parseEther("2.0"));
     });
     it("Controller can progress loop", async function () {
       let initialNumber = await SAMPLE_GAME.number();
@@ -265,10 +330,7 @@ describe("Auto Loop", function () {
       expect(finalNumber).to.equal(initialNumber + 1);
     });
     it("charges autoloop compatible contract correctly", async function () {
-      // do something to move hh onto next block
-      let gasBuffer = await AUTO_LOOP.gasBuffer();
-      tx = await AUTO_LOOP.setGasBuffer(gasBuffer);
-      await tx.wait();
+      await quickMineBlock();
 
       const contractBalanceBefore = await AUTO_LOOP.balance(
         SAMPLE_GAME.address
@@ -284,6 +346,7 @@ describe("Auto Loop", function () {
           gasPrice: GAS_PRICE
         }
       );
+
       receipt = await tx.wait();
 
       // get latest AutoLoopProgressed event from AUTO_LOOP
@@ -311,6 +374,7 @@ describe("Auto Loop", function () {
       // console.log("Gas price:", gasPrice.toString());
       // console.log("Gas cost (total):", gasCost.toString());
       // console.log("Fee:", fee.toString());
+      const gasBuffer = await AUTO_LOOP.gasBuffer();
       const contractGasUsed = gasUsed - gasBuffer;
       // console.log("Contract gas used:", contractGasUsed.toString());
       const contractTxCost = contractGasUsed * gasPrice;
@@ -327,10 +391,7 @@ describe("Auto Loop", function () {
     });
 
     it("controller receives exact refund for gas + fee", async function () {
-      // do something to move hh onto next block
-      let gasBuffer = await AUTO_LOOP.gasBuffer();
-      tx = await AUTO_LOOP.setGasBuffer(gasBuffer);
-      await tx.wait();
+      await quickMineBlock();
 
       const controllerBalanceBefore = await ethers.provider.getBalance(
         CONTROLLER
@@ -382,10 +443,7 @@ describe("Auto Loop", function () {
     });
 
     it("protocol receives fee from each tx", async function () {
-      // do something to move hh onto next block
-      let gasBuffer = await AUTO_LOOP.gasBuffer();
-      tx = await AUTO_LOOP.setGasBuffer(gasBuffer);
-      await tx.wait();
+      await quickMineBlock();
 
       const protocolBalanceBefore = await AUTO_LOOP.protocolBalance();
       const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
@@ -418,7 +476,69 @@ describe("Auto Loop", function () {
     });
 
     // many workers, few updates
-    it("can't update same contract twice in one block", async function () {});
+    it("can't update same contract twice in one block", async function () {
+      await quickMineBlock();
+
+      await setManualMining();
+      let shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
+
+      let shouldProgress2 = await SAMPLE_GAME_2.shouldProgressLoop();
+      expect(shouldProgress2.loopIsReady).to.equal(true);
+
+      // console.log("sp1", shouldProgress.progressWithData);
+      // console.log("sp2", shouldProgress2.progressWithData);
+
+      tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData,
+        {
+          gasPrice: GAS_PRICE
+        }
+      );
+
+      let tx2 = await AUTO_LOOP_VIA_CONTROLLER_2.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData,
+        {
+          gasPrice: GAS_PRICE
+        }
+      );
+      await mineBlock();
+      await tx.wait();
+      await expect(tx2).to.be.reverted;
+
+      await mineBlock();
+
+      shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
+      expect(shouldProgress.loopIsReady).to.equal(true);
+
+      shouldProgress2 = await SAMPLE_GAME_2.shouldProgressLoop();
+      expect(shouldProgress2.loopIsReady).to.equal(true);
+
+      // console.log("sp1", shouldProgress.progressWithData);
+      // console.log("sp2", shouldProgress2.progressWithData);
+
+      tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+        SAMPLE_GAME.address,
+        shouldProgress.progressWithData,
+        {
+          gasPrice: GAS_PRICE
+        }
+      );
+
+      tx2 = await AUTO_LOOP_VIA_CONTROLLER_2.progressLoop(
+        SAMPLE_GAME_2.address,
+        shouldProgress2.progressWithData,
+        {
+          gasPrice: GAS_PRICE
+        }
+      );
+
+      await mineBlock();
+      await tx.wait();
+      await expect(tx2.wait()).to.not.be.reverted;
+    });
 
     // many updates, few workers
     it("returns needy contracts first", async function () {});
