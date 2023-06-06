@@ -80,6 +80,29 @@ contract AutoLoopRegistrar is AutoLoopRoles, ReentrancyGuard {
         AUTO_LOOP.setMaxGas(registeredContract, maxGasPerUpdate);
     }
 
+    function setMaxGasPrice(uint256 maxGasPricePerUpdate) external {
+        require(
+            REGISTRY.isRegisteredAutoLoop(_msgSender()),
+            "cannot set max gas price on unregistered contract"
+        );
+        AUTO_LOOP.setMaxGasPrice(_msgSender(), maxGasPricePerUpdate);
+    }
+
+    function setMaxGasPriceFor(
+        address registeredContract,
+        uint256 maxGasPricePerUpdate
+    ) external {
+        require(
+            _isAdmin(_msgSender(), registeredContract),
+            "Cannot set gas price, caller is not admin on contract"
+        );
+        require(
+            REGISTRY.isRegisteredAutoLoop(registeredContract),
+            "cannot set max gas price on unregistered contract"
+        );
+        AUTO_LOOP.setMaxGasPrice(registeredContract, maxGasPricePerUpdate);
+    }
+
     /**
      * @notice check if a contract can be registered
      * @param registrantAddress the address that will register the contract (address of the contract if self-registering)

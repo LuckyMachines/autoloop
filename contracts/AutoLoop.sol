@@ -3,7 +3,8 @@ pragma solidity ^0.8.7;
 
 import "./AutoLoopRoles.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
+
+// import "hardhat/console.sol";
 
 contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     event AutoLoopProgressed(
@@ -24,11 +25,13 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     uint256 PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
     uint256 CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
     uint256 MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 GAS_BUFFER = 77_255; // gas required to run transaction outside of contract update
+    uint256 MAX_GAS_PRICE = 40_000_000_000_000; // 40 gwei, default if no personal max set
+    uint256 GAS_BUFFER = 81_611; // gas required to run transaction outside of contract update
     uint256 GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
+    mapping(address => uint256) public maxGasPrice; // max gas price a user is willing to spend on tx (in wei)
 
     mapping(address => mapping(uint256 => bool)) _hadUpdate; // mapping of contract address to block number to bool
 
@@ -59,6 +62,18 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         }
     }
 
+    function maxGasPriceDefault() public view returns (uint256) {
+        return MAX_GAS_PRICE;
+    }
+
+    function maxGasPriceFor(address userAddress) public view returns (uint256) {
+        if (maxGasPrice[userAddress] == 0) {
+            return MAX_GAS_PRICE;
+        } else {
+            return maxGasPrice[userAddress];
+        }
+    }
+
     function protocolBalance() public view returns (uint256) {
         return _protocolBalance;
     }
@@ -76,6 +91,10 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         require(
             !(_hadUpdate[contractAddress][block.number]),
             "Contract already updated this block"
+        );
+        require(
+            tx.gasprice <= maxGasPriceFor(contractAddress),
+            "Gas price too high"
         );
         uint256 startGas = gasleft();
         // progress loop on contract
@@ -153,6 +172,13 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
             : maxGasAmount;
     }
 
+    function setMaxGasPrice(
+        address registerdUser,
+        uint256 maxGasPriceAmount
+    ) external onlyRole(REGISTRAR_ROLE) {
+        maxGasPrice[registerdUser] = maxGasPriceAmount;
+    }
+
     // ADMIN //
     function setControllerFeePortion(
         uint256 controllerFeePercentage
@@ -180,6 +206,12 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         uint256 maxGasDefaultValue
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         MAX_GAS = maxGasDefaultValue;
+    }
+
+    function setMaxGasPriceDefault(
+        uint256 maxGasPriceDefaultValue
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        MAX_GAS_PRICE = maxGasPriceDefaultValue;
     }
 
     function setGasBuffer(

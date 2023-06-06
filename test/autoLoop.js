@@ -29,6 +29,8 @@ describe("Auto Loop", function () {
   let REGISTRY_ROLE;
   let REGISTRAR_ROLE;
 
+  let GAS_PRICE = 20000000000; // 20 gwei
+
   let Game;
 
   before(async function () {
@@ -213,7 +215,10 @@ describe("Auto Loop", function () {
       await expect(
         AUTO_LOOP_VIA_CONTROLLER.progressLoop(
           SAMPLE_GAME.address,
-          shouldProgress.progressWithData
+          shouldProgress.progressWithData,
+          {
+            gasPrice: GAS_PRICE
+          }
         )
       ).to.be.revertedWith(
         "AutoLoop compatible contract balance too low to run update + fee."
@@ -238,9 +243,23 @@ describe("Auto Loop", function () {
       let initialNumber = await SAMPLE_GAME.number();
       const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
       expect(shouldProgress.loopIsReady).to.equal(true);
+      // test for progressWithData with gas over 40k gwei, should be reverted
+      await expect(
+        AUTO_LOOP_VIA_CONTROLLER.progressLoop(
+          SAMPLE_GAME.address,
+          shouldProgress.progressWithData,
+          {
+            gasPrice: ethers.utils.parseUnits("41000", "gwei")
+          }
+        )
+      ).to.be.revertedWith("Gas price too high");
+
       await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
         SAMPLE_GAME.address,
-        shouldProgress.progressWithData
+        shouldProgress.progressWithData,
+        {
+          gasPrice: GAS_PRICE
+        }
       );
       let finalNumber = await SAMPLE_GAME.number();
       expect(finalNumber).to.equal(initialNumber + 1);
@@ -255,7 +274,6 @@ describe("Auto Loop", function () {
         SAMPLE_GAME.address
       );
       // console.log("ALCC balance before:", contractBalanceBefore.toString());
-      const _gasPrice = "20000000000"; //20 gwei
       const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
       expect(shouldProgress.loopIsReady).to.equal(true);
 
@@ -263,7 +281,7 @@ describe("Auto Loop", function () {
         SAMPLE_GAME.address,
         shouldProgress.progressWithData,
         {
-          gasPrice: _gasPrice
+          gasPrice: GAS_PRICE
         }
       );
       receipt = await tx.wait();
@@ -321,13 +339,11 @@ describe("Auto Loop", function () {
       const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
       expect(shouldProgress.loopIsReady).to.equal(true);
 
-      const _gasPrice = "20000000000"; //20 gwei
-
       tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
         SAMPLE_GAME.address,
         shouldProgress.progressWithData,
         {
-          gasPrice: _gasPrice
+          gasPrice: GAS_PRICE
         }
       );
       receipt = await tx.wait();
@@ -375,13 +391,11 @@ describe("Auto Loop", function () {
       const shouldProgress = await SAMPLE_GAME.shouldProgressLoop();
       expect(shouldProgress.loopIsReady).to.equal(true);
 
-      const _gasPrice = "20000000000"; //20 gwei
-
       tx = await AUTO_LOOP_VIA_CONTROLLER.progressLoop(
         SAMPLE_GAME.address,
         shouldProgress.progressWithData,
         {
-          gasPrice: _gasPrice
+          gasPrice: GAS_PRICE
         }
       );
       receipt = await tx.wait();
@@ -402,5 +416,11 @@ describe("Auto Loop", function () {
       // console.log("Fee received:", feeReceived);
       expect(feeReceived).to.equal("60%");
     });
+
+    // many workers, few updates
+    it("can't update same contract twice in one block", async function () {});
+
+    // many updates, few workers
+    it("returns needy contracts first", async function () {});
   });
 });
