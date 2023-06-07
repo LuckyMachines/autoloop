@@ -541,6 +541,6 @@ describe("Auto Loop", function () {
     });
 
     // many updates, few workers
-    it("returns needy contracts first", async function () {});
+    // it("returns needy contracts first", async function () {});
   });
 });
