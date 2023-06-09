@@ -25,7 +25,7 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     uint256 PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
     uint256 CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
     uint256 MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 MAX_GAS_PRICE = 40_000_000_000_000; // 40 gwei, default if no personal max set
+    uint256 MAX_GAS_PRICE = 40_000_000_000_000; // 40k gwei, default if no personal max set
     uint256 GAS_BUFFER = 81_611; // gas required to run transaction outside of contract update
     uint256 GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
 
