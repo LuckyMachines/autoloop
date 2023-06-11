@@ -4,8 +4,10 @@ pragma solidity ^0.8.7;
 import "./AutoLoopRegistry.sol";
 import "./AutoLoop.sol";
 import "./AutoLoopCompatible.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 contract AutoLoopRegistrar is AutoLoopRoles, ReentrancyGuard {
+    using ERC165Checker for address;
     AutoLoop AUTO_LOOP;
     AutoLoopRegistry REGISTRY;
 
@@ -116,6 +118,16 @@ contract AutoLoopRegistrar is AutoLoopRoles, ReentrancyGuard {
         // some logic to determine if address can register
         if (registrantAddress == address(0)) {
             // zero address can't register
+            return false;
+        } else if (
+            !autoLoopCompatibleContract.supportsInterface(
+                type(AutoLoopCompatibleInterface).interfaceId
+            ) ||
+            !autoLoopCompatibleContract.supportsInterface(
+                type(IAccessControlEnumerable).interfaceId
+            )
+        ) {
+            // contract doesn't support AutoLoopCompatibleInterface or AccessControlEnumerable
             return false;
         } else if (REGISTRY.isRegisteredAutoLoop(autoLoopCompatibleContract)) {
             // already registered

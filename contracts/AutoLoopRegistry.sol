@@ -160,8 +160,11 @@ contract AutoLoopRegistry is AutoLoopRoles {
                 _registeredAutoLoops[registeredLoops[i]]
             );
             if (
-                compatibleContract.hasRole(DEFAULT_ADMIN_ROLE, adminAddress) &&
-                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]
+                compatibleContract.hasRole(
+                    DEFAULT_ADMIN_ROLE,
+                    adminAddress
+                ) /* &&
+                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]*/
             ) {
                 ++totalRegistrations;
             }
@@ -173,8 +176,11 @@ contract AutoLoopRegistry is AutoLoopRoles {
                 _registeredAutoLoops[registeredLoops[i]]
             );
             if (
-                compatibleContract.hasRole(DEFAULT_ADMIN_ROLE, adminAddress) &&
-                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]
+                compatibleContract.hasRole(
+                    DEFAULT_ADMIN_ROLE,
+                    adminAddress
+                ) /*&&
+                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]*/
             ) {
                 autoLoops[outputIndex] = _registeredAutoLoops[
                     registeredLoops[i]

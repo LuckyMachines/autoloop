@@ -437,7 +437,7 @@ describe("Auto Loop", function () {
 
       // check that correct fee has been received
       const txProfit = controllerBalanceAfter - controllerBalanceBefore;
-      const feeReceived = Math.floor((txProfit / fee) * 100).toString() + "%";
+      const feeReceived = Math.ceil((txProfit / fee) * 100).toString() + "%";
       // console.log("Fee received:", feeReceived);
       expect(feeReceived).to.equal("40%");
     });

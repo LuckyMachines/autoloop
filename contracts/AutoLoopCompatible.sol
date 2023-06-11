@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 import "./AutoLoopCompatibleInterface.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
@@ -57,5 +57,15 @@ abstract contract AutoLoopCompatible is
         );
         adminTransferRequest = address(0);
         adminTransferRequestOrigin = address(0);
+    }
+
+    // ERC165 Support
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override returns (bool) {
+        return
+            interfaceId == type(IAccessControlEnumerable).interfaceId ||
+            interfaceId == type(AutoLoopCompatibleInterface).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }
