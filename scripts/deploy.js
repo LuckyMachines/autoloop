@@ -1,6 +1,7 @@
 const hre = require("hardhat");
 const fs = require("fs");
 require("dotenv").config();
+const deployments = require("../deployments.json");
 
 class Deployment {
   constructor(deploymentJSON) {
@@ -25,7 +26,7 @@ class Deployment {
 }
 
 async function main() {
-  const deployment = new Deployment();
+  const deployment = new Deployment(deployments);
 
   let autoLoop;
   let autoLoopRegistry;
