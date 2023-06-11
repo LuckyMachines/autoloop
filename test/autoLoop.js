@@ -133,6 +133,13 @@ describe("Auto Loop", function () {
       );
       expect(hasRegistrarRole).to.equal(true);
     });
+    it("Doesn't register non-AutoLoop compatible interface", async function () {
+      const canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
+        ADMIN,
+        ADMIN
+      );
+      expect(canRegister).to.equal(false);
+    });
     it("Registers AutoLoop compatible interface", async function () {
       const updateInterval = 0;
       SAMPLE_GAME = await Game.deploy(updateInterval);
@@ -207,7 +214,7 @@ describe("Auto Loop", function () {
       const updateInterval = 0;
       SAMPLE_GAME_2 = await Game.deploy(updateInterval);
       await SAMPLE_GAME_2.deployed();
-      console.log("Admin2 address:", ADMIN_2);
+      // console.log("Admin2 address:", ADMIN_2);
       tx = await SAMPLE_GAME_2.safeTransferAdmin(ADMIN_2);
       await tx.wait();
       let canRegister = await AUTO_LOOP_REGISTRAR.canRegisterAutoLoop(
