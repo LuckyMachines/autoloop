@@ -42,6 +42,7 @@
     "register-sample": "npx hardhat run scripts/register-sample-game.js --network",
     "deregister-sample": "npx hardhat run scripts/deregister-sample-game.js --network",
     "sample-info": "npx hardhat run scripts/sample-game-info.js --network",
+    "update-gas-buffer": "npx hardhat run scripts/update-gas-buffer.js --network",
     "test": "npx hardhat test"
   },
   "repository": {
