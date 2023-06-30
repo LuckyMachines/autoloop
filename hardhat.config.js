@@ -59,5 +59,8 @@ module.exports = {
       "AutoLoopRoles.sol",
       "NumberGoUp.sol"
     ]
+  },
+  mocha: {
+    timeout: 100000
   }
 };

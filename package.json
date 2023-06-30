@@ -64,6 +64,7 @@
   "homepage": "https://github.com/LuckyMachines/autoloop#readme",
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.1",
+    "@openzeppelin/contracts-upgradeable": "^4.9.2",
     "inquirer": "^8.0.0"
   }
 }
