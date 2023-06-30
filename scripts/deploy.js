@@ -61,7 +61,9 @@ async function main() {
     // deploy AutoLoop
     console.log("Deploying Auto Loop...");
     // autoLoop = await AutoLoop.deploy();
-    autoLoop = await upgrades.deployProxy(AutoLoop, ["0.1.0"]);
+    autoLoop = await upgrades.deployProxy(AutoLoop, ["0.1.0"], {
+      initializer: "initialize(string)"
+    });
     await autoLoop.deployed();
     console.log("Auto Loop deployed to", autoLoop.address);
     deployment.deployments[network.name].AUTO_LOOP = autoLoop.address;
@@ -77,9 +79,13 @@ async function main() {
   if (!deployment.deployments[network.name].AUTO_LOOP_REGISTRY) {
     // deploy AutoLoopRegistry
     // autoLoopRegistry = await AutoLoopRegistry.deploy(registryAdminAddress);
-    autoLoopRegistry = await upgrades.deployProxy(AutoLoopRegistry, [
-      registryAdminAddress
-    ]);
+    autoLoopRegistry = await upgrades.deployProxy(
+      AutoLoopRegistry,
+      [registryAdminAddress],
+      {
+        initializer: "initialize()"
+      }
+    );
     await autoLoopRegistry.deployed();
     console.log("Registry deployed to", autoLoopRegistry.address);
     deployment.deployments[network.name].AUTO_LOOP_REGISTRY =
@@ -102,11 +108,13 @@ async function main() {
     //   autoLoopRegistry.address,
     //   registrarAdminAddress
     // );
-    autoLoopRegistrar = await upgrades.deployProxy(AutoLoopRegistrar, [
-      autoLoop.address,
-      autoLoopRegistry.address,
-      registrarAdminAddress
-    ]);
+    autoLoopRegistrar = await upgrades.deployProxy(
+      AutoLoopRegistrar,
+      [autoLoop.address, autoLoopRegistry.address, registrarAdminAddress],
+      {
+        initializer: "initialize(address,address,address)"
+      }
+    );
     await autoLoopRegistrar.deployed();
     console.log("Registrar deployed to", autoLoopRegistrar.address);
     deployment.deployments[network.name].AUTO_LOOP_REGISTRAR =
