@@ -83,7 +83,7 @@ async function main() {
       AutoLoopRegistry,
       [registryAdminAddress],
       {
-        initializer: "initialize()"
+        initializer: "initialize(address)"
       }
     );
     await autoLoopRegistry.deployed();

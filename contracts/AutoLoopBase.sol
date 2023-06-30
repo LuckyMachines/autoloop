@@ -17,7 +17,6 @@ contract AutoLoopBase is
     function initialize() public virtual onlyInitializing {
         __AccessControlEnumerable_init();
         __ReentrancyGuard_init();
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     // Admin

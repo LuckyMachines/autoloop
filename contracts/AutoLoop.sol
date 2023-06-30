@@ -37,6 +37,7 @@ contract AutoLoop is AutoLoopBase {
     string public version;
 
     function initialize(string memory _version) public initializer {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         AutoLoopBase.initialize();
         version = _version;
         BASE_FEE = 70; // percentage of gas cost used

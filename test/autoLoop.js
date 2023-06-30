@@ -98,9 +98,9 @@ describe("Auto Loop", function () {
     console.log("Auto Loop deployed to", AUTO_LOOP.address);
 
     // AutoLoopRegistry
-    // AUTO_LOOP_REGISTRY = await AutoLoopRegistry.deploy();
-    AUTO_LOOP_REGISTRY = await upgrades.deployProxy(AutoLoopRegistry, [], {
-      initializer: "initialize()"
+    // AUTO_LOOP_REGISTRY = await AutoLoopRegistry.deploy(ADMIN);
+    AUTO_LOOP_REGISTRY = await upgrades.deployProxy(AutoLoopRegistry, [ADMIN], {
+      initializer: "initialize(address)"
     });
     await AUTO_LOOP_REGISTRY.deployed();
     console.log("Registry deployed to", AUTO_LOOP_REGISTRY.address);
@@ -462,7 +462,7 @@ describe("Auto Loop", function () {
 
       // check that correct fee has been received
       const txProfit = controllerBalanceAfter - controllerBalanceBefore;
-      const feeReceived = Math.floor((txProfit / fee) * 100).toString() + "%";
+      const feeReceived = Math.round((txProfit / fee) * 100).toString() + "%";
       // console.log("Fee received:", feeReceived);
       expect(feeReceived).to.equal("40%");
     });

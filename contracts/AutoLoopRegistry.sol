@@ -46,8 +46,9 @@ contract AutoLoopRegistry is AutoLoopBase {
         uint256 timeStamp
     );
 
-    function initialize() public override initializer {
+    function initialize(address adminAddress) public initializer {
         AutoLoopBase.initialize();
+        _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
     // Public

@@ -18,6 +18,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AutoLoopBase.initialize();
         AUTO_LOOP = AutoLoop(autoLoopAddress);
         REGISTRY = AutoLoopRegistry(registryAddress);
+        _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
     function deposit(address registeredContract) external payable {
