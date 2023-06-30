@@ -4,6 +4,7 @@ require("hardhat-contract-sizer");
 require("hardhat-abi-exporter");
 require("solidity-docgen");
 require("hardhat-contract-sizer");
+require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */

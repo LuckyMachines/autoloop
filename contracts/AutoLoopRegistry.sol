@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./AutoLoopRoles.sol";
+import "./AutoLoopBase.sol";
 import "./AutoLoopCompatible.sol";
 
-contract AutoLoopRegistry is AutoLoopRoles {
+contract AutoLoopRegistry is AutoLoopBase {
     // Mappings from registered AutoLoop or Controller Addresses
     mapping(address => bool) public isRegisteredAutoLoop;
     mapping(address => bool) public isRegisteredController;
@@ -46,8 +46,8 @@ contract AutoLoopRegistry is AutoLoopRoles {
         uint256 timeStamp
     );
 
-    constructor(address adminAddress) {
-        _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
+    function initialize() public override initializer {
+        AutoLoopBase.initialize();
     }
 
     // Public

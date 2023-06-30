@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./AutoLoopRoles.sol";
+import "./AutoLoopBase.sol";
 import "./AutoLoopCompatibleInterface.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 // import "hardhat/console.sol";
 
-contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
-    using ERC165Checker for address;
+contract AutoLoop is AutoLoopBase {
+    using ERC165CheckerUpgradeable for address;
     event AutoLoopProgressed(
         address indexed autoLoopCompatibleContract,
         uint256 indexed timeStamp,
@@ -20,17 +18,13 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
         uint256 fee
     );
 
-    constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-    }
-
-    uint256 BASE_FEE = 70; // percentage of gas cost used
-    uint256 PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
-    uint256 CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
-    uint256 MAX_GAS = 1_000_000; // default if no personal max set
-    uint256 MAX_GAS_PRICE = 40_000_000_000_000; // 40k gwei, default if no personal max set
-    uint256 GAS_BUFFER = 87_140; // gas required to run transaction outside of contract update
-    uint256 GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
+    uint256 BASE_FEE; // percentage of gas cost used
+    uint256 PROTOCOL_FEE_PORTION; // percentage of base fee to go to protocol
+    uint256 CONTROLLER_FEE_PORTION; // percentage of base fee to go to controller
+    uint256 MAX_GAS; // default if no personal max set
+    uint256 MAX_GAS_PRICE; // 40k gwei, default if no personal max set
+    uint256 GAS_BUFFER; // gas required to run transaction outside of contract update
+    uint256 GAS_THRESHOLD; // highest a user could potentially set gas
 
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
@@ -39,6 +33,20 @@ contract AutoLoop is AutoLoopRoles, ReentrancyGuard {
     mapping(address => mapping(uint256 => bool)) _hadUpdate; // mapping of contract address to block number to bool
 
     uint256 _protocolBalance;
+
+    string public version;
+
+    function initialize(string memory _version) public initializer {
+        AutoLoopBase.initialize();
+        version = _version;
+        BASE_FEE = 70; // percentage of gas cost used
+        PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
+        CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
+        MAX_GAS = 1_000_000; // default if no personal max set
+        MAX_GAS_PRICE = 40_000_000_000_000; // 40k gwei, default if no personal max set
+        GAS_BUFFER = 94_293; // gas required to run transaction outside of contract update
+        GAS_THRESHOLD = 15_000_000 - GAS_BUFFER; // highest a user could potentially set gas
+    }
 
     // PUBLIC //
     function baseFee() public view returns (uint256) {

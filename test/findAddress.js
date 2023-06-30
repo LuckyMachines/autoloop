@@ -6,7 +6,37 @@ require("dotenv").config();
 const startingNonce = 9000;
 const stoppingNonce = 20000;
 
-const targetWords = ["c0de", "5afe", "ab1e", "aced", "d1ce", "ba5e"];
+const targetWords = [
+  "0000",
+  "1111",
+  "1234",
+  "1313",
+  "4321",
+  "5afe",
+  "6a6e",
+  "7777",
+  "ab1e",
+  "aced",
+  "b00b",
+  "babe",
+  "ba5e",
+  "ba55",
+  "beef",
+  "bea7",
+  "bo1d",
+  "cafe",
+  "c0de",
+  "d00d",
+  "d1ce",
+  "dead",
+  "deaf",
+  "e665",
+  "e660",
+  "leg0",
+  "fee7",
+  "face",
+  "1dea"
+];
 
 describe("Auto Loop", function () {
   // Accounts
