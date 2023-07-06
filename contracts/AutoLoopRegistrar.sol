@@ -4,25 +4,23 @@ pragma solidity ^0.8.7;
 import "./AutoLoopRegistry.sol";
 import "./AutoLoop.sol";
 import "./AutoLoopCompatible.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-contract AutoLoopRegistrar is AutoLoopRoles, ReentrancyGuard {
-    using ERC165Checker for address;
+contract AutoLoopRegistrar is AutoLoopBase {
+    using ERC165CheckerUpgradeable for address;
     AutoLoop AUTO_LOOP;
     AutoLoopRegistry REGISTRY;
 
-    constructor(
+    function initialize(
         address autoLoopAddress,
         address registryAddress,
         address adminAddress
-    ) {
+    ) public initializer {
+        AutoLoopBase.initialize();
         AUTO_LOOP = AutoLoop(autoLoopAddress);
         REGISTRY = AutoLoopRegistry(registryAddress);
         _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
-    // IN PROGRESS
-    // Draft functions:
     function deposit(address registeredContract) external payable {
         require(msg.value > 0, "no value deposited");
         require(

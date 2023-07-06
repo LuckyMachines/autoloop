@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+const { ethers, upgrades, network } = require("hardhat");
 const fs = require("fs");
 require("dotenv").config();
 const deployments = require("../deployments.json");
@@ -32,18 +32,16 @@ async function main() {
   let autoLoopRegistry;
   let autoLoopRegistrar;
 
-  const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
-  const AutoLoopRegistry = await hre.ethers.getContractFactory(
-    "AutoLoopRegistry"
-  );
-  const AutoLoopRegistrar = await hre.ethers.getContractFactory(
+  const AutoLoop = await ethers.getContractFactory("AutoLoop");
+  const AutoLoopRegistry = await ethers.getContractFactory("AutoLoopRegistry");
+  const AutoLoopRegistrar = await ethers.getContractFactory(
     "AutoLoopRegistrar"
   );
 
   let registryAdminAddress;
   let registrarAdminAddress;
 
-  switch (hre.network.name) {
+  switch (network.name) {
     case "godwoken_test":
       registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_GW_TESTNET;
       registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_GW_TESTNET;
@@ -59,61 +57,77 @@ async function main() {
       break;
   }
 
-  if (!deployment.deployments[hre.network.name].AUTO_LOOP) {
+  if (!deployment.deployments[network.name].AUTO_LOOP) {
     // deploy AutoLoop
     console.log("Deploying Auto Loop...");
-    autoLoop = await AutoLoop.deploy();
+    // autoLoop = await AutoLoop.deploy();
+    autoLoop = await upgrades.deployProxy(AutoLoop, ["0.1.0"], {
+      initializer: "initialize(string)",
+      nonce: 1728
+    });
     await autoLoop.deployed();
     console.log("Auto Loop deployed to", autoLoop.address);
-    deployment.deployments[hre.network.name].AUTO_LOOP = autoLoop.address;
+    deployment.deployments[network.name].AUTO_LOOP = autoLoop.address;
     deployment.save();
   } else {
-    autoLoop = AutoLoop.attach(
-      deployment.deployments[hre.network.name].AUTO_LOOP
-    );
+    autoLoop = AutoLoop.attach(deployment.deployments[network.name].AUTO_LOOP);
     console.log(
       "Auto loop deployed at",
-      deployment.deployments[hre.network.name].AUTO_LOOP
+      deployment.deployments[network.name].AUTO_LOOP
     );
   }
 
-  if (!deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY) {
+  if (!deployment.deployments[network.name].AUTO_LOOP_REGISTRY) {
     // deploy AutoLoopRegistry
-    autoLoopRegistry = await AutoLoopRegistry.deploy(registryAdminAddress);
+    // autoLoopRegistry = await AutoLoopRegistry.deploy(registryAdminAddress);
+    autoLoopRegistry = await upgrades.deployProxy(
+      AutoLoopRegistry,
+      [registryAdminAddress],
+      {
+        initializer: "initialize(address)"
+      }
+    );
     await autoLoopRegistry.deployed();
     console.log("Registry deployed to", autoLoopRegistry.address);
-    deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY =
+    deployment.deployments[network.name].AUTO_LOOP_REGISTRY =
       autoLoopRegistry.address;
     deployment.save();
   } else {
     autoLoopRegistry = AutoLoopRegistry.attach(
-      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY
+      deployment.deployments[network.name].AUTO_LOOP_REGISTRY
     );
     console.log(
       "Auto loop registry deployed at",
-      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRY
+      deployment.deployments[network.name].AUTO_LOOP_REGISTRY
     );
   }
 
-  if (!deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR) {
+  if (!deployment.deployments[network.name].AUTO_LOOP_REGISTRAR) {
     // deploy AutoLoopRegistrar
-    autoLoopRegistrar = await AutoLoopRegistrar.deploy(
-      autoLoop.address,
-      autoLoopRegistry.address,
-      registrarAdminAddress
+    // autoLoopRegistrar = await AutoLoopRegistrar.deploy(
+    //   autoLoop.address,
+    //   autoLoopRegistry.address,
+    //   registrarAdminAddress
+    // );
+    autoLoopRegistrar = await upgrades.deployProxy(
+      AutoLoopRegistrar,
+      [autoLoop.address, autoLoopRegistry.address, registrarAdminAddress],
+      {
+        initializer: "initialize(address,address,address)"
+      }
     );
     await autoLoopRegistrar.deployed();
     console.log("Registrar deployed to", autoLoopRegistrar.address);
-    deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR =
+    deployment.deployments[network.name].AUTO_LOOP_REGISTRAR =
       autoLoopRegistrar.address;
     deployment.save();
   } else {
     autoLoopRegistrar = AutoLoopRegistrar.attach(
-      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR
+      deployment.deployments[network.name].AUTO_LOOP_REGISTRAR
     );
     console.log(
       "Auto loop registrar deployed at",
-      deployment.deployments[hre.network.name].AUTO_LOOP_REGISTRAR
+      deployment.deployments[network.name].AUTO_LOOP_REGISTRAR
     );
   }
   // set registrar on auto loop

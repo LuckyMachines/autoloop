@@ -1,5 +1,5 @@
 const { assert, expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 const fs = require("fs");
 const exp = require("constants");
 
@@ -90,21 +90,35 @@ describe("Auto Loop", function () {
 
     // AutoLoop
     console.log("Deploying Auto Loop...");
-    AUTO_LOOP = await AutoLoop.deploy();
-    await AUTO_LOOP.deployed();
+    // AUTO_LOOP = await AutoLoop.deploy();
+    // await AUTO_LOOP.deployed();
+    AUTO_LOOP = await upgrades.deployProxy(AutoLoop, ["0.0.1"], {
+      initializer: "initialize(string)"
+    });
     console.log("Auto Loop deployed to", AUTO_LOOP.address);
 
     // AutoLoopRegistry
-    AUTO_LOOP_REGISTRY = await AutoLoopRegistry.deploy(ADMIN);
+    // AUTO_LOOP_REGISTRY = await AutoLoopRegistry.deploy(ADMIN);
+    AUTO_LOOP_REGISTRY = await upgrades.deployProxy(AutoLoopRegistry, [ADMIN], {
+      initializer: "initialize(address)"
+    });
     await AUTO_LOOP_REGISTRY.deployed();
     console.log("Registry deployed to", AUTO_LOOP_REGISTRY.address);
 
     // AutoLoopRegistrar
-    AUTO_LOOP_REGISTRAR = await AutoLoopRegistrar.deploy(
-      AUTO_LOOP.address,
-      AUTO_LOOP_REGISTRY.address,
-      ADMIN
+    // AUTO_LOOP_REGISTRAR = await AutoLoopRegistrar.deploy(
+    //   AUTO_LOOP.address,
+    //   AUTO_LOOP_REGISTRY.address,
+    //   ADMIN
+    // );
+    AUTO_LOOP_REGISTRAR = await upgrades.deployProxy(
+      AutoLoopRegistrar,
+      [AUTO_LOOP.address, AUTO_LOOP_REGISTRY.address, ADMIN],
+      {
+        initializer: "initialize(address,address,address)"
+      }
     );
+
     await AUTO_LOOP_REGISTRAR.deployed();
     console.log("Registrar deployed to", AUTO_LOOP_REGISTRAR.address);
 
@@ -116,6 +130,10 @@ describe("Auto Loop", function () {
   });
 
   describe("Registration + Admin", function () {
+    it("Deploys AutoLoop", async function () {
+      const version = await AUTO_LOOP.version();
+      expect(version.toString()).to.equal("0.0.1");
+    });
     it("Sets registrar", async function () {
       tx = await AUTO_LOOP_REGISTRY.setRegistrar(AUTO_LOOP_REGISTRAR.address);
       await tx.wait();
@@ -444,7 +462,7 @@ describe("Auto Loop", function () {
 
       // check that correct fee has been received
       const txProfit = controllerBalanceAfter - controllerBalanceBefore;
-      const feeReceived = Math.ceil((txProfit / fee) * 100).toString() + "%";
+      const feeReceived = Math.round((txProfit / fee) * 100).toString() + "%";
       // console.log("Fee received:", feeReceived);
       expect(feeReceived).to.equal("40%");
     });
