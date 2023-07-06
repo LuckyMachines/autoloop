@@ -62,7 +62,7 @@ abstract contract AutoLoopCompatible is
     // ERC165 Support
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override returns (bool) {
+    ) public view virtual override returns (bool) {
         return
             interfaceId == type(IAccessControlEnumerable).interfaceId ||
             interfaceId == type(AutoLoopCompatibleInterface).interfaceId ||

@@ -1,7 +1,14 @@
 const { ethers, upgrades, network } = require("hardhat");
+const { Signer } = require("ethers");
 const fs = require("fs");
 require("dotenv").config();
 const deployments = require("../deployments.json");
+const customNonce = false;
+const autoLoopNonce = 1050;
+
+function toHex(int) {
+  return "0x" + int.toString(16);
+}
 
 class Deployment {
   constructor(deploymentJSON) {
@@ -25,6 +32,27 @@ class Deployment {
   }
 }
 
+// Adding NonceManager
+class NonceManager extends Signer {
+  constructor(signer, nonce) {
+    super();
+    ethers.utils.defineReadOnly(this, "signer", signer);
+    ethers.utils.defineReadOnly(this, "provider", signer.provider);
+    this.nonce = nonce;
+  }
+
+  async sendTransaction(transaction) {
+    transaction.nonce = this.nonce;
+    const tx = await this.signer.sendTransaction(transaction);
+    this.nonce++;
+    return tx;
+  }
+
+  async getAddress() {
+    return this.signer.getAddress();
+  }
+}
+
 async function main() {
   const deployment = new Deployment(deployments);
 
@@ -40,33 +68,50 @@ async function main() {
 
   let registryAdminAddress;
   let registrarAdminAddress;
+  let pk = process.env.PRIVATE_KEY;
 
   switch (network.name) {
     case "godwoken_test":
       registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_GW_TESTNET;
       registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_GW_TESTNET;
+      pk = process.env.PRIVATE_KEY_GW_TESTNET;
       break;
     case "godwoken":
       registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_GW;
       registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_GW;
+      pk = process.env.PRIVATE_KEY_GW;
       break;
     case "sepolia":
     default:
       registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_SEPOLIA;
       registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_SEPOLIA;
+      pk = process.env.PRIVATE_KEY_SEPOLIA;
       break;
   }
 
+  const wallet = new ethers.Wallet(pk, ethers.provider);
+  const nonceManagedWallet = new NonceManager(wallet, autoLoopNonce);
+
   if (!deployment.deployments[network.name].AUTO_LOOP) {
-    // deploy AutoLoop
     console.log("Deploying Auto Loop...");
-    // autoLoop = await AutoLoop.deploy();
-    autoLoop = await upgrades.deployProxy(AutoLoop, ["0.1.0"], {
-      initializer: "initialize(string)",
-      nonce: 1728
-    });
+
+    console.log("Setting nonce to", autoLoopNonce);
+    console.log("nonce hex:", toHex(autoLoopNonce));
+
+    console.log("Deploying proxy...");
+    if (customNonce) {
+      const AutoLoopWithSigner = AutoLoop.connect(nonceManagedWallet);
+      autoLoop = await upgrades.deployProxy(AutoLoopWithSigner, ["0.1.0"], {
+        initializer: "initialize(string)"
+      });
+    } else {
+      autoLoop = await upgrades.deployProxy(AutoLoop, ["0.1.0"], {
+        initializer: "initialize(string)"
+      });
+    }
     await autoLoop.deployed();
-    console.log("Auto Loop deployed to", autoLoop.address);
+    console.log("AutoLoop deployed to:", autoLoop.address);
+
     deployment.deployments[network.name].AUTO_LOOP = autoLoop.address;
     deployment.save();
   } else {
@@ -76,19 +121,34 @@ async function main() {
       deployment.deployments[network.name].AUTO_LOOP
     );
   }
-
   if (!deployment.deployments[network.name].AUTO_LOOP_REGISTRY) {
     // deploy AutoLoopRegistry
-    // autoLoopRegistry = await AutoLoopRegistry.deploy(registryAdminAddress);
-    autoLoopRegistry = await upgrades.deployProxy(
-      AutoLoopRegistry,
-      [registryAdminAddress],
-      {
-        initializer: "initialize(address)"
-      }
-    );
+    console.log("Deploying Auto Loop Registry...");
+
+    if (customNonce) {
+      const AutoLoopRegistryWithSigner =
+        AutoLoopRegistry.connect(nonceManagedWallet);
+
+      autoLoopRegistry = await upgrades.deployProxy(
+        AutoLoopRegistryWithSigner,
+        [registryAdminAddress],
+        {
+          initializer: "initialize(address)"
+        }
+      );
+    } else {
+      autoLoopRegistry = await upgrades.deployProxy(
+        AutoLoopRegistry,
+        [registryAdminAddress],
+        {
+          initializer: "initialize(address)"
+        }
+      );
+    }
     await autoLoopRegistry.deployed();
-    console.log("Registry deployed to", autoLoopRegistry.address);
+    // await autoLoopRegistry.waitForDeployment();
+    console.log("AutoLoopRegistry deployed to:", autoLoopRegistry.address);
+
     deployment.deployments[network.name].AUTO_LOOP_REGISTRY =
       autoLoopRegistry.address;
     deployment.save();
@@ -104,20 +164,32 @@ async function main() {
 
   if (!deployment.deployments[network.name].AUTO_LOOP_REGISTRAR) {
     // deploy AutoLoopRegistrar
-    // autoLoopRegistrar = await AutoLoopRegistrar.deploy(
-    //   autoLoop.address,
-    //   autoLoopRegistry.address,
-    //   registrarAdminAddress
-    // );
-    autoLoopRegistrar = await upgrades.deployProxy(
-      AutoLoopRegistrar,
-      [autoLoop.address, autoLoopRegistry.address, registrarAdminAddress],
-      {
-        initializer: "initialize(address,address,address)"
-      }
-    );
+    console.log("Deploying Auto Loop Registrar...");
+
+    if (customNonce) {
+      const AutoLoopRegistrarWithSigner =
+        AutoLoopRegistrar.connect(nonceManagedWallet);
+
+      autoLoopRegistrar = await upgrades.deployProxy(
+        AutoLoopRegistrarWithSigner,
+        [autoLoop.address, autoLoopRegistry.address, registrarAdminAddress],
+        {
+          initializer: "initialize(address,address,address)"
+        }
+      );
+    } else {
+      autoLoopRegistrar = await upgrades.deployProxy(
+        AutoLoopRegistrar,
+        [autoLoop.address, autoLoopRegistry.address, registrarAdminAddress],
+        {
+          initializer: "initialize(address,address,address)"
+        }
+      );
+    }
     await autoLoopRegistrar.deployed();
-    console.log("Registrar deployed to", autoLoopRegistrar.address);
+    // await autoLoopRegistrar.waitForDeployment();
+    console.log("AutoLoopRegistrar deployed to:", autoLoopRegistrar.address);
+
     deployment.deployments[network.name].AUTO_LOOP_REGISTRAR =
       autoLoopRegistrar.address;
     deployment.save();
@@ -130,16 +202,18 @@ async function main() {
       deployment.deployments[network.name].AUTO_LOOP_REGISTRAR
     );
   }
+
   // set registrar on auto loop
   console.log("setting registrar on auto loop");
   let tx = await autoLoop.setRegistrar(autoLoopRegistrar.address);
   await tx.wait();
+
   // set registrar on registry
   console.log("Setting registrar on registry");
   tx = await autoLoopRegistry.setRegistrar(autoLoopRegistrar.address);
   await tx.wait();
-  console.log("Registrar set.");
 
+  console.log("Registrar set.");
   console.log("Deployments complete.");
 }
 

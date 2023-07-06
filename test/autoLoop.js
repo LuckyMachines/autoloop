@@ -95,6 +95,7 @@ describe("Auto Loop", function () {
     AUTO_LOOP = await upgrades.deployProxy(AutoLoop, ["0.0.1"], {
       initializer: "initialize(string)"
     });
+    await AUTO_LOOP.deployed();
     console.log("Auto Loop deployed to", AUTO_LOOP.address);
 
     // AutoLoopRegistry
