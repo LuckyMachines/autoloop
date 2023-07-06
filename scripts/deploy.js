@@ -62,7 +62,8 @@ async function main() {
     console.log("Deploying Auto Loop...");
     // autoLoop = await AutoLoop.deploy();
     autoLoop = await upgrades.deployProxy(AutoLoop, ["0.1.0"], {
-      initializer: "initialize(string)"
+      initializer: "initialize(string)",
+      nonce: 1728
     });
     await autoLoop.deployed();
     console.log("Auto Loop deployed to", autoLoop.address);

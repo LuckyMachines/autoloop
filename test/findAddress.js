@@ -1,10 +1,10 @@
 const { assert, expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 const fs = require("fs");
 require("dotenv").config();
 
-const startingNonce = 9000;
-const stoppingNonce = 20000;
+const startingNonce = 363000;
+const stoppingNonce = 1000000;
 
 const targetWords = [
   "0000",
@@ -17,6 +17,7 @@ const targetWords = [
   "6a6e",
   "7777",
   "ab1e",
+  "a1a1",
   "aced",
   "b00b",
   "babe",
@@ -36,7 +37,12 @@ const targetWords = [
   "leg0",
   "fee7",
   "face",
-  "1dea"
+  "1dea",
+  "5432",
+  "fade",
+  "1001",
+  "1010",
+  "0101"
 ];
 
 describe("Auto Loop", function () {
@@ -145,9 +151,17 @@ describe("Auto Loop", function () {
       ]);
 
       for (let i = startingNonce; i < stoppingNonce; i++) {
-        AUTO_LOOP = await AutoLoop.connect(wallet).deploy();
+        // AUTO_LOOP = await AutoLoop.connect(wallet).deploy();
+        AUTO_LOOP = await upgrades.deployProxy(
+          AutoLoop.connect(wallet),
+          ["0.0.1"],
+          {
+            initializer: "initialize(string)"
+          }
+        );
+
         await AUTO_LOOP.deployed();
-        if (i % 500 === 0) {
+        if (i % 1000 === 0) {
           console.log("Checking nonce:", i);
         }
         // console.log(
@@ -169,10 +183,16 @@ describe("Auto Loop", function () {
           addressString.length
         );
         const addressSubstringEndLower = addressSubstringEnd.toLowerCase();
+        let isMatch = false;
+        let startMatch = false;
+        let endMatch = false;
         if (
           targetWords.includes(addressSubstringLower) &&
           targetWords.includes(addressSubstringEndLower)
         ) {
+          isMatch = true;
+          startMatch = true;
+          endMatch = true;
           console.log(
             "word match start + end:",
             addressSubstringLower,
@@ -182,15 +202,31 @@ describe("Auto Loop", function () {
           console.log("Nonce:", AUTO_LOOP.deployTransaction.nonce);
           console.log("Wallet address:", wallet.address);
         } else if (targetWords.includes(addressSubstringLower)) {
+          isMatch = true;
+          startMatch = true;
           console.log("word match start:", addressSubstringLower);
           console.log("Address:", address);
           console.log("Nonce:", AUTO_LOOP.deployTransaction.nonce);
           console.log("Wallet address:", wallet.address);
         } else if (targetWords.includes(addressSubstringEndLower)) {
+          isMatch = true;
+          endMatch = true;
           console.log("word match end:", addressSubstringEndLower);
           console.log("Address:", address);
           console.log("Nonce:", AUTO_LOOP.deployTransaction.nonce);
           console.log("Wallet address:", wallet.address);
+        }
+
+        // If address has a match, save all of the info currently logged to a json file
+        if (isMatch) {
+          const data = {
+            wordStart: startMatch ? addressSubstringLower : "",
+            wordEnd: endMatch ? addressSubstringEndLower : "",
+            address: address,
+            nonce: AUTO_LOOP.deployTransaction.nonce,
+            wallet: wallet.address
+          };
+          fs.appendFileSync("addresses.json", JSON.stringify(data, null, 4));
         }
       }
     });
