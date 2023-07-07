@@ -81,6 +81,11 @@ async function main() {
       registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_GW;
       pk = process.env.PRIVATE_KEY_GW;
       break;
+    case "mumbai":
+      registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_MUMBAI;
+      registrarAdminAddress = process.env.REGISTRAR_ADMIN_ADDRESS_MUMBAI;
+      pk = process.env.PRIVATE_KEY_MUMBAI;
+      break;
     case "sepolia":
     default:
       registryAdminAddress = process.env.REGISTRY_ADMIN_ADDRESS_SEPOLIA;

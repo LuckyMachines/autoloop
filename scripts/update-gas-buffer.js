@@ -5,7 +5,7 @@ async function main() {
   // register controller with registrar contract
   const AutoLoop = await hre.ethers.getContractFactory("AutoLoop");
   const autoLoop = AutoLoop.attach(deployments[hre.network.name].AUTO_LOOP);
-  const tx = await autoLoop.setGasBuffer("149440");
+  const tx = await autoLoop.setGasBuffer("102134");
   await tx.wait();
   console.log("Gas Buffer Updated");
   const gasBuffer = await autoLoop.gasBuffer();

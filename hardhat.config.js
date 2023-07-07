@@ -24,6 +24,11 @@ module.exports = {
       url: process.env.RPC_URL_SEPOLIA,
       accounts: [process.env.PRIVATE_KEY_SEPOLIA],
       chainId: Number(process.env.CHAIN_ID_SEPOLIA)
+    },
+    mumbai: {
+      url: process.env.RPC_URL_MUMBAI,
+      accounts: [process.env.PRIVATE_KEY_MUMBAI],
+      chainId: Number(process.env.CHAIN_ID_MUMBAI)
     }
   },
   solidity: {
