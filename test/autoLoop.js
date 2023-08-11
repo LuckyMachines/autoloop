@@ -1,7 +1,5 @@
 const { assert, expect } = require("chai");
 const { ethers, upgrades } = require("hardhat");
-const fs = require("fs");
-const exp = require("constants");
 
 async function setManualMining() {
   await network.provider.request({
