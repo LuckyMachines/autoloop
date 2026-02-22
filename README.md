@@ -6,10 +6,6 @@ An on-chain automation loop for your blockchain automation needs. Perfect for on
 
 Your contract should inherit from [AutoLoopCompatible.sol](https://github.com/LuckyMachines/autoloop/blob/main/contracts/AutoLoopCompatible.sol) (see [example](https://github.com/LuckyMachines/autoloop/blob/main/contracts/sample/NumberGoUp.sol))
 
-## Register AutoLoop compatible contract through AutoLoop Dashboard
-
-[AutoLoop dashboard](https://luckymachines.io/)
-
 ## Register AutoLoop compatible contract through CLI:
 
 ```shell
