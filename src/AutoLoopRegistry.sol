@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.34;
 
 import "./AutoLoopBase.sol";
 import "./AutoLoopCompatible.sol";
@@ -48,7 +48,7 @@ contract AutoLoopRegistry is AutoLoopBase {
 
     function initialize(address adminAddress) public initializer {
         AutoLoopBase.initialize();
-        _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
     // Public
@@ -164,8 +164,7 @@ contract AutoLoopRegistry is AutoLoopBase {
                 compatibleContract.hasRole(
                     DEFAULT_ADMIN_ROLE,
                     adminAddress
-                ) /* &&
-                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]*/
+                )
             ) {
                 ++totalRegistrations;
             }
@@ -180,8 +179,7 @@ contract AutoLoopRegistry is AutoLoopBase {
                 compatibleContract.hasRole(
                     DEFAULT_ADMIN_ROLE,
                     adminAddress
-                ) /*&&
-                isRegisteredAutoLoop[_registeredAutoLoops[registeredLoops[i]]]*/
+                )
             ) {
                 autoLoops[outputIndex] = _registeredAutoLoops[
                     registeredLoops[i]
@@ -275,8 +273,6 @@ contract AutoLoopRegistry is AutoLoopBase {
     }
 
     // Cleanup
-    // TODO: remove zero addresses from registration lists
-    // Careful here, will need to re-map any registered autoloops to new indices
     function cleanControllerList() public {}
 
     function cleanAutoLoopList() public {}
@@ -307,10 +303,6 @@ contract AutoLoopRegistry is AutoLoopBase {
     ) external onlyRole(REGISTRAR_ROLE) {
         if (isRegisteredAutoLoop[registrantAddress]) {
             isRegisteredAutoLoop[registrantAddress] = false;
-            // delete _registeredAutoLoops[
-            //     _registeredAutoLoopIndex[registrantAddress]
-            // ];
-            // delete _registeredAutoLoopIndex[registrantAddress];
             emit AutoLoopDeregistered(
                 registrantAddress,
                 msg.sender,
@@ -342,10 +334,6 @@ contract AutoLoopRegistry is AutoLoopBase {
     ) external onlyRole(REGISTRAR_ROLE) {
         if (isRegisteredController[registrantAddress]) {
             isRegisteredController[registrantAddress] = false;
-            // delete _registeredControllers[
-            //     _registeredControllerIndex[registrantAddress]
-            // ];
-            // delete _registeredControllerIndex[registrantAddress];
             emit ControllerDeregistered(
                 registrantAddress,
                 msg.sender,

@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.34;
 
 import "./AutoLoopBase.sol";
 import "./AutoLoopCompatibleInterface.sol";
 
-// import "hardhat/console.sol";
-
 contract AutoLoop is AutoLoopBase {
-    using ERC165CheckerUpgradeable for address;
+    using ERC165Checker for address;
     event AutoLoopProgressed(
         address indexed autoLoopCompatibleContract,
         uint256 indexed timeStamp,
@@ -37,7 +35,7 @@ contract AutoLoop is AutoLoopBase {
     string public version;
 
     function initialize(string memory _version) public initializer {
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         AutoLoopBase.initialize();
         version = _version;
         BASE_FEE = 70; // percentage of gas cost used
@@ -105,7 +103,6 @@ contract AutoLoop is AutoLoopBase {
             ),
             "AutoLoop compatible contract required"
         );
-        // console.log("Progressing Loop %s", contractAddress);
         require(
             !(_hadUpdate[contractAddress][block.number]),
             "Contract already updated this block"
@@ -252,7 +249,7 @@ contract AutoLoop is AutoLoopBase {
             _protocolBalance >= amount,
             "withdraw amount greater than protocol balance"
         );
-        (bool sent, ) = toAddress.call{value: _protocolBalance}("");
+        (bool sent, ) = toAddress.call{value: amount}("");
         require(sent, "Error withdrawing protocol fees");
         _protocolBalance -= amount;
     }

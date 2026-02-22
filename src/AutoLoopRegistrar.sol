@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.34;
 
 import "./AutoLoopRegistry.sol";
 import "./AutoLoop.sol";
 import "./AutoLoopCompatible.sol";
 
 contract AutoLoopRegistrar is AutoLoopBase {
-    using ERC165CheckerUpgradeable for address;
+    using ERC165Checker for address;
     AutoLoop AUTO_LOOP;
     AutoLoopRegistry REGISTRY;
 
@@ -18,7 +18,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AutoLoopBase.initialize();
         AUTO_LOOP = AutoLoop(autoLoopAddress);
         REGISTRY = AutoLoopRegistry(registryAddress);
-        _setupRole(DEFAULT_ADMIN_ROLE, adminAddress);
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
     }
 
     function deposit(address registeredContract) external payable {

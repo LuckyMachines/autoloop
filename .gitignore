@@ -6,9 +6,15 @@ typechain
 typechain-types
 .DS_Store
 
-# Hardhat files
+# Hardhat files (legacy)
 cache
 artifacts
+
+# Foundry
+out/
+cache/
+lib/
+broadcast/
 
 # Controller config
 controller.config.json

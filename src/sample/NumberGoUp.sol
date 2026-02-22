@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.34;
 
-// AutoLoopCompatible.sol imports the functions from both @chainlink/contracts/src/v0.8/AutomationBase.sol
-// and AutoLoopCompatibleInterface.sol
 import "../AutoLoopCompatible.sol";
 import "../AutoLoopRegistrar.sol";
 
@@ -32,7 +30,6 @@ contract NumberGoUp is AutoLoopCompatible {
     function deregisterAutoLoop(
         address registrarAddress
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        // Unegister auto loop
         AutoLoopRegistrar(registrarAddress).deregisterAutoLoop();
     }
 

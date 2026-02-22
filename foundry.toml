@@ -1,0 +1,22 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.34"
+optimizer = true
+optimizer_runs = 1_000_000
+via_ir = true
+ffi = true
+ast = true
+build_info = true
+extra_output = ["abi", "evm.bytecode"]
+
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+godwoken_test = "${GODWOKEN_TESTNET_RPC_URL}"
+godwoken = "${GODWOKEN_RPC_URL}"
+
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = false

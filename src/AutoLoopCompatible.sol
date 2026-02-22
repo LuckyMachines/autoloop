@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.34;
 
 import "./AutoLoopCompatibleInterface.sol";
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 
 abstract contract AutoLoopCompatible is
     AutoLoopCompatibleInterface,
@@ -14,7 +14,7 @@ abstract contract AutoLoopCompatible is
     uint256 _loopID;
 
     constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _loopID = 1;
     }
 
@@ -45,7 +45,7 @@ abstract contract AutoLoopCompatible is
             "No pending transfer request to accept."
         );
         _revokeRole(DEFAULT_ADMIN_ROLE, adminTransferRequestOrigin);
-        _setupRole(DEFAULT_ADMIN_ROLE, adminTransferRequest);
+        _grantRole(DEFAULT_ADMIN_ROLE, adminTransferRequest);
         adminTransferRequestOrigin = address(0);
         adminTransferRequest = address(0);
     }
