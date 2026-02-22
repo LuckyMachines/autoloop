@@ -8,7 +8,7 @@ Your contract should inherit from [AutoLoopCompatible.sol](https://github.com/Lu
 
 ## Register AutoLoop compatible contract through AutoLoop Dashboard
 
-[AutoLoop dashboard](https://auto-loop-ui-godwoken.vercel.app/)
+[AutoLoop dashboard](https://luckymachines.io/)
 
 ## Register AutoLoop compatible contract through CLI:
 

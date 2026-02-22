@@ -13,8 +13,6 @@ extra_output = ["abi", "evm.bytecode"]
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
-godwoken_test = "${GODWOKEN_TESTNET_RPC_URL}"
-godwoken = "${GODWOKEN_RPC_URL}"
 
 [fmt]
 line_length = 100
