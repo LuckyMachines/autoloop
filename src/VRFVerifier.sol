@@ -187,27 +187,22 @@ library VRFVerifier {
         // hash = -s*pkX (mod n) ... then ecrecover gives:
         //   s_param*inv(r)*G + (-hash*inv(r))*PK = s_param*inv(pkX)*G + (s*pkX*inv(pkX))*PK... nope
         //
-        // Correct formulation (Witnet approach):
-        // ecrecover(e, v, r, s_ec) recovers the address of the point:
-        //   inv(r) * (s_ec * G - e * PK)
-        // We want this to equal U, so:
-        //   U = inv(pkX) * (s_ec * G - e * PK)
-        //   pkX * U = s_ec * G - e * PK
-        // We want: s*G - c*PK
-        // So: s_ec = s, e = c, and we multiply U by pkX... but that changes U.
+        // ecrecover(e, v, r, s_sig) recovers the address of the point:
+        //   Q = inv(r) * (s_sig * R - e * G)
+        // where R is the curve point with x = r and y determined by v.
         //
-        // Instead: set r = pkX (the x-coordinate of PK is used as r)
-        //   recovered = inv(r) * (s_ec * G - e * PK)
-        //   r * recovered = s_ec * G - e * PK
-        //   We want: s * G - c * PK
-        //   So: s_ec = s * pkX mod n, e = c * pkX mod n
-        //   Then: inv(pkX) * (s*pkX*G - c*pkX*PK) = s*G - c*PK = U ✓
+        // Setting R = PK (r = pkX, v from pkY parity):
+        //   Q = inv(pkX) * (sParam * PK - e * G)
+        // We want Q = U = s*G - c*PK, so:
+        //   sParam * PK - e * G = pkX * (s*G - c*PK)
+        //   Coefficient of G:  -e = pkX*s  =>  e = -(pkX*s) mod n
+        //   Coefficient of PK: sParam = -(pkX*c) mod n
 
         uint256 pkX = publicKey[0] % NN; // r must be in [1, n-1]
         if (pkX == 0) return false;
 
-        uint256 e = mulmod(c, pkX, NN);
-        uint256 sParam = mulmod(s, pkX, NN);
+        uint256 e = NN - mulmod(s, pkX, NN);
+        uint256 sParam = NN - mulmod(c, pkX, NN);
 
         // v = 27 or 28 depending on parity of publicKey Y
         uint8 v = publicKey[1] % 2 == 0 ? uint8(27) : uint8(28);
