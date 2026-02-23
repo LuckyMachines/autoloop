@@ -2,15 +2,82 @@
 
 An on-chain automation loop for your blockchain automation needs. Perfect for on-chain game loops.
 
-# Integrate with your smart contract
+## Integrate with Your Smart Contract
 
-Your contract should inherit from [AutoLoopCompatible.sol](https://github.com/LuckyMachines/autoloop/blob/main/contracts/AutoLoopCompatible.sol) (see [example](https://github.com/LuckyMachines/autoloop/blob/main/contracts/sample/NumberGoUp.sol))
+### Standard Loop
 
-## Register AutoLoop compatible contract through CLI:
+Inherit from [`AutoLoopCompatible.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/AutoLoopCompatible.sol) and implement two functions:
 
-```shell
-yarn register-contract <NETWORK>
+```solidity
+import "./AutoLoopCompatible.sol";
+
+contract MyGame is AutoLoopCompatible {
+    function shouldProgressLoop()
+        external view override
+        returns (bool loopIsReady, bytes memory progressWithData)
+    {
+        loopIsReady = /* your condition */;
+        progressWithData = abi.encode(_loopID);
+    }
+
+    function progressLoop(bytes calldata progressWithData) external override {
+        uint256 loopID = abi.decode(progressWithData, (uint256));
+        require(loopID == _loopID, "stale");
+        // your game logic here
+        ++_loopID;
+    }
+}
 ```
+
+See [`NumberGoUp.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/sample/NumberGoUp.sol) for a complete example.
+
+### Loop with Verifiable Randomness
+
+For contracts that need provably fair randomness, inherit from [`AutoLoopVRFCompatible.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/AutoLoopVRFCompatible.sol) instead:
+
+**How VRF works:**
+
+1. Your contract returns `shouldProgressLoop() => true` with the current `_loopID`
+2. The worker detects VRF support via ERC-165 (`supportsInterface`)
+3. The worker generates an ECVRF proof off-chain using its private key and a deterministic seed
+4. The proof is wrapped around your game data and submitted to `progressLoop()`
+5. [`VRFVerifier.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/VRFVerifier.sol) verifies the proof on-chain and outputs a `bytes32` random value
+
+**Solidity integration (3 steps):**
+
+```solidity
+import "./AutoLoopVRFCompatible.sol";
+
+contract MyVRFGame is AutoLoopVRFCompatible {
+    // 1. shouldProgressLoop — same as standard loop
+    function shouldProgressLoop()
+        external view override
+        returns (bool loopIsReady, bytes memory progressWithData)
+    {
+        loopIsReady = /* your condition */;
+        progressWithData = abi.encode(_loopID);
+    }
+
+    // 2. progressLoop — verify VRF and use the randomness
+    function progressLoop(bytes calldata progressWithData) external override {
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
+
+        uint256 loopID = abi.decode(gameData, (uint256));
+        require(loopID == _loopID, "stale");
+
+        // Use randomness: e.g. uint256(randomness) % 6 + 1
+        ++_loopID;
+    }
+}
+```
+
+```solidity
+// 3. Register the controller's VRF public key (call once per controller)
+myVRFGame.registerControllerKey(controllerAddress, pkX, pkY);
+```
+
+See [`RandomGame.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/sample/RandomGame.sol) for a complete VRF example.
 
 ---
 
@@ -102,3 +169,25 @@ All parameters below can be adjusted by the contract admin (`DEFAULT_ADMIN_ROLE`
 Setting `PROTOCOL_FEE_PORTION` automatically adjusts `CONTROLLER_FEE_PORTION` to `100 - value`, and vice versa. Both must be ≤ 100.
 
 Per-contract overrides for `maxGas` and `maxGasPrice` can be set through the registrar via `setMaxGas()` and `setMaxGasPrice()`.
+
+---
+
+## Gas Costs
+
+| Loop Type | Median Gas | Notes |
+|-----------|-----------|-------|
+| Standard (`NumberGoUp`) | ~90,000 | Time-based counter |
+| VRF (`RandomGame`) | ~240,000 | Includes on-chain ECVRF proof verification |
+
+VRF adds approximately 150k gas of overhead for the elliptic curve operations in `VRFVerifier.sol`. At current L1 gas prices (~0.05 gwei), the VRF overhead costs less than $0.001 per tick.
+
+See [gas-cost-analysis.md](gas-cost-analysis.md) for full cost projections.
+
+## Dashboard
+
+The [autoloop-dashboard](https://github.com/LuckyMachines/autoloop-dashboard) provides a web UI for one-click local setup, contract deployment, worker management, and real-time event monitoring — including VRF dice rolls and proof verification.
+
+## Related Repos
+
+- [autoloop-worker](https://github.com/LuckyMachines/autoloop-worker) — Off-chain worker bot with VRF proof generation
+- [autoloop-dashboard](https://github.com/LuckyMachines/autoloop-dashboard) — Web-based control panel and event monitor

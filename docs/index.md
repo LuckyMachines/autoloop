@@ -497,3 +497,281 @@ function progressLoop(bytes progressWithData) external
 ```solidity
 function updateGame() internal
 ```
+
+---
+
+## VRFVerifier
+
+Gas-efficient ECVRF proof verification library for secp256k1 using the `ecrecover` precompile.
+
+Implements ECVRF-SECP256K1-SHA256-TAI (cipher suite `0xFE`). Instead of full EC point multiplication on-chain (~millions of gas), uses `ecrecover` as an EC multiplication oracle (~3k gas).
+
+### fastVerify
+
+```solidity
+function fastVerify(
+    uint256[2] memory publicKey,
+    uint256[4] memory proof,
+    bytes memory message,
+    uint256[2] memory uPoint,
+    uint256[4] memory vComponents
+) internal pure returns (bool)
+```
+
+Verifies an ECVRF proof using precomputed helper points.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| publicKey | uint256[2] | [x, y] coordinates of the prover's public key |
+| proof | uint256[4] | [gamma_x, gamma_y, c, s] VRF proof components |
+| message | bytes | The input message (seed) that was signed |
+| uPoint | uint256[2] | Precomputed point U = s*G - c*PublicKey |
+| vComponents | uint256[4] | [sH_x, sH_y, cGamma_x, cGamma_y] precomputed components |
+
+### gammaToHash
+
+```solidity
+function gammaToHash(uint256 gammaX, uint256 gammaY) internal pure returns (bytes32)
+```
+
+Derives a deterministic random output from a verified VRF proof: `keccak256("VRF_OUTPUT", gammaX, gammaY)`.
+
+### hashToCurve
+
+```solidity
+function hashToCurve(
+    uint256[2] memory publicKey,
+    bytes memory message
+) internal pure returns (uint256 x, uint256 y)
+```
+
+Hash-to-curve using try-and-increment (TAI). Deterministically maps a message to a secp256k1 point.
+
+### ecAdd
+
+```solidity
+function ecAdd(
+    uint256 x1, uint256 y1,
+    uint256 x2, uint256 y2
+) internal pure returns (uint256 x3, uint256 y3)
+```
+
+EC point addition using standard chord-and-tangent formulas.
+
+### ecSub
+
+```solidity
+function ecSub(
+    uint256 x1, uint256 y1,
+    uint256 x2, uint256 y2
+) internal pure returns (uint256, uint256)
+```
+
+EC point subtraction: `(x1,y1) + (x2, -y2)`.
+
+---
+
+## AutoLoopVRFCompatible
+
+Abstract base for AutoLoop-compatible contracts that require verifiable randomness. Extends `AutoLoopCompatible` and uses `VRFVerifier` for on-chain proof verification.
+
+Controllers generate ECVRF proofs off-chain and wrap them around the original `progressWithData`. This contract verifies the proof and exposes the VRF output as a `bytes32` random value.
+
+### VRF Envelope Encoding
+
+```
+abi.encode(
+    uint8 vrfVersion,       // 1 = ECVRF-SECP256K1-SHA256-TAI
+    uint256[4] proof,       // [gamma_x, gamma_y, c, s]
+    uint256[2] uPoint,      // precomputed for fastVerify
+    uint256[4] vComponents, // precomputed for fastVerify
+    bytes gameData          // original progressWithData from shouldProgressLoop
+)
+```
+
+### VRF\_VERSION
+
+```solidity
+uint8 public constant VRF_VERSION = 1
+```
+
+VRF version constant (ECVRF-SECP256K1-SHA256-TAI).
+
+### VRF\_INTERFACE\_ID
+
+```solidity
+bytes4 public constant VRF_INTERFACE_ID = bytes4(keccak256("AutoLoopVRFCompatible"))
+```
+
+ERC-165 interface ID for VRF-compatible contracts.
+
+### controllerPublicKeys
+
+```solidity
+mapping(address => uint256[2]) public controllerPublicKeys
+```
+
+Controller address to [x, y] public key coordinates.
+
+### controllerKeyRegistered
+
+```solidity
+mapping(address => bool) public controllerKeyRegistered
+```
+
+Tracks which controllers have registered public keys.
+
+### registerControllerKey
+
+```solidity
+function registerControllerKey(
+    address controller,
+    uint256 pkX,
+    uint256 pkY
+) external
+```
+
+Register a controller's secp256k1 public key for VRF proof verification. Only the controller itself or an admin can call this. The key must be a valid point on secp256k1.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| controller | address | The controller address |
+| pkX | uint256 | x-coordinate of the public key |
+| pkY | uint256 | y-coordinate of the public key |
+
+### computeSeed
+
+```solidity
+function computeSeed(uint256 loopID) public view returns (bytes memory)
+```
+
+Compute the deterministic seed for a given loop ID: `keccak256(address(this), loopID)`. Controllers cannot choose seeds.
+
+### \_verifyAndExtractRandomness
+
+```solidity
+function _verifyAndExtractRandomness(
+    bytes calldata progressWithData,
+    address controller
+) internal returns (bytes32 randomness, bytes memory gameData)
+```
+
+Verify VRF proof and extract randomness from the VRF envelope. Called by the implementing contract's `progressLoop()`.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| progressWithData | bytes | The VRF-wrapped data from the controller |
+| controller | address | The controller address (tx.origin or passed from AutoLoop) |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| randomness | bytes32 | The verified random value |
+| gameData | bytes | The original game-specific data from the envelope |
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool)
+```
+
+ERC-165 support — returns `true` for `VRF_INTERFACE_ID` and all parent interfaces.
+
+### ControllerKeyRegistered
+
+```solidity
+event ControllerKeyRegistered(address indexed controller, uint256 pkX, uint256 pkY)
+```
+
+Emitted when a controller registers their VRF public key.
+
+### VRFRandomnessVerified
+
+```solidity
+event VRFRandomnessVerified(uint256 indexed loopID, bytes32 randomness, address indexed controller)
+```
+
+Emitted when VRF randomness is verified and consumed.
+
+---
+
+## RandomGame
+
+Sample dice-roll game demonstrating AutoLoop VRF integration. On each tick, the controller provides an ECVRF proof. The contract verifies it and uses the VRF output to produce a fair 1-6 dice roll.
+
+### lastRoll
+
+```solidity
+uint256 public lastRoll
+```
+
+The last dice roll result (1-6).
+
+### totalRolls
+
+```solidity
+uint256 public totalRolls
+```
+
+Total number of rolls performed.
+
+### interval
+
+```solidity
+uint256 public interval
+```
+
+Minimum time between rolls (seconds).
+
+### rollHistory
+
+```solidity
+uint256[10] public rollHistory
+```
+
+Ring buffer of the last 10 rolls.
+
+### constructor
+
+```solidity
+constructor(uint256 updateInterval) public
+```
+
+### shouldProgressLoop
+
+```solidity
+function shouldProgressLoop() external view returns (bool loopIsReady, bytes memory progressWithData)
+```
+
+Returns `true` when `block.timestamp - lastTimeStamp > interval`. Passes `_loopID` as `progressWithData`.
+
+### progressLoop
+
+```solidity
+function progressLoop(bytes calldata progressWithData) external
+```
+
+Verifies the VRF proof via `_verifyAndExtractRandomness()`, decodes the loop ID, re-checks timing, and performs a dice roll.
+
+### getRecentRolls
+
+```solidity
+function getRecentRolls() external view returns (uint256[10] memory)
+```
+
+Returns all 10 entries in the roll history ring buffer.
+
+### DiceRolled
+
+```solidity
+event DiceRolled(uint256 indexed loopID, uint256 roll, bytes32 randomness, uint256 timestamp)
+```
+
+Emitted on each dice roll with the loop ID, result (1-6), raw randomness, and block timestamp.

@@ -9,6 +9,22 @@
 | **2026** | 0.047 gwei | $1,976.23 | **$0.0084** |
 | | | **Reduction** | **3,571x cheaper** |
 
+## VRF Overhead
+
+VRF-enabled contracts (`AutoLoopVRFCompatible`) require on-chain ECVRF proof verification via `VRFVerifier.sol`. This adds elliptic curve operations (hash-to-curve, ecrecover trick, EC addition) on top of the standard loop cost.
+
+| Loop Type | Median Gas | Delta |
+|-----------|-----------|-------|
+| Standard (`NumberGoUp`) | ~90,000 | — |
+| VRF (`RandomGame`) | ~240,000 | +150,000 |
+
+| Era | Gas Price | ETH Price | Standard Tick | VRF Tick |
+|-----|-----------|-----------|---------------|----------|
+| **2026** | 0.047 gwei | $1,976.23 | **$0.0084** | **$0.0223** |
+| **2021** | 100 gwei | $3,318 | **$30.07** | **$79.63** |
+
+At 2026 prices, VRF adds roughly **$0.014 per tick** — negligible for most game loops.
+
 ## Cost Per Game Session
 
 | Duration | Ticks/sec | Total Ticks | Gas (M) | 2026 ETH | **2026 USD** | 2021 ETH | **2021 USD** |
@@ -31,6 +47,24 @@
 | 20 min | 30 | 36,000 | 3,262.6 | 0.15335 | **$303.06** | 326.26 | **$1,082,513** |
 | 20 min | 60 | 72,000 | 6,525.2 | 0.30670 | **$606.11** | 652.52 | **$2,165,026** |
 
+## VRF Cost Per Game Session
+
+Using ~240,000 gas per VRF tick at 2026 gas prices (0.047 gwei, ETH $1,976.23):
+
+| Duration | Ticks/sec | Total Ticks | Gas (M) | 2026 ETH | **2026 USD** |
+|----------|-----------|-------------|---------|----------|--------------|
+| 5 min | 1 | 300 | 72.0 | 0.00338 | **$6.69** |
+| 5 min | 5 | 1,500 | 360.0 | 0.01692 | **$33.44** |
+| 5 min | 10 | 3,000 | 720.0 | 0.03384 | **$66.88** |
+| | | | | | |
+| 10 min | 1 | 600 | 144.0 | 0.00677 | **$13.38** |
+| 10 min | 5 | 3,000 | 720.0 | 0.03384 | **$66.88** |
+| 10 min | 10 | 6,000 | 1,440.0 | 0.06768 | **$133.76** |
+| | | | | | |
+| 20 min | 1 | 1,200 | 288.0 | 0.01354 | **$26.75** |
+| 20 min | 5 | 6,000 | 1,440.0 | 0.06768 | **$133.76** |
+| 20 min | 10 | 12,000 | 2,880.0 | 0.13536 | **$267.52** |
+
 ## Notes
 
 - Gas costs dropped **3,571x** from 2021 to 2026 (100 gwei -> 0.047 gwei, plus ETH price decrease)
@@ -38,3 +72,5 @@
 - What cost $90k in 2021 (5 min @ 10 ticks/sec) now costs $25
 - Sweet spot for on-chain game loops is **1-5 ticks/sec**
 - At 30+ ticks/sec, consider an L2/rollup or off-chain state with periodic on-chain checkpoints
+- VRF adds ~2.65x gas per tick (~150k overhead) for on-chain proof verification
+- For VRF games at 1 tick/sec, a 10-minute session costs ~$13 — still practical for real-time on-chain play
