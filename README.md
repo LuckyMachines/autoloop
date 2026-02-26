@@ -20,12 +20,13 @@ Start here:
 
 ## Installation
 
-AutoLoop is published to the Lucky Machines package registry.
+AutoLoop is published to the Lucky Machines Verdaccio registry.
 
 Add the registry to your project's `.npmrc`:
 
 ```
-@luckymachines:registry=https://packages.luckymachines.io
+registry=http://localhost:4873
+@luckymachines:registry=http://localhost:4873
 ```
 
 Then install:

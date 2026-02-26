@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "On-chain automation protocol for progressing compatible smart contract loops, including VRF-based randomness flows.",
   "keywords": [
     "autoloop",
@@ -15,9 +15,13 @@
   "bugs": {
     "url": "https://github.com/LuckyMachines/autoloop/issues"
   },
-  "files": ["abi/", "deployments.json", "src/"],
+  "files": [
+    "abi/",
+    "deployments.json",
+    "src/"
+  ],
   "publishConfig": {
-    "registry": "https://packages.luckymachines.io"
+    "registry": "http://localhost:4873"
   },
   "scripts": {
     "build": "forge build",
