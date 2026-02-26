@@ -2,6 +2,44 @@
 
 An on-chain automation loop for your blockchain automation needs. Perfect for on-chain game loops.
 
+## AI Agent Quickstart
+
+This repository is optimized for automated code agents and LLM retrieval:
+
+- Machine-readable project summary: `llms.txt`
+- API and contract reference: `docs/index.md`
+- Gas and economics assumptions: `gas-cost-analysis.md`
+- ABI artifacts for integration tooling: `abi/contracts/*`
+
+Start here:
+
+1. Read `llms.txt` and `README.md`
+2. Compile and test with `npm run build` and `npm run test`
+3. Extract latest ABI bundle with `npm run extract-abi`
+4. Pair with `autoloop-worker` for loop execution and VRF proof delivery
+
+## Installation
+
+AutoLoop is published to the Lucky Machines package registry.
+
+Add the registry to your project's `.npmrc`:
+
+```
+@luckymachines:registry=https://packages.luckymachines.io
+```
+
+Then install:
+
+```bash
+npm install @luckymachines/autoloop
+```
+
+For Foundry projects, add a remapping to `remappings.txt`:
+
+```
+@luckymachines/autoloop/=node_modules/@luckymachines/autoloop/
+```
+
 ## Integrate with Your Smart Contract
 
 ### Standard Loop
@@ -9,7 +47,7 @@ An on-chain automation loop for your blockchain automation needs. Perfect for on
 Inherit from [`AutoLoopCompatible.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/AutoLoopCompatible.sol) and implement two functions:
 
 ```solidity
-import "./AutoLoopCompatible.sol";
+import "@luckymachines/autoloop/src/AutoLoopCompatible.sol";
 
 contract MyGame is AutoLoopCompatible {
     function shouldProgressLoop()
@@ -46,7 +84,7 @@ For contracts that need provably fair randomness, inherit from [`AutoLoopVRFComp
 **Solidity integration (3 steps):**
 
 ```solidity
-import "./AutoLoopVRFCompatible.sol";
+import "@luckymachines/autoloop/src/AutoLoopVRFCompatible.sol";
 
 contract MyVRFGame is AutoLoopVRFCompatible {
     // 1. shouldProgressLoop — same as standard loop
