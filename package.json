@@ -2,6 +2,9 @@
   "name": "@luckymachines/autoloop",
   "version": "0.1.0",
   "files": ["abi/", "deployments.json", "src/"],
+  "publishConfig": {
+    "registry": "https://packages.luckymachines.io"
+  },
   "scripts": {
     "build": "forge build",
     "test": "forge test -vvv",
