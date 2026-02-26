@@ -1,0 +1,36 @@
+# Lucky Machines AutoLoop
+
+AutoLoop is an on-chain automation protocol for smart contracts that expose `shouldProgressLoop()` and `progressLoop(bytes)`.
+
+## Canonical Files
+
+- `README.md` - integration guide, economics, and VRF model
+- `docs/index.md` - generated Solidity API documentation
+- `gas-cost-analysis.md` - cost assumptions and projections
+- `src/` - source contracts
+- `abi/contracts/` - ABI outputs for integration tooling
+
+## Core Contracts
+
+- `AutoLoop.sol` - execution entrypoint and fee accounting
+- `AutoLoopRegistry.sol` - registered contracts and controllers
+- `AutoLoopRegistrar.sol` - role-gated registration and balance ops
+- `AutoLoopCompatible.sol` - standard automation interface
+- `AutoLoopVRFCompatible.sol` - VRF envelope verification workflow
+- `VRFVerifier.sol` - ECVRF proof verifier
+
+## Integration Quickstart
+
+1. Implement `AutoLoopCompatible` or `AutoLoopVRFCompatible` in your game contract.
+2. Return readiness and opaque loop data from `shouldProgressLoop()`.
+3. Validate loop freshness inside `progressLoop(bytes)`.
+4. Register contract and controller through the registrar.
+5. Fund the contract balance used for gas reimbursement and fees.
+
+## Related Repositories
+
+- `../autoloop-worker` - off-chain controller that calls `progressLoop`
+- `../autoloop-dashboard` - local orchestration and monitoring UI
+- `../../RCS_Racerverse_Transit_System` - transit integration examples
+- `../../game-core` - reusable game infrastructure and transit batching
+
