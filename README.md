@@ -22,17 +22,26 @@ Start here:
 
 AutoLoop is published to the Lucky Machines Verdaccio registry.
 
-Add the registry to your project's `.npmrc`:
+Set the registry profile for this repo:
 
-```
-registry=http://localhost:4873
-@luckymachines:registry=http://localhost:4873
+```bash
+npm run registry:local    # http://localhost:4873
+npm run registry:staging  # https://staging-packages.luckymachines.io
+npm run registry:prod     # https://packages.luckymachines.io
+npm run registry:set -- custom https://your-registry.example.com
+npm run registry:ping
 ```
 
 Then install:
 
 ```bash
 npm install @luckymachines/autoloop
+```
+
+Publish to the configured registry:
+
+```bash
+npm run publish:registry
 ```
 
 For Foundry projects, add a remapping to `remappings.txt`:

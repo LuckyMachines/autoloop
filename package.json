@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "On-chain automation protocol for progressing compatible smart contract loops, including VRF-based randomness flows.",
   "keywords": [
     "autoloop",
@@ -20,10 +20,14 @@
     "deployments.json",
     "src/"
   ],
-  "publishConfig": {
-    "registry": "http://localhost:4873"
-  },
   "scripts": {
+    "registry:set": "node scripts/registry-config.cjs",
+    "registry:show": "node scripts/registry-config.cjs show",
+    "registry:local": "node scripts/registry-config.cjs local",
+    "registry:staging": "node scripts/registry-config.cjs staging",
+    "registry:prod": "node scripts/registry-config.cjs prod",
+    "registry:ping": "node scripts/registry-config.cjs ping",
+    "publish:registry": "node scripts/publish-registry.cjs",
     "build": "forge build",
     "test": "forge test -vvv",
     "extract-abi": "node scripts/extract-abi.js"
