@@ -39,8 +39,8 @@ contract AutoLoop is AutoLoopBase {
         AutoLoopBase.initialize();
         version = _version;
         BASE_FEE = 70; // percentage of gas cost used
-        PROTOCOL_FEE_PORTION = 60; // percentage of base fee to go to protocol
-        CONTROLLER_FEE_PORTION = 40; // percentage of base fee to go to controller
+        PROTOCOL_FEE_PORTION = 50; // percentage of base fee to go to protocol
+        CONTROLLER_FEE_PORTION = 50; // percentage of base fee to go to controller
         MAX_GAS = 1_000_000; // default if no personal max set
         MAX_GAS_PRICE = 40_000_000_000_000; // 40k gwei, default if no personal max set
         GAS_BUFFER = 94_293; // gas required to run transaction outside of contract update

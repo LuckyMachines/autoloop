@@ -454,12 +454,12 @@ contract AutoLoopTest is Test {
         uint256 protocolBalanceAfter = autoLoop.protocolBalance();
         uint256 protocolProfit = protocolBalanceAfter - protocolBalanceBefore;
 
-        // Protocol should receive 60% of the fee
-        uint256 expectedProtocolFee = (eventFee * 60) / 100;
+        // Protocol should receive 50% of the fee
+        uint256 expectedProtocolFee = (eventFee * 50) / 100;
         assertEq(
             protocolProfit,
             expectedProtocolFee,
-            "Protocol should receive exactly 60% of fee"
+            "Protocol should receive exactly 50% of fee"
         );
     }
 
@@ -548,19 +548,19 @@ contract AutoLoopTest is Test {
     }
 
     function test_AdminCanSetControllerFeePortion() public {
-        autoLoop.setControllerFeePortion(50);
-        // PROTOCOL_FEE_PORTION should be 50 now as well (100 - 50)
+        autoLoop.setControllerFeePortion(60);
+        // PROTOCOL_FEE_PORTION should be 40 now (100 - 60)
         // We can verify through the protocol fee portion
         // Since there's no direct getter for PROTOCOL_FEE_PORTION, we trust the logic
         // Reset to original
-        autoLoop.setControllerFeePortion(40);
+        autoLoop.setControllerFeePortion(50);
     }
 
     function test_AdminCanSetProtocolFeePortion() public {
         autoLoop.setProtocolFeePortion(70);
         // Controller fee portion becomes 30
         // Reset
-        autoLoop.setProtocolFeePortion(60);
+        autoLoop.setProtocolFeePortion(50);
     }
 
     function test_OnlyAdminCanSetFees() public {

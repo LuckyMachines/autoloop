@@ -148,8 +148,8 @@ The base fee is split between the protocol (Lucky Machines) and the controller t
 
 | Recipient | Share of base fee |
 |---|---|
-| Protocol | 60% |
-| Controller | 40% |
+| Protocol | 50% |
+| Controller | 50% |
 
 The controller also receives the full gas reimbursement.
 
@@ -159,7 +159,7 @@ From `AutoLoop.sol` `progressLoop()` (lines 125-137):
 
 ```
 fee            = (txGas * tx.gasprice * 70) / 100
-controllerFee  = (fee * 40) / 100
+controllerFee  = (fee * 50) / 100
 totalCost      = gasCost + fee
 
 Controller receives:  gasCost + controllerFee
@@ -176,11 +176,11 @@ Assume a loop execution uses **200,000 gas** at a gas price of **50 gwei**:
 | Gas used (with buffer) | 200,000 + 94,293 | 294,293 gas |
 | Gas cost (reimbursement) | 294,293 × 50 gwei | 0.01471465 ETH |
 | Base fee | (200,000 × 50 gwei × 70) / 100 | 0.007 ETH |
-| Controller fee (40% of base fee) | 0.007 × 40 / 100 | 0.0028 ETH |
-| Protocol fee (60% of base fee) | 0.007 × 60 / 100 | 0.0042 ETH |
+| Controller fee (50% of base fee) | 0.007 × 50 / 100 | 0.0035 ETH |
+| Protocol fee (50% of base fee) | 0.007 × 50 / 100 | 0.0035 ETH |
 | **Total charged to contract** | 0.01471465 + 0.007 | **0.02171465 ETH** |
-| **Controller receives** | 0.01471465 + 0.0028 | **0.01751465 ETH** |
-| **Protocol accumulates** | 0.007 - 0.0028 | **0.0042 ETH** |
+| **Controller receives** | 0.01471465 + 0.0035 | **0.01821465 ETH** |
+| **Protocol accumulates** | 0.007 - 0.0035 | **0.0035 ETH** |
 
 ## Deposits & Balances
 
@@ -207,8 +207,8 @@ All parameters below can be adjusted by the contract admin (`DEFAULT_ADMIN_ROLE`
 | Parameter | Default | Setter | Description |
 |---|---|---|---|
 | `BASE_FEE` | 70 | — | % of gas cost charged as fee (not directly settable post-init) |
-| `PROTOCOL_FEE_PORTION` | 60 | `setProtocolFeePortion()` | % of base fee to protocol |
-| `CONTROLLER_FEE_PORTION` | 40 | `setControllerFeePortion()` | % of base fee to controller |
+| `PROTOCOL_FEE_PORTION` | 50 | `setProtocolFeePortion()` | % of base fee to protocol |
+| `CONTROLLER_FEE_PORTION` | 50 | `setControllerFeePortion()` | % of base fee to controller |
 | `MAX_GAS` | 1,000,000 | `setMaxGasDefault()` | Default max gas per execution |
 | `MAX_GAS_PRICE` | 40,000,000,000,000 (40k gwei) | `setMaxGasPriceDefault()` | Default max gas price (wei) |
 | `GAS_BUFFER` | 94,293 | `setGasBuffer()` | Overhead gas outside contract update |
