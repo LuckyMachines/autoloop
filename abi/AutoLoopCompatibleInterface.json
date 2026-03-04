@@ -1,0 +1,33 @@
+[
+  {
+    "type": "function",
+    "name": "progressLoop",
+    "inputs": [
+      {
+        "name": "progressWithData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "shouldProgressLoop",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "loopIsReady",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "progressWithData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "view"
+  }
+]

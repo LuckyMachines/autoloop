@@ -11,7 +11,7 @@ const DEFAULTS = {
   local: process.env.LM_REGISTRY_LOCAL_URL || "http://localhost:4873",
   staging:
     process.env.LM_REGISTRY_STAGING_URL ||
-    "https://staging-packages.luckymachines.io",
+    "https://packages-staging.luckymachines.io",
   prod:
     process.env.LM_REGISTRY_PROD_URL || "https://packages.luckymachines.io",
 };

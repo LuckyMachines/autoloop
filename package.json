@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "On-chain automation protocol for progressing compatible smart contract loops, including VRF-based randomness flows.",
   "keywords": [
     "autoloop",

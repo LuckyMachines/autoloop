@@ -1,7 +1,40 @@
 {
-    "sepolia": {
-        "AUTO_LOOP": "0xB5F4cF500daE3162A4A4F5D2f3569bE1d5BE5238",
-        "AUTO_LOOP_REGISTRY": "0xAE63c1071020964e61f668De95cA1c90ad5695A7",
-        "AUTO_LOOP_REGISTRAR": "0xAE473527893bbf687D93cFD0e447d13202054ef0"
+  "11155111": {
+    "name": "Sepolia",
+    "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+    "etherscanUrl": "https://sepolia.etherscan.io",
+    "contracts": {
+      "AUTO_LOOP": "0xB5F4cF500daE3162A4A4F5D2f3569bE1d5BE5238",
+      "AUTO_LOOP_REGISTRY": "0xAE63c1071020964e61f668De95cA1c90ad5695A7",
+      "AUTO_LOOP_REGISTRAR": "0xAE473527893bbf687D93cFD0e447d13202054ef0"
     }
+  },
+  "31337": {
+    "name": "Anvil",
+    "rpcUrl": "http://127.0.0.1:8545",
+    "etherscanUrl": null,
+    "contracts": {
+      "AUTO_LOOP": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "AUTO_LOOP_REGISTRY": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "AUTO_LOOP_REGISTRAR": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+    }
+  },
+  "8453": {
+    "name": "Base",
+    "rpcUrl": "https://mainnet.base.org",
+    "etherscanUrl": "https://basescan.org",
+    "contracts": {}
+  },
+  "42161": {
+    "name": "Arbitrum",
+    "rpcUrl": "https://arb1.arbitrum.io/rpc",
+    "etherscanUrl": "https://arbiscan.io",
+    "contracts": {}
+  },
+  "137": {
+    "name": "Polygon",
+    "rpcUrl": "https://polygon-rpc.com",
+    "etherscanUrl": "https://polygonscan.com",
+    "contracts": {}
+  }
 }
