@@ -272,10 +272,48 @@ contract AutoLoopRegistry is AutoLoopBase {
         return admins;
     }
 
-    // Cleanup
-    function cleanControllerList() public {}
+    // Cleanup — swap-and-pop to remove deregistered entries (C3)
+    function cleanControllerList() public {
+        uint256 i = 0;
+        while (i < _registeredControllers.length) {
+            address addr = _registeredControllers[i];
+            if (addr == address(0) || !isRegisteredController[addr]) {
+                // Swap with last element and pop
+                uint256 lastIdx = _registeredControllers.length - 1;
+                if (i != lastIdx) {
+                    address lastAddr = _registeredControllers[lastIdx];
+                    _registeredControllers[i] = lastAddr;
+                    _registeredControllerIndex[lastAddr] = i;
+                }
+                _registeredControllers.pop();
+                // Don't increment i — re-check the swapped element
+            } else {
+                _registeredControllerIndex[addr] = i;
+                i++;
+            }
+        }
+    }
 
-    function cleanAutoLoopList() public {}
+    function cleanAutoLoopList() public {
+        uint256 i = 0;
+        while (i < _registeredAutoLoops.length) {
+            address addr = _registeredAutoLoops[i];
+            if (addr == address(0) || !isRegisteredAutoLoop[addr]) {
+                // Swap with last element and pop
+                uint256 lastIdx = _registeredAutoLoops.length - 1;
+                if (i != lastIdx) {
+                    address lastAddr = _registeredAutoLoops[lastIdx];
+                    _registeredAutoLoops[i] = lastAddr;
+                    _registeredAutoLoopIndex[lastAddr] = i;
+                }
+                _registeredAutoLoops.pop();
+                // Don't increment i — re-check the swapped element
+            } else {
+                _registeredAutoLoopIndex[addr] = i;
+                i++;
+            }
+        }
+    }
 
     // Registrar
     function registerAutoLoop(

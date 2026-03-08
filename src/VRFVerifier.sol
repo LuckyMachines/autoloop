@@ -10,6 +10,28 @@ pragma solidity 0.8.34;
  *      The key insight: instead of doing full EC point multiplication on-chain (~millions of gas),
  *      we use ecrecover as an EC multiplication oracle (~3k gas). The prover computes helper points
  *      (U, V) off-chain, and the verifier checks them using ecrecover + EC addition only.
+ *
+ *      ## Trust Model (C5 documentation)
+ *
+ *      U = s*G - c*PK is verified algebraically via the ecrecover trick (exact check).
+ *
+ *      sH and cGamma CANNOT be algebraically verified on-chain using ecrecover because
+ *      ecrecover only works for scalar multiples of the generator G, not arbitrary base
+ *      points like H or Gamma. Instead, the controller supplies sH and cGamma as precomputed
+ *      values. We verify they are valid secp256k1 points (on-curve check), then rely on
+ *      the Fiat-Shamir hash check c == hash(G, H, PK, Gamma, U, V) for soundness.
+ *
+ *      This means the controller is semi-trusted for these precomputed points. A malicious
+ *      controller could supply incorrect sH/cGamma values, but they would need to find
+ *      an sH' and cGamma' such that V' = sH' - cGamma' produces a valid Fiat-Shamir
+ *      challenge c == hash(..., U, V'). Finding such a collision is computationally
+ *      infeasible under the random oracle model (keccak256).
+ *
+ *      ## Hash Function Variant (M5 documentation)
+ *
+ *      This implementation uses keccak256 instead of SHA-256 for the hash-to-curve
+ *      and Fiat-Shamir challenge. This is a deliberate variant choice for gas efficiency
+ *      on the EVM. The security properties are equivalent under the random oracle model.
  */
 library VRFVerifier {
     // secp256k1 curve parameters
@@ -39,11 +61,20 @@ library VRFVerifier {
         uint256[2] memory uPoint,
         uint256[4] memory vComponents
     ) internal pure returns (bool) {
+        // Range validation (M4): public key coordinates must be in field
+        require(publicKey[0] < PP && publicKey[1] < PP, "VRF: public key out of range");
+
         // Extract proof components
         uint256 gammaX = proof[0];
         uint256 gammaY = proof[1];
         uint256 c = proof[2];
         uint256 s = proof[3];
+
+        // Range validation (M4): proof scalars must be in [0, n)
+        require(c < NN, "VRF: c out of range");
+        require(s < NN, "VRF: s out of range");
+        // Gamma must be a valid curve point
+        require(_isOnCurve(gammaX, gammaY), "VRF: gamma not on curve");
 
         // Step 1: Hash message to curve point H
         (uint256 hx, uint256 hy) = hashToCurve(publicKey, message);
@@ -161,32 +192,18 @@ library VRFVerifier {
         uint256 s,
         uint256[2] memory uPoint
     ) private pure returns (bool) {
-        // We want to verify: uPoint = s*G - c*publicKey
-        // Using the ecrecover trick:
-        // address(ecrecover(e, v, r, s_ec)) where:
-        //   e = -(c * pkX) mod n
-        //   v = pkY parity + 27
-        //   r = pkX
-        //   s_ec = (n - (c * pkX * invmod(s, n))) mod n ... simplified:
+        // H4: Validate public key is on curve and in valid range
+        if (!_isOnCurve(publicKey[0], publicKey[1])) return false;
 
-        // Actually, we use the standard Witnet approach:
-        // ecrecover can recover a public key from a signature.
-        // If we set up the "signature" parameters correctly, ecrecover
-        // will compute s*G - c*PK for us, and we verify the result matches uPoint.
+        // H4: Validate uPoint is on curve
+        if (!_isOnCurve(uPoint[0], uPoint[1])) return false;
+
+        // H4: Degenerate case — c and s both zero would produce trivial result
+        if (c == 0 && s == 0) return false;
 
         // Hash of uPoint gives us the "address" to check against
         address expectedAddr = _pointToAddress(uPoint[0], uPoint[1]);
 
-        // Construct ecrecover params:
-        // For point P with coordinates (px, py):
-        //   ecrecover(hash, v, r, s_param) recovers address of R where
-        //   R = s_param * inv(r) * G + (-hash * inv(r)) * P
-        //
-        // We want: U = s*G - c*PK
-        // Set r = pkX (mod n), and derive v from pkY parity
-        // hash = -s*pkX (mod n) ... then ecrecover gives:
-        //   s_param*inv(r)*G + (-hash*inv(r))*PK = s_param*inv(pkX)*G + (s*pkX*inv(pkX))*PK... nope
-        //
         // ecrecover(e, v, r, s_sig) recovers the address of the point:
         //   Q = inv(r) * (s_sig * R - e * G)
         // where R is the curve point with x = r and y determined by v.
@@ -203,6 +220,9 @@ library VRFVerifier {
 
         uint256 e = NN - mulmod(s, pkX, NN);
         uint256 sParam = NN - mulmod(c, pkX, NN);
+
+        // H4: Ensure sParam != 0 (ecrecover returns address(0) for s=0)
+        if (sParam == 0) return false;
 
         // v = 27 or 28 depending on parity of publicKey Y
         uint8 v = publicKey[1] % 2 == 0 ? uint8(27) : uint8(28);

@@ -3,6 +3,7 @@ pragma solidity 0.8.34;
 
 import "./AutoLoopBase.sol";
 import "./AutoLoopCompatibleInterface.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract AutoLoop is AutoLoopBase {
     using ERC165Checker for address;
@@ -96,7 +97,7 @@ contract AutoLoop is AutoLoopBase {
     function progressLoop(
         address contractAddress,
         bytes calldata progressWithData
-    ) external onlyRole(CONTROLLER_ROLE) nonReentrant {
+    ) external onlyRole(CONTROLLER_ROLE) nonReentrant whenNotPaused {
         require(
             contractAddress.supportsInterface(
                 type(AutoLoopCompatibleInterface).interfaceId
@@ -121,9 +122,9 @@ contract AutoLoop is AutoLoopBase {
         require(success, "Unable to progress loop. Call not a success");
         uint256 gasUsed = GAS_BUFFER + txGas;
         uint256 gasCost = gasUsed * tx.gasprice;
-        // get fee from contract update gas, not total gas
-        uint256 fee = (txGas * tx.gasprice * BASE_FEE) / 100; //total fee for controller + protocol
-        uint256 controllerFee = (fee * CONTROLLER_FEE_PORTION) / 100; // controller's portion of fee
+        // get fee from contract update gas, not total gas (H1: use Math.mulDiv for precision)
+        uint256 fee = Math.mulDiv(txGas * tx.gasprice, BASE_FEE, 100);
+        uint256 controllerFee = Math.mulDiv(fee, CONTROLLER_FEE_PORTION, 100);
         uint256 totalCost = gasCost + fee; // total cost including fee
 
         require(
@@ -164,7 +165,7 @@ contract AutoLoop is AutoLoopBase {
 
     function deposit(
         address registeredUser
-    ) external payable onlyRole(REGISTRAR_ROLE) {
+    ) external payable onlyRole(REGISTRAR_ROLE) whenNotPaused {
         balance[registeredUser] += msg.value;
     }
 
@@ -172,10 +173,12 @@ contract AutoLoop is AutoLoopBase {
         address registeredUser,
         address toAddress
     ) external onlyRole(REGISTRAR_ROLE) nonReentrant {
+        require(toAddress != address(0), "Cannot refund to zero address");
         require(balance[registeredUser] > 0, "User balance is zero.");
-        (bool sent, ) = toAddress.call{value: balance[registeredUser]}("");
-        require(sent, "Failed to send refund");
+        uint256 refundAmount = balance[registeredUser];
         balance[registeredUser] = 0;
+        (bool sent, ) = toAddress.call{value: refundAmount}("");
+        require(sent, "Failed to send refund");
     }
 
     function setMaxGas(
@@ -245,13 +248,14 @@ contract AutoLoop is AutoLoopBase {
         uint256 amount,
         address toAddress
     ) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        require(toAddress != address(0), "Cannot withdraw to zero address");
         require(
             _protocolBalance >= amount,
             "withdraw amount greater than protocol balance"
         );
+        _protocolBalance -= amount;
         (bool sent, ) = toAddress.call{value: amount}("");
         require(sent, "Error withdrawing protocol fees");
-        _protocolBalance -= amount;
     }
 
     // Internal //

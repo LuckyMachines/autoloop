@@ -162,7 +162,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @notice AutoLoop compatible contract registers itself. ACCs can have multiple admins, admin at 0 is indexed.
      * @return success - whether the registration was successful or not
      */
-    function registerAutoLoop() external nonReentrant returns (bool success) {
+    function registerAutoLoop() external nonReentrant whenNotPaused returns (bool success) {
         // pass _msgSender() as both arguments since it is both registrant and contract being registered
         if (canRegisterAutoLoop(_msgSender(), _msgSender())) {
             address adminAddress = AutoLoopCompatible(_msgSender())
@@ -180,7 +180,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
     function registerAutoLoopFor(
         address autoLoopCompatibleContract,
         uint256 maxGasPerUpdate
-    ) external payable returns (bool success) {
+    ) external payable whenNotPaused returns (bool success) {
         if (canRegisterAutoLoop(_msgSender(), autoLoopCompatibleContract)) {
             _registerAutoLoop(autoLoopCompatibleContract, _msgSender());
             if (msg.value > 0) {
@@ -200,7 +200,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @notice register an AutoLoop controller
      * @return success - whether or not the controller was registered
      */
-    function registerController() external payable returns (bool success) {
+    function registerController() external payable whenNotPaused returns (bool success) {
         require(msg.value > 0, "Insufficient registration fee");
         if (canRegisterController(_msgSender())) {
             (bool sent, ) = _msgSender().call{value: msg.value}("");
@@ -225,16 +225,19 @@ contract AutoLoopRegistrar is AutoLoopBase {
     }
 
     /**
-     * @notice AutoLoop compatible contract deregisters itself
+     * @notice AutoLoop compatible contract deregisters itself.
+     *         Any remaining balance is refunded to the contract's primary admin. (C4)
      * @return success - whether the unregistration was successful or not
      */
     function deregisterAutoLoop() external returns (bool success) {
+        _refundOnDeregister(_msgSender());
         _deregisterAutoLoop(_msgSender());
         success = true;
     }
 
     /**
-     * @notice deregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being deregistered)
+     * @notice deregister an AutoLoop compatible contract (must have DEFAULT_ADMIN_ROLE on contract being deregistered).
+     *         Any remaining balance is refunded to the caller. (C4)
      * @param autoLoopCompatibleContract the address of the contract to deregister
      * @return success - whether or not the contract was deregistered
      */
@@ -242,8 +245,28 @@ contract AutoLoopRegistrar is AutoLoopBase {
         address autoLoopCompatibleContract
     ) external returns (bool success) {
         if (_isAdmin(_msgSender(), autoLoopCompatibleContract)) {
+            _refundOnDeregister(autoLoopCompatibleContract);
             _deregisterAutoLoop(autoLoopCompatibleContract);
             success = true;
+        }
+    }
+
+    /**
+     * @notice Emergency withdrawal for a registered contract's balance.
+     *         Only callable by the contract's admin. (C4)
+     * @param registeredContract the AutoLoop-compatible contract address
+     * @param toAddress the address to send the refund to
+     */
+    function emergencyWithdraw(
+        address registeredContract,
+        address toAddress
+    ) external {
+        require(
+            _isAdmin(_msgSender(), registeredContract),
+            "Caller is not admin on contract"
+        );
+        if (AUTO_LOOP.balance(registeredContract) > 0) {
+            AUTO_LOOP.requestRefund(registeredContract, toAddress);
         }
     }
 
@@ -264,6 +287,19 @@ contract AutoLoopRegistrar is AutoLoopBase {
                 DEFAULT_ADMIN_ROLE,
                 testAddress
             );
+    }
+
+    /**
+     * @dev Refund remaining balance to the contract's primary admin on deregistration. (C4)
+     */
+    function _refundOnDeregister(address registrant) internal {
+        if (AUTO_LOOP.balance(registrant) > 0) {
+            address primaryAdmin = AutoLoopCompatible(registrant).getRoleMember(
+                DEFAULT_ADMIN_ROLE,
+                0
+            );
+            AUTO_LOOP.requestRefund(registrant, primaryAdmin);
+        }
     }
 
     /**

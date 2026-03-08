@@ -40,6 +40,9 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
     /// @notice Emitted when a controller registers their VRF public key
     event ControllerKeyRegistered(address indexed controller, uint256 pkX, uint256 pkY);
 
+    /// @notice Emitted when a controller's existing key is revoked/overwritten (M3)
+    event ControllerKeyRevoked(address indexed controller, uint256 oldPkX, uint256 oldPkY);
+
     /// @notice Emitted when VRF randomness is verified and consumed
     event VRFRandomnessVerified(
         uint256 indexed loopID,
@@ -66,6 +69,12 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
             "Only controller or admin can register key"
         );
         require(_isValidPublicKey(pkX, pkY), "Invalid public key");
+
+        // M3: Emit revocation event if overwriting an existing key
+        if (controllerKeyRegistered[controller]) {
+            uint256[2] memory oldKey = controllerPublicKeys[controller];
+            emit ControllerKeyRevoked(controller, oldKey[0], oldKey[1]);
+        }
 
         controllerPublicKeys[controller] = [pkX, pkY];
         controllerKeyRegistered[controller] = true;
