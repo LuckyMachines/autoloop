@@ -1,6 +1,6 @@
 {
   "name": "@luckymachines/autoloop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "On-chain automation protocol for progressing compatible smart contract loops, including VRF-based randomness flows.",
   "keywords": [
     "autoloop",
@@ -36,7 +36,7 @@
     "type": "git",
     "url": "https://github.com/LuckyMachines/autoloop"
   },
-  "author": "Max Meier",
+  "author": "Lucky Machines LLC",
   "license": "MIT",
   "devDependencies": {
     "dotenv": "^16.4.7"
