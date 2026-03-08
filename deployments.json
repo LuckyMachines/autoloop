@@ -1,4 +1,14 @@
 {
+  "1": {
+    "name": "Mainnet",
+    "rpcUrl": "https://ethereum-rpc.publicnode.com",
+    "etherscanUrl": "https://etherscan.io",
+    "contracts": {
+      "AUTO_LOOP": "0x6748415BcE63c0FBf1E50ceB2128BfeAC977224F",
+      "AUTO_LOOP_REGISTRY": "0xC1b9241DE87108EffF5caAf0340CcEbD05A5425f",
+      "AUTO_LOOP_REGISTRAR": "0x202d73Ac243907A6e81B5FF55E4c316567e4fF80"
+    }
+  },
   "11155111": {
     "name": "Sepolia",
     "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
