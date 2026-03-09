@@ -644,6 +644,413 @@ contract AutoLoopSecurityTest is Test {
     }
 
     // ===============================================================
+    //  Section 11 — Fuzz: Rapid Deposit / Refund / Re-deposit Cycling
+    // ===============================================================
+
+    /// @dev Rapid cycles of deposit → refund → re-deposit should never
+    ///      lose or create ETH. Tests the Chainlink-style "trapped funds"
+    ///      scenario where repeated operations could leave dust behind.
+    function testFuzz_DepositRefundCycle(
+        uint256 amount,
+        uint8 cycles
+    ) public {
+        amount = bound(amount, 1 wei, 10 ether);
+        cycles = uint8(bound(cycles, 1, 20));
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+
+        uint256 adminBalStart = admin.balance;
+
+        for (uint256 i = 0; i < cycles; i++) {
+            // Deposit
+            registrar.deposit{value: amount}(address(game1));
+            assertEq(
+                autoLoop.balance(address(game1)),
+                amount,
+                "Balance should match deposit"
+            );
+
+            // Refund
+            registrar.requestRefundFor(address(game1), admin);
+            assertEq(
+                autoLoop.balance(address(game1)),
+                0,
+                "Balance should be zero after refund"
+            );
+        }
+
+        // Admin should have exactly what they started with
+        assertEq(admin.balance, adminBalStart, "No ETH lost or created after cycling");
+
+        // AutoLoop contract should hold zero for this game
+        assertEq(
+            autoLoop.balance(address(game1)),
+            0,
+            "No dust remaining in contract"
+        );
+    }
+
+    /// @dev Variant: deposit multiple times before a single refund.
+    ///      Ensures incremental deposits are fully refundable.
+    function testFuzz_MultiDepositSingleRefund(
+        uint256 depositCount,
+        uint256 amount
+    ) public {
+        depositCount = bound(depositCount, 1, 30);
+        amount = bound(amount, 1 wei, 1 ether);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+
+        uint256 adminBalStart = admin.balance;
+        uint256 totalDeposited = 0;
+
+        for (uint256 i = 0; i < depositCount; i++) {
+            registrar.deposit{value: amount}(address(game1));
+            totalDeposited += amount;
+        }
+
+        assertEq(
+            autoLoop.balance(address(game1)),
+            totalDeposited,
+            "Balance should equal sum of all deposits"
+        );
+
+        // Single refund should return everything
+        registrar.requestRefundFor(address(game1), admin);
+        assertEq(autoLoop.balance(address(game1)), 0, "Balance should be zero");
+        assertEq(admin.balance, adminBalStart, "All ETH returned to admin");
+    }
+
+    // ===============================================================
+    //  Section 12 — Fuzz: Refund During Active Loop Execution
+    // ===============================================================
+
+    /// @dev Simulates a refund immediately after a progressLoop execution.
+    ///      Ensures the user can always withdraw remaining balance after
+    ///      fees have been deducted, and no ETH gets stuck.
+    function testFuzz_RefundAfterProgress(
+        uint256 deposit,
+        uint256 gasPrice
+    ) public {
+        // Use realistic ranges: deposit must cover gas+buffer+fee at the fuzzed price.
+        // At 200 gwei with ~2M gas + 94k buffer + 70% fee, max cost is ~0.7 ETH.
+        deposit = bound(deposit, 1 ether, 50 ether);
+        gasPrice = bound(gasPrice, 1 gwei, 200 gwei);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        registrar.deposit{value: deposit}(address(game1));
+
+        // Register controller
+        vm.prank(controller1);
+        registrar.registerController{value: 0.0001 ether}();
+
+        // Advance time so shouldProgressLoop returns true
+        vm.warp(block.timestamp + 31);
+        vm.roll(block.number + 1);
+
+        (, bytes memory data) = game1.shouldProgressLoop();
+
+        // Progress loop — deducts gas cost + fee from balance
+        vm.txGasPrice(gasPrice);
+        vm.prank(controller1);
+        autoLoop.progressLoop(address(game1), data);
+
+        uint256 remainingBalance = autoLoop.balance(address(game1));
+        uint256 protocolBal = autoLoop.protocolBalance();
+
+        // Invariant: contract ETH = all user balances + protocol balance
+        assertEq(
+            address(autoLoop).balance,
+            remainingBalance + protocolBal,
+            "ETH invariant broken after progress"
+        );
+
+        // User should be able to refund whatever remains
+        if (remainingBalance > 0) {
+            uint256 adminBalBefore = admin.balance;
+            registrar.requestRefundFor(address(game1), admin);
+            assertEq(autoLoop.balance(address(game1)), 0, "Balance not zeroed");
+            assertEq(
+                admin.balance,
+                adminBalBefore + remainingBalance,
+                "Admin didn't receive correct refund"
+            );
+        }
+
+        // Protocol fees should still be withdrawable
+        if (protocolBal > 0) {
+            uint256 adminBalBefore2 = admin.balance;
+            autoLoop.withdrawProtocolFees(protocolBal, admin);
+            assertEq(autoLoop.protocolBalance(), 0, "Protocol balance not zeroed");
+            assertEq(
+                admin.balance,
+                adminBalBefore2 + protocolBal,
+                "Admin didn't receive protocol fees"
+            );
+        }
+
+        // Contract should be completely drained
+        assertEq(address(autoLoop).balance, 0, "AutoLoop should hold zero ETH");
+    }
+
+    /// @dev Progress multiple times at different gas prices, then refund.
+    ///      Tests that repeated fee deductions don't leave unrecoverable dust.
+    function testFuzz_MultiProgressThenRefund(
+        uint256 progressCount,
+        uint256 gasPrice
+    ) public {
+        progressCount = bound(progressCount, 1, 10);
+        gasPrice = bound(gasPrice, 1 gwei, 100 gwei);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        registrar.deposit{value: 50 ether}(address(game1));
+
+        vm.prank(controller1);
+        registrar.registerController{value: 0.0001 ether}();
+
+        for (uint256 i = 0; i < progressCount; i++) {
+            vm.warp(block.timestamp + 31);
+            vm.roll(block.number + 1);
+
+            (bool ready, bytes memory data) = game1.shouldProgressLoop();
+            if (!ready) break;
+
+            // Check balance is sufficient before progressing
+            uint256 bal = autoLoop.balance(address(game1));
+            if (bal < 0.001 ether) break; // avoid reverts on low balance
+
+            vm.txGasPrice(gasPrice);
+            vm.prank(controller1);
+            autoLoop.progressLoop(address(game1), data);
+        }
+
+        // After all progress loops, verify invariant
+        uint256 userBal = autoLoop.balance(address(game1));
+        uint256 protoBal = autoLoop.protocolBalance();
+
+        assertEq(
+            address(autoLoop).balance,
+            userBal + protoBal,
+            "ETH invariant violated after multi-progress"
+        );
+
+        // Full refund + protocol withdrawal should drain contract
+        if (userBal > 0) {
+            registrar.requestRefundFor(address(game1), admin);
+        }
+        if (protoBal > 0) {
+            autoLoop.withdrawProtocolFees(protoBal, admin);
+        }
+
+        assertEq(address(autoLoop).balance, 0, "Dust remaining after full withdrawal");
+    }
+
+    // ===============================================================
+    //  Section 13 — Fuzz: Deregister + Refund Race Conditions
+    // ===============================================================
+
+    /// @dev Deregister auto-refunds to primary admin. Verify this works
+    ///      correctly with any deposit amount and that re-registration
+    ///      starts with a clean slate.
+    function testFuzz_DeregisterRefundReregister(uint256 amount) public {
+        amount = bound(amount, 1 wei, 10 ether);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        registrar.deposit{value: amount}(address(game1));
+
+        uint256 adminBalBefore = admin.balance;
+
+        // Deregister — should auto-refund
+        registrar.deregisterAutoLoopFor(address(game1));
+
+        assertEq(autoLoop.balance(address(game1)), 0, "Balance not zeroed on deregister");
+        assertEq(admin.balance, adminBalBefore + amount, "Refund not received on deregister");
+        assertFalse(registry.isRegisteredAutoLoop(address(game1)), "Still registered");
+
+        // Re-register — should start fresh with zero balance
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        assertTrue(registry.isRegisteredAutoLoop(address(game1)), "Not re-registered");
+        assertEq(autoLoop.balance(address(game1)), 0, "Balance not zero after re-register");
+    }
+
+    /// @dev Emergency withdraw then deregister — both should succeed,
+    ///      no double-refund.
+    function testFuzz_EmergencyWithdrawThenDeregister(uint256 amount) public {
+        amount = bound(amount, 1 wei, 10 ether);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        registrar.deposit{value: amount}(address(game1));
+
+        uint256 adminBalBefore = admin.balance;
+
+        // Emergency withdraw first
+        registrar.emergencyWithdraw(address(game1), admin);
+        assertEq(autoLoop.balance(address(game1)), 0, "Balance not zeroed");
+        assertEq(admin.balance, adminBalBefore + amount, "Didn't receive emergency refund");
+
+        // Deregister — balance is zero, should not revert
+        registrar.deregisterAutoLoopFor(address(game1));
+        assertFalse(registry.isRegisteredAutoLoop(address(game1)), "Still registered");
+
+        // Admin balance should not have changed (no double refund)
+        assertEq(admin.balance, adminBalBefore + amount, "Double refund detected");
+    }
+
+    /// @dev Deregister with zero balance should succeed without revert.
+    function test_DeregisterZeroBalance() public {
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        // No deposit — zero balance
+
+        // Should not revert
+        registrar.deregisterAutoLoopFor(address(game1));
+        assertFalse(registry.isRegisteredAutoLoop(address(game1)), "Still registered");
+    }
+
+    // ===============================================================
+    //  Section 14 — Fuzz: Dust Accumulation Over Many Loops
+    // ===============================================================
+
+    /// @dev Run many loops with varying gas prices and verify that after
+    ///      refund + protocol withdrawal, exactly zero ETH remains.
+    ///      This catches any integer division rounding that could leak
+    ///      or create wei over many iterations.
+    function testFuzz_DustAfterManyLoops(uint256 seed) public {
+        seed = bound(seed, 1, type(uint128).max);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        registrar.deposit{value: 100 ether}(address(game1));
+
+        vm.prank(controller1);
+        registrar.registerController{value: 0.0001 ether}();
+
+        // Run 50 loops with pseudo-random gas prices
+        for (uint256 i = 0; i < 50; i++) {
+            vm.warp(block.timestamp + 31);
+            vm.roll(block.number + 1);
+
+            (bool ready, bytes memory data) = game1.shouldProgressLoop();
+            if (!ready) break;
+
+            uint256 bal = autoLoop.balance(address(game1));
+            if (bal < 0.01 ether) break;
+
+            // Vary gas price using seed
+            uint256 gp = bound(
+                uint256(keccak256(abi.encode(seed, i))),
+                1 gwei,
+                150 gwei
+            );
+
+            vm.txGasPrice(gp);
+            vm.prank(controller1);
+            autoLoop.progressLoop(address(game1), data);
+        }
+
+        // Verify invariant holds
+        uint256 userBal = autoLoop.balance(address(game1));
+        uint256 protoBal = autoLoop.protocolBalance();
+
+        assertEq(
+            address(autoLoop).balance,
+            userBal + protoBal,
+            "ETH invariant broken after 50 loops"
+        );
+
+        // Withdraw everything
+        if (userBal > 0) {
+            registrar.requestRefundFor(address(game1), admin);
+        }
+        if (protoBal > 0) {
+            autoLoop.withdrawProtocolFees(protoBal, admin);
+        }
+
+        // No dust should remain
+        assertEq(
+            address(autoLoop).balance,
+            0,
+            "Dust detected after full withdrawal - rounding error"
+        );
+    }
+
+    /// @dev Fuzz the fee percentages themselves during active operation.
+    ///      Change controller/protocol fee split mid-stream and verify
+    ///      accounting still holds.
+    function testFuzz_FeeChangeMidStream(
+        uint256 newControllerPortion,
+        uint256 loops
+    ) public {
+        newControllerPortion = bound(newControllerPortion, 0, 100);
+        loops = bound(loops, 1, 10);
+
+        game1 = new NumberGoUp(0);
+        registrar.registerAutoLoopFor(address(game1), 2_000_000);
+        registrar.deposit{value: 50 ether}(address(game1));
+
+        vm.prank(controller1);
+        registrar.registerController{value: 0.0001 ether}();
+
+        // Run some loops with default fees
+        for (uint256 i = 0; i < loops / 2 + 1; i++) {
+            vm.warp(block.timestamp + 31);
+            vm.roll(block.number + 1);
+            (bool ready, bytes memory data) = game1.shouldProgressLoop();
+            if (!ready) break;
+            uint256 bal = autoLoop.balance(address(game1));
+            if (bal < 0.01 ether) break;
+            vm.txGasPrice(20 gwei);
+            vm.prank(controller1);
+            autoLoop.progressLoop(address(game1), data);
+        }
+
+        // Change fee split mid-stream
+        autoLoop.setControllerFeePortion(newControllerPortion);
+
+        // Run more loops with new fees
+        for (uint256 i = 0; i < loops / 2 + 1; i++) {
+            vm.warp(block.timestamp + 31);
+            vm.roll(block.number + 1);
+            (bool ready, bytes memory data) = game1.shouldProgressLoop();
+            if (!ready) break;
+            uint256 bal = autoLoop.balance(address(game1));
+            if (bal < 0.01 ether) break;
+            vm.txGasPrice(20 gwei);
+            vm.prank(controller1);
+            autoLoop.progressLoop(address(game1), data);
+        }
+
+        // Verify invariant
+        uint256 userBal = autoLoop.balance(address(game1));
+        uint256 protoBal = autoLoop.protocolBalance();
+
+        assertEq(
+            address(autoLoop).balance,
+            userBal + protoBal,
+            "Invariant broken after fee change"
+        );
+
+        // Full drain
+        if (userBal > 0) {
+            registrar.requestRefundFor(address(game1), admin);
+        }
+        if (protoBal > 0) {
+            autoLoop.withdrawProtocolFees(protoBal, admin);
+        }
+
+        assertEq(address(autoLoop).balance, 0, "Dust after fee change scenario");
+
+        // Reset fees
+        autoLoop.setControllerFeePortion(50);
+    }
+
+    // ===============================================================
     //  Internal helpers
     // ===============================================================
 
