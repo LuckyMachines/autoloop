@@ -573,6 +573,84 @@ EC point subtraction: `(x1,y1) + (x2, -y2)`.
 
 ---
 
+## AutoLoopHybridVRFCompatible
+
+Abstract base for AutoLoop contracts that selectively use VRF randomness. Extends `AutoLoopVRFCompatible`. The contract decides per-tick whether it needs VRF randomness via `_needsVRF(loopID)`. Standard ticks are cheap (~90k gas); VRF ticks fire only when requested (~240k gas).
+
+### HYBRID\_VRF\_INTERFACE\_ID
+
+```solidity
+bytes4 public constant HYBRID_VRF_INTERFACE_ID = bytes4(keccak256("AutoLoopHybridVRFCompatible"))
+```
+
+ERC-165 interface ID for hybrid VRF-compatible contracts.
+
+### \_needsVRF
+
+```solidity
+function _needsVRF(uint256 loopID) internal view virtual returns (bool)
+```
+
+Override to determine when VRF randomness is needed (e.g., `return loopID % 10 == 0`).
+
+### \_shouldProgress
+
+```solidity
+function _shouldProgress() internal view virtual returns (bool ready, bytes memory gameData)
+```
+
+Override with timing/readiness logic. Returns whether the loop is ready and any game-specific data.
+
+### \_onTick
+
+```solidity
+function _onTick(bytes memory gameData) internal virtual
+```
+
+Called on standard ticks (no VRF randomness). Override with cheap game logic.
+
+### \_onVRFTick
+
+```solidity
+function _onVRFTick(bytes32 randomness, bytes memory gameData) internal virtual
+```
+
+Called on VRF ticks with verified randomness. Override with random-event logic (loot, crits, spawns).
+
+### shouldProgressLoop
+
+```solidity
+function shouldProgressLoop() external view override returns (bool loopIsReady, bytes memory progressWithData)
+```
+
+Encodes `(needsVRF, loopID, gameData)` so the worker knows whether to generate a VRF proof.
+
+### progressLoop
+
+```solidity
+function progressLoop(bytes calldata progressWithData) external override
+```
+
+Routes to `_onTick()` or `_onVRFTick()` based on data size. VRF envelope (>= 640 bytes) triggers proof verification; smaller data is treated as a standard tick.
+
+### StandardTick
+
+```solidity
+event StandardTick(uint256 indexed loopID, uint256 timestamp)
+```
+
+Emitted on standard (non-VRF) ticks.
+
+### HybridVRFTick
+
+```solidity
+event HybridVRFTick(uint256 indexed loopID, bytes32 randomness, uint256 timestamp)
+```
+
+Emitted on VRF ticks with the verified randomness value.
+
+---
+
 ## AutoLoopVRFCompatible
 
 Abstract base for AutoLoop-compatible contracts that require verifiable randomness. Extends `AutoLoopCompatible` and uses `VRFVerifier` for on-chain proof verification.

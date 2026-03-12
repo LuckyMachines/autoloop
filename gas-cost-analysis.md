@@ -11,19 +11,29 @@
 
 ## VRF Overhead
 
-VRF-enabled contracts (`AutoLoopVRFCompatible`) require on-chain ECVRF proof verification via `VRFVerifier.sol`. This adds elliptic curve operations (hash-to-curve, ecrecover trick, EC addition) on top of the standard loop cost.
+VRF-enabled contracts require on-chain ECVRF proof verification via `VRFVerifier.sol`. This adds elliptic curve operations (hash-to-curve, ecrecover trick, EC addition) on top of the standard loop cost.
 
 | Loop Type | Median Gas | Delta |
 |-----------|-----------|-------|
 | Standard (`NumberGoUp`) | ~90,000 | — |
-| VRF (`RandomGame`) | ~240,000 | +150,000 |
+| Hybrid VRF (`HybridGame`) | ~90k / ~240k | Standard ticks: 0 delta, VRF ticks: +150,000 |
+| Full VRF (`RandomGame`) | ~240,000 | +150,000 every tick |
 
-| Era | Gas Price | ETH Price | Standard Tick | VRF Tick |
-|-----|-----------|-----------|---------------|----------|
-| **2026** | 0.047 gwei | $1,976.23 | **$0.0084** | **$0.0223** |
-| **2021** | 100 gwei | $3,318 | **$30.07** | **$79.63** |
+| Era | Gas Price | ETH Price | Standard Tick | Hybrid Avg (VRF every 10th) | Full VRF Tick |
+|-----|-----------|-----------|---------------|-----------------------------|---------------|
+| **2026** | 0.047 gwei | $1,976.23 | **$0.0084** | **$0.0098** | **$0.0223** |
+| **2021** | 100 gwei | $3,318 | **$30.07** | **$34.99** | **$79.63** |
 
 At 2026 prices, VRF adds roughly **$0.014 per tick** — negligible for most game loops.
+
+### Hybrid VRF: The Sweet Spot
+
+`AutoLoopHybridVRFCompatible` lets your contract decide per-tick whether it needs randomness. Most ticks run at standard gas cost (~90k); VRF ticks (~240k gas) fire only when `_needsVRF()` returns true.
+
+For a game doing VRF every 10th tick:
+- **Average gas per tick:** (9 × 90k + 1 × 240k) / 10 = **105,000**
+- **Average cost per tick (2026):** ~$0.0098
+- **Savings vs full VRF:** ~56% cheaper
 
 ## Cost Per Game Session
 
@@ -64,6 +74,22 @@ Using ~240,000 gas per VRF tick at 2026 gas prices (0.047 gwei, ETH $1,976.23):
 | 20 min | 1 | 1,200 | 288.0 | 0.01354 | **$26.75** |
 | 20 min | 5 | 6,000 | 1,440.0 | 0.06768 | **$133.76** |
 | 20 min | 10 | 12,000 | 2,880.0 | 0.13536 | **$267.52** |
+
+## Hybrid VRF Cost Per Game Session
+
+Using ~105,000 average gas per tick (VRF every 10th tick) at 2026 gas prices (0.047 gwei, ETH $1,976.23):
+
+| Duration | Ticks/sec | Total Ticks | Gas (M) | 2026 ETH | **2026 USD** |
+|----------|-----------|-------------|---------|----------|--------------|
+| 5 min | 1 | 300 | 31.5 | 0.00148 | **$2.93** |
+| 5 min | 5 | 1,500 | 157.5 | 0.00740 | **$14.63** |
+| 5 min | 10 | 3,000 | 315.0 | 0.01481 | **$29.26** |
+| | | | | | |
+| 10 min | 1 | 600 | 63.0 | 0.00296 | **$5.85** |
+| 10 min | 5 | 3,000 | 315.0 | 0.01481 | **$29.26** |
+| 10 min | 10 | 6,000 | 630.0 | 0.02961 | **$58.52** |
+
+Hybrid VRF is **56% cheaper than full VRF** and only **16% more expensive than standard** — the ideal balance for games that need occasional randomness.
 
 ## Notes
 

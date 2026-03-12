@@ -4,20 +4,30 @@ Complete, deployable examples demonstrating AutoLoop integration patterns.
 
 ## Contracts
 
-### AutoCounter
+### AutoCounter (Standard)
 The simplest possible AutoLoop contract. Increments a counter at a fixed interval.
+- **Base**: `AutoLoopCompatible`
 - **Difficulty**: Beginner
 - **VRF**: No
 - **Use case**: Periodic tasks, heartbeats, scheduled operations
 
-### CoinFlipper
-A provably fair coin flip using VRF (verifiable random function).
+### HybridGame (Hybrid VRF)
+Score accumulation with random events on every Nth tick. Standard ticks are cheap; VRF ticks fire for loot, crits, and special events.
+- **Base**: `AutoLoopHybridVRFCompatible`
 - **Difficulty**: Intermediate
-- **VRF**: Yes (ECVRF)
+- **VRF**: Selective (configurable frequency via constructor)
+- **Use case**: Games with occasional random events, loot systems, RPG combat
+
+### CoinFlipper (Full VRF)
+A provably fair coin flip using VRF (verifiable random function).
+- **Base**: `AutoLoopVRFCompatible`
+- **Difficulty**: Intermediate
+- **VRF**: Yes, every tick (ECVRF)
 - **Use case**: Games, lotteries, random selections
 
-### PriceAlerter
+### PriceAlerter (Standard)
 Monitors a Chainlink price feed and alerts on threshold crossings.
+- **Base**: `AutoLoopCompatible`
 - **Difficulty**: Intermediate
 - **VRF**: No
 - **Use case**: Price monitoring, automated trading signals, notifications

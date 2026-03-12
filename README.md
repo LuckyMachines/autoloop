@@ -79,7 +79,50 @@ contract MyGame is AutoLoopCompatible {
 
 See [`NumberGoUp.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/sample/NumberGoUp.sol) for a complete example.
 
-### Loop with Verifiable Randomness
+### Hybrid VRF Loop (Selective Randomness)
+
+For contracts that need randomness only on certain ticks (e.g., every 10th tick for loot drops, crits, or spawns), inherit from [`AutoLoopHybridVRFCompatible.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/AutoLoopHybridVRFCompatible.sol):
+
+```solidity
+import "@luckymachines/autoloop/src/AutoLoopHybridVRFCompatible.sol";
+
+contract MyHybridGame is AutoLoopHybridVRFCompatible {
+    // Decide when VRF is needed (e.g., every 10th tick)
+    function _needsVRF(uint256 loopID) internal view override returns (bool) {
+        return loopID % 10 == 0;
+    }
+
+    // Readiness check + game data
+    function _shouldProgress()
+        internal view override
+        returns (bool ready, bytes memory gameData)
+    {
+        ready = /* your condition */;
+        gameData = abi.encode(/* your data */);
+    }
+
+    // Standard tick — cheap, no randomness
+    function _onTick(bytes memory gameData) internal override {
+        // standard game logic
+    }
+
+    // VRF tick — includes verified randomness
+    function _onVRFTick(bytes32 randomness, bytes memory gameData) internal override {
+        // use randomness for loot, crits, spawns, etc.
+    }
+}
+```
+
+**How Hybrid VRF works:**
+
+1. `shouldProgressLoop()` encodes `(needsVRF, loopID, gameData)` — the worker reads the flag
+2. On standard ticks: worker sends data as-is, contract calls `_onTick()` (~90k gas)
+3. On VRF ticks: worker wraps in VRF envelope, contract verifies proof and calls `_onVRFTick()` (~240k gas)
+4. Detection uses data size (>= 640 bytes = VRF envelope) and ERC-165 interface ID
+
+See [`HybridGame.sol`](https://github.com/LuckyMachines/autoloop/blob/main/examples/HybridGame.sol) for a complete example.
+
+### Loop with Verifiable Randomness (Every Tick)
 
 For contracts that need provably fair randomness, inherit from [`AutoLoopVRFCompatible.sol`](https://github.com/LuckyMachines/autoloop/blob/main/src/AutoLoopVRFCompatible.sol) instead:
 
@@ -224,10 +267,13 @@ Per-contract overrides for `maxGas` and `maxGasPrice` can be set through the reg
 
 | Loop Type | Median Gas | Notes |
 |-----------|-----------|-------|
-| Standard (`NumberGoUp`) | ~90,000 | Time-based counter |
-| VRF (`RandomGame`) | ~240,000 | Includes on-chain ECVRF proof verification |
+| Standard (`NumberGoUp`) | ~90,000 | Pure automation, no randomness |
+| Hybrid VRF (`HybridGame`) | ~90k / ~240k | Standard ticks are cheap; VRF ticks only when `_needsVRF()` returns true |
+| Full VRF (`RandomGame`) | ~240,000 | ECVRF proof verification on every tick |
 
 VRF adds approximately 150k gas of overhead for the elliptic curve operations in `VRFVerifier.sol`. At current L1 gas prices (~0.05 gwei), the VRF overhead costs less than $0.001 per tick.
+
+Hybrid VRF is the sweet spot for most games — run cheap standard ticks with occasional VRF for random events (loot drops, critical hits, spawns). A game doing VRF every 10th tick pays ~$0.009/tick on average vs $0.022/tick for full VRF.
 
 See [gas-cost-analysis.md](gas-cost-analysis.md) for full cost projections.
 
