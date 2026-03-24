@@ -85,6 +85,14 @@ contract AutoLoop is AutoLoopBase {
         }
     }
 
+    function controllerFeePortion() public view returns (uint256) {
+        return CONTROLLER_FEE_PORTION;
+    }
+
+    function protocolFeePortion() public view returns (uint256) {
+        return PROTOCOL_FEE_PORTION;
+    }
+
     function protocolBalance() public view returns (uint256) {
         return _protocolBalance;
     }
@@ -242,6 +250,13 @@ contract AutoLoop is AutoLoopBase {
         uint256 gasThresholdValue
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         GAS_THRESHOLD = gasThresholdValue;
+    }
+
+    function setBaseFee(
+        uint256 baseFeePercentage
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(baseFeePercentage <= 100, "Percentage should be <= 100");
+        BASE_FEE = baseFeePercentage;
     }
 
     function withdrawProtocolFees(
