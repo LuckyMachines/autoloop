@@ -28,13 +28,15 @@ contract AutoLoop is AutoLoopBase {
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
     mapping(address => uint256) public maxGasPrice; // max gas price a user is willing to spend on tx (in wei)
-    mapping(address => uint256) public minBalance; // minimum balance to keep as reserve (stop executing below this)
 
     mapping(address => mapping(uint256 => bool)) _hadUpdate; // mapping of contract address to block number to bool
 
     uint256 _protocolBalance;
 
     string public version;
+
+    // --- Added in upgrade (appended after existing storage to preserve layout) ---
+    mapping(address => uint256) public minBalance; // minimum balance to keep as reserve (stop executing below this)
 
     function initialize(string memory _version) public initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
