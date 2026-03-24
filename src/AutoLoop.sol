@@ -28,6 +28,7 @@ contract AutoLoop is AutoLoopBase {
     mapping(address => uint256) public balance; // balance held at this address
     mapping(address => uint256) public maxGas; // max gas a user is willing to spend on tx
     mapping(address => uint256) public maxGasPrice; // max gas price a user is willing to spend on tx (in wei)
+    mapping(address => uint256) public minBalance; // minimum balance to keep as reserve (stop executing below this)
 
     mapping(address => mapping(uint256 => bool)) _hadUpdate; // mapping of contract address to block number to bool
 
@@ -85,6 +86,10 @@ contract AutoLoop is AutoLoopBase {
         }
     }
 
+    function minBalanceFor(address userAddress) public view returns (uint256) {
+        return minBalance[userAddress];
+    }
+
     function controllerFeePortion() public view returns (uint256) {
         return CONTROLLER_FEE_PORTION;
     }
@@ -136,8 +141,8 @@ contract AutoLoop is AutoLoopBase {
         uint256 totalCost = gasCost + fee; // total cost including fee
 
         require(
-            balance[contractAddress] >= totalCost,
-            "AutoLoop compatible contract balance too low to run update + fee."
+            balance[contractAddress] >= totalCost + minBalance[contractAddress],
+            "AutoLoop compatible contract balance too low to run update + fee + reserve."
         );
         balance[contractAddress] -= totalCost;
         (bool sent, ) = _msgSender().call{value: gasCost + controllerFee}("");
@@ -203,6 +208,13 @@ contract AutoLoop is AutoLoopBase {
         uint256 maxGasPriceAmount
     ) external onlyRole(REGISTRAR_ROLE) {
         maxGasPrice[registerdUser] = maxGasPriceAmount;
+    }
+
+    function setMinBalance(
+        address registeredUser,
+        uint256 minBalanceAmount
+    ) external onlyRole(REGISTRAR_ROLE) {
+        minBalance[registeredUser] = minBalanceAmount;
     }
 
     // ADMIN //

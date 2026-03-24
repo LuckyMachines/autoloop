@@ -103,6 +103,29 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AUTO_LOOP.setMaxGasPrice(registeredContract, maxGasPricePerUpdate);
     }
 
+    function setMinBalance(uint256 minBalanceAmount) external {
+        require(
+            REGISTRY.isRegisteredAutoLoop(_msgSender()),
+            "cannot set min balance on unregistered contract"
+        );
+        AUTO_LOOP.setMinBalance(_msgSender(), minBalanceAmount);
+    }
+
+    function setMinBalanceFor(
+        address registeredContract,
+        uint256 minBalanceAmount
+    ) external {
+        require(
+            _isAdmin(_msgSender(), registeredContract),
+            "Cannot set min balance, caller is not admin on contract"
+        );
+        require(
+            REGISTRY.isRegisteredAutoLoop(registeredContract),
+            "cannot set min balance on unregistered contract"
+        );
+        AUTO_LOOP.setMinBalance(registeredContract, minBalanceAmount);
+    }
+
     /**
      * @notice check if a contract can be registered
      * @param registrantAddress the address that will register the contract (address of the contract if self-registering)

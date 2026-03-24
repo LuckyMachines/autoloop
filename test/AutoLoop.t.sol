@@ -291,7 +291,7 @@ contract AutoLoopTest is Test {
                 keccak256(reason),
                 keccak256(abi.encodeWithSignature(
                     "Error(string)",
-                    "AutoLoop compatible contract balance too low to run update + fee."
+                    "AutoLoop compatible contract balance too low to run update + fee + reserve."
                 ))
             );
         }
