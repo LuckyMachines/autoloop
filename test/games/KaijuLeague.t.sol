@@ -8,27 +8,27 @@ import "../../src/AutoLoop.sol";
 import "../../src/AutoLoopRegistry.sol";
 import "../../src/AutoLoopRegistrar.sol";
 import "../../src/AutoLoopCompatibleInterface.sol";
-import "../../src/games/GrandPrix.sol";
+import "../../src/games/KaijuLeague.sol";
 
 /// @notice Test harness exposing `_progressInternal` for deterministic tests.
-contract GrandPrixHarness is GrandPrix {
+contract KaijuLeagueHarness is KaijuLeague {
     constructor(
-        uint256 _carMintFee,
+        uint256 _hatchFee,
         uint256 _entryFee,
-        uint256 _raceInterval,
+        uint256 _clashInterval,
         uint256 _protocolRakeBps,
-        uint32 _initialPower,
-        uint32 _minPower,
-        uint256 _maxEntrantsPerRace
+        uint32 _initialHealth,
+        uint32 _minHealth,
+        uint256 _maxEntrantsPerClash
     )
-        GrandPrix(
-            _carMintFee,
+        KaijuLeague(
+            _hatchFee,
             _entryFee,
-            _raceInterval,
+            _clashInterval,
             _protocolRakeBps,
-            _initialPower,
-            _minPower,
-            _maxEntrantsPerRace
+            _initialHealth,
+            _minHealth,
+            _maxEntrantsPerClash
         )
     {}
 
@@ -41,12 +41,12 @@ contract GrandPrixHarness is GrandPrix {
     }
 }
 
-contract GrandPrixTest is Test {
+contract KaijuLeagueTest is Test {
     AutoLoop public autoLoop;
     AutoLoopRegistry public registry;
     AutoLoopRegistrar public registrar;
 
-    GrandPrixHarness public game;
+    KaijuLeagueHarness public game;
 
     address public proxyAdmin;
     address public admin;
@@ -56,12 +56,12 @@ contract GrandPrixTest is Test {
     address public dave;
     address public controller1;
 
-    uint256 constant CAR_MINT_FEE = 0.01 ether;
+    uint256 constant HATCH_FEE = 0.01 ether;
     uint256 constant ENTRY_FEE = 0.001 ether;
-    uint256 constant RACE_INTERVAL = 60;
+    uint256 constant CLASH_INTERVAL = 60;
     uint256 constant PROTOCOL_RAKE_BPS = 500; // 5%
-    uint32 constant INITIAL_POWER = 500;
-    uint32 constant MIN_POWER = 50;
+    uint32 constant INITIAL_HEALTH = 500;
+    uint32 constant MIN_HEALTH = 50;
     uint256 constant MAX_ENTRANTS = 8;
     uint256 constant GAS_PRICE = 20 gwei;
 
@@ -115,13 +115,13 @@ contract GrandPrixTest is Test {
         registry.setRegistrar(address(registrar));
         autoLoop.setRegistrar(address(registrar));
 
-        game = new GrandPrixHarness(
-            CAR_MINT_FEE,
+        game = new KaijuLeagueHarness(
+            HATCH_FEE,
             ENTRY_FEE,
-            RACE_INTERVAL,
+            CLASH_INTERVAL,
             PROTOCOL_RAKE_BPS,
-            INITIAL_POWER,
-            MIN_POWER,
+            INITIAL_HEALTH,
+            MIN_HEALTH,
             MAX_ENTRANTS
         );
         registrar.registerAutoLoopFor(address(game), 2_000_000);
@@ -149,22 +149,22 @@ contract GrandPrixTest is Test {
     }
 
     function test_InitialState() public view {
-        assertEq(game.nextCarId(), 1);
-        assertEq(game.currentRaceId(), 1);
+        assertEq(game.nextKaijuId(), 1);
+        assertEq(game.currentClashId(), 1);
         assertEq(game.currentEntrantCount(), 0);
         assertEq(game.currentPrizePool(), 0);
         assertEq(game.protocolFeeBalance(), 0);
-        assertEq(game.totalRacesResolved(), 0);
+        assertEq(game.totalClashesResolved(), 0);
     }
 
     function test_Immutables() public view {
-        assertEq(game.carMintFee(), CAR_MINT_FEE);
+        assertEq(game.hatchFee(), HATCH_FEE);
         assertEq(game.entryFee(), ENTRY_FEE);
-        assertEq(game.raceInterval(), RACE_INTERVAL);
+        assertEq(game.clashInterval(), CLASH_INTERVAL);
         assertEq(game.protocolRakeBps(), PROTOCOL_RAKE_BPS);
-        assertEq(game.initialPower(), INITIAL_POWER);
-        assertEq(game.minPower(), MIN_POWER);
-        assertEq(game.maxEntrantsPerRace(), MAX_ENTRANTS);
+        assertEq(game.initialHealth(), INITIAL_HEALTH);
+        assertEq(game.minHealth(), MIN_HEALTH);
+        assertEq(game.maxEntrantsPerClash(), MAX_ENTRANTS);
     }
 
     // ===============================================================
@@ -172,195 +172,167 @@ contract GrandPrixTest is Test {
     // ===============================================================
 
     function test_ConstructorRejectsZeroInterval() public {
-        vm.expectRevert("GrandPrix: raceInterval=0");
-        new GrandPrixHarness(
-            CAR_MINT_FEE,
-            ENTRY_FEE,
-            0,
-            PROTOCOL_RAKE_BPS,
-            INITIAL_POWER,
-            MIN_POWER,
-            MAX_ENTRANTS
+        vm.expectRevert("KaijuLeague: clashInterval=0");
+        new KaijuLeagueHarness(
+            HATCH_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS,
+            INITIAL_HEALTH, MIN_HEALTH, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
-        vm.expectRevert("GrandPrix: rake > 20%");
-        new GrandPrixHarness(
-            CAR_MINT_FEE,
-            ENTRY_FEE,
-            RACE_INTERVAL,
-            2001,
-            INITIAL_POWER,
-            MIN_POWER,
-            MAX_ENTRANTS
+        vm.expectRevert("KaijuLeague: rake > 20%");
+        new KaijuLeagueHarness(
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, 2001,
+            INITIAL_HEALTH, MIN_HEALTH, MAX_ENTRANTS
         );
     }
 
-    function test_ConstructorRejectsBadPowerOrdering() public {
-        vm.expectRevert("GrandPrix: power ordering");
-        new GrandPrixHarness(
-            CAR_MINT_FEE,
-            ENTRY_FEE,
-            RACE_INTERVAL,
-            PROTOCOL_RAKE_BPS,
-            50,
-            500,
-            MAX_ENTRANTS
+    function test_ConstructorRejectsBadHealthOrdering() public {
+        vm.expectRevert("KaijuLeague: health ordering");
+        new KaijuLeagueHarness(
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS,
+            50, 500, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsLowMaxEntrants() public {
-        vm.expectRevert("GrandPrix: maxEntrants < 2");
-        new GrandPrixHarness(
-            CAR_MINT_FEE,
-            ENTRY_FEE,
-            RACE_INTERVAL,
-            PROTOCOL_RAKE_BPS,
-            INITIAL_POWER,
-            MIN_POWER,
-            1
+        vm.expectRevert("KaijuLeague: maxEntrants < 2");
+        new KaijuLeagueHarness(
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS,
+            INITIAL_HEALTH, MIN_HEALTH, 1
         );
     }
 
     function test_ConstructorRejectsHighMaxEntrants() public {
-        vm.expectRevert("GrandPrix: maxEntrants > 16");
-        new GrandPrixHarness(
-            CAR_MINT_FEE,
-            ENTRY_FEE,
-            RACE_INTERVAL,
-            PROTOCOL_RAKE_BPS,
-            INITIAL_POWER,
-            MIN_POWER,
-            17
+        vm.expectRevert("KaijuLeague: maxEntrants > 16");
+        new KaijuLeagueHarness(
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS,
+            INITIAL_HEALTH, MIN_HEALTH, 17
         );
     }
 
     // ===============================================================
-    //  Section 3 — Car minting
+    //  Section 3 — Kaiju hatching
     // ===============================================================
 
-    function test_MintCar() public {
+    function test_HatchKaiju() public {
         vm.prank(alice);
-        uint256 id = game.mintCar{value: CAR_MINT_FEE}();
+        uint256 id = game.hatchKaiju{value: HATCH_FEE}();
         assertEq(id, 1);
-        GrandPrix.Car memory c = game.getCar(1);
-        assertEq(c.owner, alice);
-        assertEq(c.power, INITIAL_POWER);
-        assertEq(c.wins, 0);
-        assertEq(c.races, 0);
-        assertEq(game.protocolFeeBalance(), CAR_MINT_FEE);
+        KaijuLeague.Kaiju memory k = game.getKaiju(1);
+        assertEq(k.owner, alice);
+        assertEq(k.health, INITIAL_HEALTH);
+        assertEq(k.victories, 0);
+        assertEq(k.clashes, 0);
+        assertEq(game.protocolFeeBalance(), HATCH_FEE);
     }
 
-    function test_MintCarRejectsInsufficientFee() public {
+    function test_HatchKaijuRejectsInsufficientFee() public {
         vm.prank(alice);
-        vm.expectRevert("GrandPrix: insufficient mint fee");
-        game.mintCar{value: CAR_MINT_FEE - 1}();
+        vm.expectRevert("KaijuLeague: insufficient hatch fee");
+        game.hatchKaiju{value: HATCH_FEE - 1}();
     }
 
-    function test_MintCarRefundsOverpayment() public {
+    function test_HatchKaijuRefundsOverpayment() public {
         uint256 before = alice.balance;
         vm.prank(alice);
-        game.mintCar{value: CAR_MINT_FEE + 1 ether}();
-        assertEq(alice.balance, before - CAR_MINT_FEE);
+        game.hatchKaiju{value: HATCH_FEE + 1 ether}();
+        assertEq(alice.balance, before - HATCH_FEE);
     }
 
-    function test_MintCarIdsAreSequential() public {
+    function test_HatchKaijuIdsAreSequential() public {
         vm.prank(alice);
-        game.mintCar{value: CAR_MINT_FEE}();
+        game.hatchKaiju{value: HATCH_FEE}();
         vm.prank(bob);
-        game.mintCar{value: CAR_MINT_FEE}();
+        game.hatchKaiju{value: HATCH_FEE}();
         vm.prank(carol);
-        game.mintCar{value: CAR_MINT_FEE}();
+        game.hatchKaiju{value: HATCH_FEE}();
 
-        assertEq(game.nextCarId(), 4);
-        assertEq(game.getCar(1).owner, alice);
-        assertEq(game.getCar(2).owner, bob);
-        assertEq(game.getCar(3).owner, carol);
+        assertEq(game.nextKaijuId(), 4);
+        assertEq(game.getKaiju(1).owner, alice);
+        assertEq(game.getKaiju(2).owner, bob);
+        assertEq(game.getKaiju(3).owner, carol);
     }
 
     // ===============================================================
-    //  Section 4 — Race entry
+    //  Section 4 — Clash entry
     // ===============================================================
 
-    function test_EnterRace() public {
-        _mintCar(alice);
+    function test_EnterClash() public {
+        _hatchKaiju(alice);
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE}(1);
+        game.enterClash{value: ENTRY_FEE}(1);
 
         assertEq(game.currentEntrantCount(), 1);
         assertEq(game.currentPrizePool(), ENTRY_FEE);
-        assertTrue(game.enteredInCurrentRace(1));
+        assertTrue(game.enteredInCurrentClash(1));
     }
 
-    function test_EnterRaceRejectsNonOwner() public {
-        _mintCar(alice);
+    function test_EnterClashRejectsNonOwner() public {
+        _hatchKaiju(alice);
         vm.prank(bob);
-        vm.expectRevert("GrandPrix: not owner");
-        game.enterRace{value: ENTRY_FEE}(1);
+        vm.expectRevert("KaijuLeague: not owner");
+        game.enterClash{value: ENTRY_FEE}(1);
     }
 
-    function test_EnterRaceRejectsDoubleEntry() public {
-        _mintCar(alice);
+    function test_EnterClashRejectsDoubleEntry() public {
+        _hatchKaiju(alice);
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE}(1);
+        game.enterClash{value: ENTRY_FEE}(1);
         vm.prank(alice);
-        vm.expectRevert("GrandPrix: already entered");
-        game.enterRace{value: ENTRY_FEE}(1);
+        vm.expectRevert("KaijuLeague: already entered");
+        game.enterClash{value: ENTRY_FEE}(1);
     }
 
-    function test_EnterRaceRejectsInsufficientFee() public {
-        _mintCar(alice);
+    function test_EnterClashRejectsInsufficientFee() public {
+        _hatchKaiju(alice);
         vm.prank(alice);
-        vm.expectRevert("GrandPrix: insufficient entry fee");
-        game.enterRace{value: ENTRY_FEE - 1}(1);
+        vm.expectRevert("KaijuLeague: insufficient entry fee");
+        game.enterClash{value: ENTRY_FEE - 1}(1);
     }
 
-    function test_EnterRaceRejectsFull() public {
-        // Fill race to cap
+    function test_EnterClashRejectsFull() public {
         for (uint256 i = 0; i < MAX_ENTRANTS; i++) {
             address player = vm.addr(0x1000 + i);
             vm.deal(player, 1 ether);
             vm.prank(player);
-            uint256 id = game.mintCar{value: CAR_MINT_FEE}();
+            uint256 id = game.hatchKaiju{value: HATCH_FEE}();
             vm.prank(player);
-            game.enterRace{value: ENTRY_FEE}(id);
+            game.enterClash{value: ENTRY_FEE}(id);
         }
 
-        // One more should fail. Pre-compute the car id so no view call
-        // sits between expectRevert and the reverting call.
-        _mintCar(alice);
-        uint256 aliceCarId = game.nextCarId() - 1;
+        _hatchKaiju(alice);
+        uint256 aliceKaijuId = game.nextKaijuId() - 1;
 
         vm.prank(alice);
-        vm.expectRevert("GrandPrix: race full");
-        game.enterRace{value: ENTRY_FEE}(aliceCarId);
+        vm.expectRevert("KaijuLeague: clash full");
+        game.enterClash{value: ENTRY_FEE}(aliceKaijuId);
     }
 
-    function test_EnterRaceRefundsOverpayment() public {
-        _mintCar(alice);
+    function test_EnterClashRefundsOverpayment() public {
+        _hatchKaiju(alice);
         uint256 before = alice.balance;
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE + 1 ether}(1);
+        game.enterClash{value: ENTRY_FEE + 1 ether}(1);
         assertEq(alice.balance, before - ENTRY_FEE);
     }
 
     // ===============================================================
-    //  Section 5 — Race resolution
+    //  Section 5 — Clash resolution
     // ===============================================================
 
-    function test_ShouldProgressFalseWithOneEntrant() public {
-        _mintCar(alice);
+    function test_ShouldProgressFalseWithOneKaiju() public {
+        _hatchKaiju(alice);
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE}(1);
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        game.enterClash{value: ENTRY_FEE}(1);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         (bool ready, ) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
-    function test_ShouldProgressTrueWithTwoEntrants() public {
+    function test_ShouldProgressTrueWithTwoKaiju() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         (bool ready, ) = game.shouldProgressLoop();
         assertTrue(ready);
     }
@@ -371,96 +343,95 @@ contract GrandPrixTest is Test {
         assertFalse(ready);
     }
 
-    function test_ResolveRaceIncrementsRaceId() public {
+    function test_ResolveClashIncrementsClashId() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(1)));
-        assertEq(game.currentRaceId(), 2);
+        assertEq(game.currentClashId(), 2);
     }
 
-    function test_ResolveRaceDistributesPrize() public {
+    function test_ResolveClashDistributesPrize() public {
         _enterPair();
         uint256 poolBefore = game.currentPrizePool();
         assertEq(poolBefore, ENTRY_FEE * 2);
 
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(1)));
 
-        // Winner has pending withdrawal of (pool - rake)
         uint256 expectedRake = (poolBefore * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 expectedPrize = poolBefore - expectedRake;
 
         uint256 withdrawable = game.pendingWithdrawals(alice) +
             game.pendingWithdrawals(bob);
         assertEq(withdrawable, expectedPrize);
-        assertEq(game.protocolFeeBalance() - CAR_MINT_FEE * 2, expectedRake);
+        assertEq(game.protocolFeeBalance() - HATCH_FEE * 2, expectedRake);
     }
 
-    function test_ResolveRaceClearsEntrants() public {
+    function test_ResolveClashClearsEntrants() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(1)));
         assertEq(game.currentEntrantCount(), 0);
         assertEq(game.currentPrizePool(), 0);
-        assertFalse(game.enteredInCurrentRace(1));
-        assertFalse(game.enteredInCurrentRace(2));
+        assertFalse(game.enteredInCurrentClash(1));
+        assertFalse(game.enteredInCurrentClash(2));
     }
 
-    function test_ResolveRaceAppliesWear() public {
+    function test_ResolveClashAppliesDamage() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(42)));
 
-        GrandPrix.Car memory c1 = game.getCar(1);
-        GrandPrix.Car memory c2 = game.getCar(2);
+        KaijuLeague.Kaiju memory k1 = game.getKaiju(1);
+        KaijuLeague.Kaiju memory k2 = game.getKaiju(2);
 
-        assertLt(c1.power, INITIAL_POWER, "wear reduces power");
-        assertLt(c2.power, INITIAL_POWER, "wear reduces power");
-        assertGe(c1.power, INITIAL_POWER - 20);
-        assertGe(c2.power, INITIAL_POWER - 20);
-        assertEq(c1.races, 1);
-        assertEq(c2.races, 1);
+        assertLt(k1.health, INITIAL_HEALTH, "damage reduces health");
+        assertLt(k2.health, INITIAL_HEALTH, "damage reduces health");
+        assertGe(k1.health, INITIAL_HEALTH - 20);
+        assertGe(k2.health, INITIAL_HEALTH - 20);
+        assertEq(k1.clashes, 1);
+        assertEq(k2.clashes, 1);
     }
 
-    function test_ResolveRaceIncrementsWinnerWins() public {
+    function test_ResolveClashIncrementsWinnerVictories() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(1)));
 
-        GrandPrix.Car memory c1 = game.getCar(1);
-        GrandPrix.Car memory c2 = game.getCar(2);
-        uint256 totalWins = c1.wins + c2.wins;
-        assertEq(totalWins, 1, "exactly one winner");
+        KaijuLeague.Kaiju memory k1 = game.getKaiju(1);
+        KaijuLeague.Kaiju memory k2 = game.getKaiju(2);
+        uint256 totalVictories = k1.victories + k2.victories;
+        assertEq(totalVictories, 1, "exactly one winner");
     }
 
-    function test_ResolveRaceEmitsEvent() public {
+    function test_ResolveClashEmitsEvent() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
 
         vm.expectEmit(true, false, false, false, address(game));
-        emit GrandPrix.RaceResolved(1, 0, address(0), 0, 0, bytes32(0));
+        emit KaijuLeague.ClashResolved(1, 0, address(0), 0, 0, bytes32(0));
         game.tickForTest(bytes32(uint256(7)));
     }
 
-    function test_ResolveRaceRejectsTooSoon() public {
+    function test_ResolveClashRejectsTooSoon() public {
         _enterPair();
-        vm.expectRevert("GrandPrix: too soon");
+        vm.expectRevert("KaijuLeague: too soon");
         game.tickForTest(bytes32(uint256(1)));
     }
 
-    function test_ResolveRaceRejectsStaleLoopID() public {
+    function test_ResolveClashRejectsStaleLoopID() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
-        vm.expectRevert("GrandPrix: stale loop id");
+        vm.warp(block.timestamp + CLASH_INTERVAL);
+        vm.expectRevert("KaijuLeague: stale loop id");
         game.tickForTestRaw(bytes32(uint256(1)), 999);
     }
 
-    function test_ResolveRaceRejectsNotEnoughEntrants() public {
-        _mintCar(alice);
+    function test_ResolveClashRejectsNotEnoughEntrants() public {
+        _hatchKaiju(alice);
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE}(1);
-        vm.warp(block.timestamp + RACE_INTERVAL);
-        vm.expectRevert("GrandPrix: not enough entrants");
+        game.enterClash{value: ENTRY_FEE}(1);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
+        vm.expectRevert("KaijuLeague: not enough entrants");
         game.tickForTest(bytes32(uint256(1)));
     }
 
@@ -470,7 +441,7 @@ contract GrandPrixTest is Test {
 
     function test_ClaimWinnings() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(1)));
 
         address winner = game.pendingWithdrawals(alice) > 0 ? alice : bob;
@@ -486,105 +457,86 @@ contract GrandPrixTest is Test {
 
     function test_ClaimWinningsRejectsZero() public {
         vm.prank(alice);
-        vm.expectRevert("GrandPrix: nothing to claim");
+        vm.expectRevert("KaijuLeague: nothing to claim");
         game.claimWinnings();
     }
 
     // ===============================================================
-    //  Section 7 — Multiple sequential races
+    //  Section 7 — Multiple sequential clashes
     // ===============================================================
 
-    function test_MultipleRaces() public {
+    function test_MultipleClashes() public {
         _enterPair();
-        // Track time explicitly — via_ir caches block.timestamp reads.
         uint256 ts = block.timestamp;
 
         for (uint256 i = 0; i < 5; i++) {
-            ts += RACE_INTERVAL;
+            ts += CLASH_INTERVAL;
             vm.warp(ts);
             game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("race", i))))
+                bytes32(uint256(keccak256(abi.encodePacked("clash", i))))
             );
 
-            // Re-enter for the next race
             if (i < 4) {
                 vm.prank(alice);
-                game.enterRace{value: ENTRY_FEE}(1);
+                game.enterClash{value: ENTRY_FEE}(1);
                 vm.prank(bob);
-                game.enterRace{value: ENTRY_FEE}(2);
+                game.enterClash{value: ENTRY_FEE}(2);
             }
         }
 
-        assertEq(game.totalRacesResolved(), 5);
-        assertEq(game.currentRaceId(), 6);
+        assertEq(game.totalClashesResolved(), 5);
+        assertEq(game.currentClashId(), 6);
     }
 
-    function test_WearRetiresCarAfterManyRaces() public {
+    function test_DamageDestroysKaijuAfterManyClashes() public {
         _enterPair();
         uint256 ts = block.timestamp;
 
-        // Force many races. Each race applies 5-20 wear; worst case 100 races
-        // to reach minPower from initialPower=500.
         for (uint256 i = 0; i < 80; i++) {
-            ts += RACE_INTERVAL;
+            ts += CLASH_INTERVAL;
             vm.warp(ts);
             game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("retirement", i))))
+                bytes32(uint256(keccak256(abi.encodePacked("destroy", i))))
             );
 
-            if (game.getCar(1).power > MIN_POWER && i < 79) {
+            if (game.getKaiju(1).health > MIN_HEALTH && i < 79) {
                 vm.prank(alice);
-                try game.enterRace{value: ENTRY_FEE}(1) {} catch {
-                    break;
-                }
+                try game.enterClash{value: ENTRY_FEE}(1) {} catch { break; }
                 vm.prank(bob);
-                try game.enterRace{value: ENTRY_FEE}(2) {} catch {
-                    break;
-                }
+                try game.enterClash{value: ENTRY_FEE}(2) {} catch { break; }
             } else {
                 break;
             }
         }
 
-        GrandPrix.Car memory c1 = game.getCar(1);
-        assertLt(c1.power, INITIAL_POWER, "wear accrued");
+        KaijuLeague.Kaiju memory k1 = game.getKaiju(1);
+        assertLt(k1.health, INITIAL_HEALTH, "damage accrued");
     }
 
     // ===============================================================
     //  Section 8 — Weighted winner selection
     // ===============================================================
 
-    function test_HigherPowerMoreLikelyToWin() public {
-        // Setup: 4 races, alternating winners based on seed
-        // We assert that across multiple seeds the winner distribution is
-        // consistent with power-weighted selection (deterministic here).
-        _enterPair(); // alice carId=1, bob carId=2 — both 500 power
-
-        // With equal power, seed modulo totalPower determines winner.
-        // totalPower = 1000. winningWeight = seed % 1000.
-        // Car 1 wins if cumulative(1)=500 > winningWeight, so weight in [0, 499].
-        // Car 2 wins if weight in [500, 999].
-
-        vm.warp(block.timestamp + RACE_INTERVAL);
-        // seed = 100 → weight = 100 → car 1 wins
+    function test_HigherHealthMoreLikelyToWin() public {
+        _enterPair();
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(100)));
 
-        GrandPrix.Car memory c1 = game.getCar(1);
-        GrandPrix.Car memory c2 = game.getCar(2);
-        assertEq(c1.wins, 1, "car 1 should win with weight 100");
-        assertEq(c2.wins, 0);
+        KaijuLeague.Kaiju memory k1 = game.getKaiju(1);
+        KaijuLeague.Kaiju memory k2 = game.getKaiju(2);
+        assertEq(k1.victories, 1, "kaiju 1 should win with weight 100");
+        assertEq(k2.victories, 0);
     }
 
-    function test_Car2WinsWithHighWeight() public {
+    function test_Kaiju2WinsWithHighWeight() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
-        // seed = 600 → weight = 600 → car 2 wins
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(bytes32(uint256(600)));
 
-        GrandPrix.Car memory c1 = game.getCar(1);
-        GrandPrix.Car memory c2 = game.getCar(2);
-        assertEq(c1.wins, 0);
-        assertEq(c2.wins, 1);
+        KaijuLeague.Kaiju memory k1 = game.getKaiju(1);
+        KaijuLeague.Kaiju memory k2 = game.getKaiju(2);
+        assertEq(k1.victories, 0);
+        assertEq(k2.victories, 1);
     }
 
     // ===============================================================
@@ -592,15 +544,15 @@ contract GrandPrixTest is Test {
     // ===============================================================
 
     function test_WithdrawProtocolFees() public {
-        _mintCar(alice);
+        _hatchKaiju(alice);
         uint256 before = admin.balance;
-        game.withdrawProtocolFees(admin, CAR_MINT_FEE);
-        assertEq(admin.balance - before, CAR_MINT_FEE);
+        game.withdrawProtocolFees(admin, HATCH_FEE);
+        assertEq(admin.balance - before, HATCH_FEE);
         assertEq(game.protocolFeeBalance(), 0);
     }
 
     function test_WithdrawRejectsExceeds() public {
-        vm.expectRevert("GrandPrix: exceeds balance");
+        vm.expectRevert("KaijuLeague: exceeds balance");
         game.withdrawProtocolFees(admin, 1 ether);
     }
 
@@ -616,7 +568,7 @@ contract GrandPrixTest is Test {
 
     function test_RejectsUnregisteredControllerVRFEnvelope() public {
         _enterPair();
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
 
         bytes memory gameData = abi.encode(uint256(1));
         bytes memory vrfEnvelope = abi.encode(
@@ -637,14 +589,12 @@ contract GrandPrixTest is Test {
     //  Section 11 — Fuzz tests
     // ===============================================================
 
-    /// @dev Across arbitrary randomness, exactly one winner is selected and
-    ///      the prize accounting always sums to the pool.
-    function testFuzz_RaceSettlementInvariant(bytes32 randomness) public {
+    function testFuzz_ClashSettlementInvariant(bytes32 randomness) public {
         _enterPair();
         uint256 pool = game.currentPrizePool();
         uint256 feeBefore = game.protocolFeeBalance();
 
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(randomness);
 
         uint256 rake = (pool * PROTOCOL_RAKE_BPS) / 10_000;
@@ -658,61 +608,59 @@ contract GrandPrixTest is Test {
         assertEq(feeDelta, rake, "fee matches rake");
     }
 
-    /// @dev Wear applied per entrant is always in [WEAR_MIN, WEAR_MAX].
-    function testFuzz_WearBounds(bytes32 randomness) public {
+    function testFuzz_DamageBounds(bytes32 randomness) public {
         _enterPair();
-        uint32 powerBefore1 = game.getCar(1).power;
-        uint32 powerBefore2 = game.getCar(2).power;
+        uint32 healthBefore1 = game.getKaiju(1).health;
+        uint32 healthBefore2 = game.getKaiju(2).health;
 
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(randomness);
 
-        uint32 wear1 = powerBefore1 - game.getCar(1).power;
-        uint32 wear2 = powerBefore2 - game.getCar(2).power;
+        uint32 damage1 = healthBefore1 - game.getKaiju(1).health;
+        uint32 damage2 = healthBefore2 - game.getKaiju(2).health;
 
-        assertGe(wear1, game.WEAR_MIN());
-        assertLe(wear1, game.WEAR_MAX());
-        assertGe(wear2, game.WEAR_MIN());
-        assertLe(wear2, game.WEAR_MAX());
+        assertGe(damage1, game.DAMAGE_MIN());
+        assertLe(damage1, game.DAMAGE_MAX());
+        assertGe(damage2, game.DAMAGE_MIN());
+        assertLe(damage2, game.DAMAGE_MAX());
     }
 
-    /// @dev Winner index is always in range of entrants.
     function testFuzz_WinnerInBounds(bytes32 randomness) public {
-        _mintCar(alice);
-        _mintCar(bob);
-        _mintCar(carol);
+        _hatchKaiju(alice);
+        _hatchKaiju(bob);
+        _hatchKaiju(carol);
 
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE}(1);
+        game.enterClash{value: ENTRY_FEE}(1);
         vm.prank(bob);
-        game.enterRace{value: ENTRY_FEE}(2);
+        game.enterClash{value: ENTRY_FEE}(2);
         vm.prank(carol);
-        game.enterRace{value: ENTRY_FEE}(3);
+        game.enterClash{value: ENTRY_FEE}(3);
 
-        vm.warp(block.timestamp + RACE_INTERVAL);
+        vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(randomness);
 
-        uint256 totalWins = game.getCar(1).wins +
-            game.getCar(2).wins +
-            game.getCar(3).wins;
-        assertEq(totalWins, 1, "exactly one winner");
+        uint256 totalVictories = game.getKaiju(1).victories +
+            game.getKaiju(2).victories +
+            game.getKaiju(3).victories;
+        assertEq(totalVictories, 1, "exactly one winner");
     }
 
     // ===============================================================
     //  Helpers
     // ===============================================================
 
-    function _mintCar(address who) internal returns (uint256) {
+    function _hatchKaiju(address who) internal returns (uint256) {
         vm.prank(who);
-        return game.mintCar{value: CAR_MINT_FEE}();
+        return game.hatchKaiju{value: HATCH_FEE}();
     }
 
     function _enterPair() internal {
-        _mintCar(alice);
-        _mintCar(bob);
+        _hatchKaiju(alice);
+        _hatchKaiju(bob);
         vm.prank(alice);
-        game.enterRace{value: ENTRY_FEE}(1);
+        game.enterClash{value: ENTRY_FEE}(1);
         vm.prank(bob);
-        game.enterRace{value: ENTRY_FEE}(2);
+        game.enterClash{value: ENTRY_FEE}(2);
     }
 }

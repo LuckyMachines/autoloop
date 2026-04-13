@@ -6,85 +6,103 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "../../src/AutoLoop.sol";
 import "../../src/AutoLoopRegistry.sol";
 import "../../src/AutoLoopRegistrar.sol";
-import "../../src/games/PitRow.sol";
-import "../../src/games/GrandPrix.sol";
+import "../../src/games/CrumbleCore.sol";
+import "../../src/games/GladiatorArena.sol";
+import "../../src/games/MechBrawl.sol";
+import "../../src/games/SorcererDuel.sol";
+import "../../src/games/KaijuLeague.sol";
+import "../../src/games/VoidHarvester.sol";
 import "../../src/games/SponsorAuction.sol";
-import "../../src/games/PhantomDriver.sol";
+import "../../src/games/GladiatorOracle.sol";
 import "../../src/games/OracleRun.sol";
+import "../../src/games/KaijuOracle.sol";
+import "../../src/games/ForecasterLeaderboard.sol";
 
 // Local harness copies so the snapshot tests can inject randomness without
 // constructing ECVRF proofs. Production deploys use the plain contracts.
 
-contract PitRowSnap is PitRow {
+contract CrumbleCoreSnap is CrumbleCore {
     constructor(
-        uint256 a,
-        uint256 b,
-        uint256 c,
-        uint16 d,
-        uint16 e,
-        uint256 f,
-        uint256 g
-    ) PitRow(a, b, c, d, e, f, g) {}
-    function tickForTest(bytes32 r) external {
-        _progressInternal(r, _loopID);
-    }
+        uint256 a, uint256 b, uint256 c,
+        uint16 d, uint16 e, uint256 f, uint256 g
+    ) CrumbleCore(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
 }
 
-contract GrandPrixSnap is GrandPrix {
+contract GladiatorArenaSnap is GladiatorArena {
     constructor(
-        uint256 a,
-        uint256 b,
-        uint256 c,
-        uint256 d,
-        uint32 e,
-        uint32 f,
-        uint256 g
-    ) GrandPrix(a, b, c, d, e, f, g) {}
-    function tickForTest(bytes32 r) external {
-        _progressInternal(r, _loopID);
-    }
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) GladiatorArena(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
 }
 
-contract PhantomDriverSnap is PhantomDriver {
+contract MechBrawlSnap is MechBrawl {
     constructor(
-        uint256 a,
-        uint256 b,
-        uint256 c,
-        uint256 d
-    ) PhantomDriver(a, b, c, d) {}
-    function tickForTest(bytes32 r) external {
-        _progressInternal(r, _loopID);
-    }
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) MechBrawl(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
+}
+
+contract SorcererDuelSnap is SorcererDuel {
+    constructor(
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) SorcererDuel(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
+}
+
+contract KaijuLeagueSnap is KaijuLeague {
+    constructor(
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) KaijuLeague(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
+}
+
+contract VoidHarvesterSnap is VoidHarvester {
+    constructor(
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) VoidHarvester(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
+}
+
+contract ArenaSnapForOracle is GladiatorArena {
+    constructor(
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) GladiatorArena(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
+}
+
+contract LeagueSnapForKaijuOracle is KaijuLeague {
+    constructor(
+        uint256 a, uint256 b, uint256 c,
+        uint256 d, uint32 e, uint32 f, uint256 g
+    ) KaijuLeague(a, b, c, d, e, f, g) {}
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
 }
 
 contract OracleRunSnap is OracleRun {
     constructor(
-        uint256 a,
-        uint256 b,
-        uint256 c,
-        uint256 d,
-        uint32 e,
-        uint32 f,
-        uint32 g
+        uint256 a, uint256 b, uint256 c, uint256 d,
+        uint32 e, uint32 f, uint32 g
     ) OracleRun(a, b, c, d, e, f, g) {}
-    function tickForTest(bytes32 r) external {
-        _progressInternal(r, _loopID);
-    }
+    function tickForTest(bytes32 r) external { _progressInternal(r, _loopID); }
 }
 
 /**
  * @title GameGasSnapshotTest
- * @notice Measures and logs real per-tick gas usage across all five games.
+ * @notice Measures and logs real per-tick gas usage across all nine games.
  *
  *         Run with:
  *             forge test --match-contract GameGasSnapshot -vv
  *
  *         Asserts a hard upper bound of 600k gas per tick (well below the
- *         2,000,000 default cap set at registration) so regressions fail
- *         CI. Actual values are printed via console.log for reference.
- *
- *         This answers flag 4 from the ESP rebuttal build: gas profile
- *         is observable and regression-detectable.
+ *         2,000,000 default cap set at registration) so regressions fail CI.
+ *         Actual values are printed via console.log for reference.
  */
 contract GameGasSnapshotTest is Test {
     uint256 constant GAS_CEILING = 600_000;
@@ -95,7 +113,7 @@ contract GameGasSnapshotTest is Test {
 
     function setUp() public {
         alice = vm.addr(0xA11CE);
-        bob = vm.addr(0xB0B);
+        bob   = vm.addr(0xB0B);
         carol = vm.addr(0xCA201);
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
@@ -104,119 +122,144 @@ contract GameGasSnapshotTest is Test {
     }
 
     // ===============================================================
-    //  PitRow
+    //  CrumbleCore
     // ===============================================================
 
-    function test_Gas_PitRow_StandardTick() public {
-        PitRowSnap game = new PitRowSnap(
-            0.01 ether, // baseMintFee
-            0.002 ether, // repairFee
-            60, // tickInterval
-            10_000, // maxHealth
-            100, // passiveDecayPerHour
-            1000, // insurancePremiumBps
-            5000 // salvageTargetBps
+    function test_Gas_CrumbleCore_StandardTick() public {
+        CrumbleCoreSnap game = new CrumbleCoreSnap(
+            0.01 ether, 0.002 ether, 60, 10_000, 100, 1000, 5000
         );
-
-        vm.prank(alice);
-        game.mintFloor{value: 0.01 ether}(false);
-        vm.prank(bob);
-        game.mintFloor{value: 0.011 ether}(false);
-        vm.prank(carol);
-        game.mintFloor{value: 0.012 ether}(false);
-
+        vm.prank(alice); game.mintFloor{value: 0.01 ether}(false);
+        vm.prank(bob);   game.mintFloor{value: 0.011 ether}(false);
+        vm.prank(carol); game.mintFloor{value: 0.012 ether}(false);
         vm.warp(block.timestamp + 60);
-
-        uint256 gasBefore = gasleft();
-        game.tickForTest(bytes32(uint256(42)));
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("PitRow.tick (3 floors)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "PitRow tick exceeds ceiling");
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(42))); uint256 used = g - gasleft();
+        _reportGas("CrumbleCore.tick (3 floors)", used);
+        assertLt(used, GAS_CEILING, "CrumbleCore tick exceeds ceiling");
     }
 
-    function test_Gas_PitRow_Mint() public {
-        PitRowSnap game = new PitRowSnap(
-            0.01 ether,
-            0.002 ether,
-            60,
-            10_000,
-            100,
-            1000,
-            5000
-        );
-
+    function test_Gas_CrumbleCore_Mint() public {
+        CrumbleCoreSnap game = new CrumbleCoreSnap(0.01 ether, 0.002 ether, 60, 10_000, 100, 1000, 5000);
         vm.prank(alice);
-        uint256 gasBefore = gasleft();
-        game.mintFloor{value: 0.01 ether}(false);
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("PitRow.mintFloor (no insurance)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "PitRow mint exceeds ceiling");
+        uint256 g = gasleft(); game.mintFloor{value: 0.01 ether}(false); uint256 used = g - gasleft();
+        _reportGas("CrumbleCore.mintFloor (no insurance)", used);
+        assertLt(used, GAS_CEILING, "CrumbleCore mint exceeds ceiling");
     }
 
     // ===============================================================
-    //  GrandPrix
+    //  GladiatorArena
     // ===============================================================
 
-    function test_Gas_GrandPrix_RaceResolution() public {
-        GrandPrixSnap game = new GrandPrixSnap(
-            0.01 ether, // carMintFee
-            0.001 ether, // entryFee
-            60, // raceInterval
-            500, // 5% rake
-            500, // initialPower
-            50, // minPower
-            8 // maxEntrants
+    function test_Gas_GladiatorArena_BoutResolution() public {
+        GladiatorArenaSnap game = new GladiatorArenaSnap(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
         );
-
-        // Mint and enter 4 cars
         for (uint256 i = 0; i < 4; i++) {
             address p = vm.addr(0x3000 + i);
             vm.deal(p, 1 ether);
-            vm.prank(p);
-            uint256 id = game.mintCar{value: 0.01 ether}();
-            vm.prank(p);
-            game.enterRace{value: 0.001 ether}(id);
+            vm.prank(p); uint256 id = game.mintGladiator{value: 0.01 ether}();
+            vm.prank(p); game.enterBout{value: 0.001 ether}(id);
         }
-
         vm.warp(block.timestamp + 60);
-
-        uint256 gasBefore = gasleft();
-        game.tickForTest(bytes32(uint256(100)));
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("GrandPrix.tick (4 entrants)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "GrandPrix tick exceeds ceiling");
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(100))); uint256 used = g - gasleft();
+        _reportGas("GladiatorArena.tick (4 entrants)", used);
+        assertLt(used, GAS_CEILING, "GladiatorArena tick exceeds ceiling");
     }
 
-    function test_Gas_GrandPrix_RaceResolutionMax() public {
-        GrandPrixSnap game = new GrandPrixSnap(
-            0.01 ether,
-            0.001 ether,
-            60,
-            500,
-            500,
-            50,
-            8
+    function test_Gas_GladiatorArena_BoutResolutionMax() public {
+        GladiatorArenaSnap game = new GladiatorArenaSnap(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
         );
         for (uint256 i = 0; i < 8; i++) {
             address p = vm.addr(0x4000 + i);
             vm.deal(p, 1 ether);
-            vm.prank(p);
-            uint256 id = game.mintCar{value: 0.01 ether}();
-            vm.prank(p);
-            game.enterRace{value: 0.001 ether}(id);
+            vm.prank(p); uint256 id = game.mintGladiator{value: 0.01 ether}();
+            vm.prank(p); game.enterBout{value: 0.001 ether}(id);
         }
-
         vm.warp(block.timestamp + 60);
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(100))); uint256 used = g - gasleft();
+        _reportGas("GladiatorArena.tick (8 entrants, max)", used);
+        assertLt(used, GAS_CEILING, "GladiatorArena tick at max exceeds ceiling");
+    }
 
-        uint256 gasBefore = gasleft();
-        game.tickForTest(bytes32(uint256(100)));
-        uint256 gasUsed = gasBefore - gasleft();
+    // ===============================================================
+    //  MechBrawl
+    // ===============================================================
 
-        _reportGas("GrandPrix.tick (8 entrants, max)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "GrandPrix tick at max exceeds ceiling");
+    function test_Gas_MechBrawl_BrawlResolution() public {
+        MechBrawlSnap game = new MechBrawlSnap(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        for (uint256 i = 0; i < 4; i++) {
+            address p = vm.addr(0x5000 + i);
+            vm.deal(p, 1 ether);
+            vm.prank(p); uint256 id = game.deployMech{value: 0.01 ether}();
+            vm.prank(p); game.joinBrawl{value: 0.001 ether}(id);
+        }
+        vm.warp(block.timestamp + 60);
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(100))); uint256 used = g - gasleft();
+        _reportGas("MechBrawl.tick (4 entrants)", used);
+        assertLt(used, GAS_CEILING, "MechBrawl tick exceeds ceiling");
+    }
+
+    // ===============================================================
+    //  SorcererDuel
+    // ===============================================================
+
+    function test_Gas_SorcererDuel_DuelResolution() public {
+        SorcererDuelSnap game = new SorcererDuelSnap(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        for (uint256 i = 0; i < 4; i++) {
+            address p = vm.addr(0x6000 + i);
+            vm.deal(p, 1 ether);
+            vm.prank(p); uint256 id = game.summonSorcerer{value: 0.01 ether}();
+            vm.prank(p); game.enterDuel{value: 0.001 ether}(id);
+        }
+        vm.warp(block.timestamp + 60);
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(100))); uint256 used = g - gasleft();
+        _reportGas("SorcererDuel.tick (4 entrants)", used);
+        assertLt(used, GAS_CEILING, "SorcererDuel tick exceeds ceiling");
+    }
+
+    // ===============================================================
+    //  KaijuLeague
+    // ===============================================================
+
+    function test_Gas_KaijuLeague_ClashResolution() public {
+        KaijuLeagueSnap game = new KaijuLeagueSnap(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        for (uint256 i = 0; i < 4; i++) {
+            address p = vm.addr(0x7000 + i);
+            vm.deal(p, 1 ether);
+            vm.prank(p); uint256 id = game.hatchKaiju{value: 0.01 ether}();
+            vm.prank(p); game.enterClash{value: 0.001 ether}(id);
+        }
+        vm.warp(block.timestamp + 60);
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(100))); uint256 used = g - gasleft();
+        _reportGas("KaijuLeague.tick (4 entrants)", used);
+        assertLt(used, GAS_CEILING, "KaijuLeague tick exceeds ceiling");
+    }
+
+    // ===============================================================
+    //  VoidHarvester
+    // ===============================================================
+
+    function test_Gas_VoidHarvester_MissionResolution() public {
+        VoidHarvesterSnap game = new VoidHarvesterSnap(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        for (uint256 i = 0; i < 4; i++) {
+            address p = vm.addr(0x8000 + i);
+            vm.deal(p, 1 ether);
+            vm.prank(p); uint256 id = game.deployProbe{value: 0.01 ether}();
+            vm.prank(p); game.launchMission{value: 0.001 ether}(id);
+        }
+        vm.warp(block.timestamp + 60);
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(100))); uint256 used = g - gasleft();
+        _reportGas("VoidHarvester.tick (4 entrants)", used);
+        assertLt(used, GAS_CEILING, "VoidHarvester tick exceeds ceiling");
     }
 
     // ===============================================================
@@ -225,91 +268,71 @@ contract GameGasSnapshotTest is Test {
 
     function test_Gas_SponsorAuction_Close() public {
         SponsorAuction game = new SponsorAuction(
-            120, // auctionDuration
-            3600, // sponsorshipPeriod
-            0.001 ether, // minBid
-            500, // 5% minIncrementBps
-            500, // 5% protocolRakeBps
-            alice
+            120, 3600, 0.001 ether, 500, 500, alice
         );
-
-        // Place a bid so close has something to settle
-        vm.prank(bob);
-        game.bid{value: 0.001 ether}();
-
+        vm.prank(bob); game.bid{value: 0.001 ether}();
         vm.warp(game.auctionClosesAt());
-
         bytes memory data = abi.encode(game.currentAuctionId());
-        uint256 gasBefore = gasleft();
-        game.progressLoop(data);
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("SponsorAuction.close (with bid)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "SponsorAuction close exceeds ceiling");
+        uint256 g = gasleft(); game.progressLoop(data); uint256 used = g - gasleft();
+        _reportGas("SponsorAuction.close (with bid)", used);
+        assertLt(used, GAS_CEILING, "SponsorAuction close exceeds ceiling");
     }
 
     function test_Gas_SponsorAuction_CloseNoBids() public {
-        SponsorAuction game = new SponsorAuction(
-            120,
-            3600,
-            0.001 ether,
-            500,
-            500,
-            alice
-        );
+        SponsorAuction game = new SponsorAuction(120, 3600, 0.001 ether, 500, 500, alice);
         vm.warp(game.auctionClosesAt());
-
         bytes memory data = abi.encode(game.currentAuctionId());
-        uint256 gasBefore = gasleft();
-        game.progressLoop(data);
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("SponsorAuction.close (no bids)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING);
+        uint256 g = gasleft(); game.progressLoop(data); uint256 used = g - gasleft();
+        _reportGas("SponsorAuction.close (no bids)", used);
+        assertLt(used, GAS_CEILING);
     }
 
     // ===============================================================
-    //  PhantomDriver
+    //  GladiatorOracle
     // ===============================================================
 
-    function test_Gas_PhantomDriver_Resolution() public {
-        PhantomDriverSnap game = new PhantomDriverSnap(
-            120, // commitDuration
-            120, // revealDuration
-            0.001 ether, // minStake
-            500 // 5% rake
+    function test_Gas_GladiatorOracle_Settlement() public {
+        ArenaSnapForOracle snap = new ArenaSnapForOracle(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        GladiatorOracle game = new GladiatorOracle(
+            address(snap), 120, 120, 0.001 ether, 500
         );
 
-        // 3 players commit + reveal
+        // Three oracle players commit predictions
         address[3] memory players = [alice, bob, carol];
-        uint8[3] memory roles = [uint8(0), uint8(1), uint8(2)];
-        bytes32[3] memory salts = [
-            bytes32(uint256(1)),
-            bytes32(uint256(2)),
-            bytes32(uint256(3))
-        ];
-
+        uint256[3] memory gids = [uint256(1), uint256(2), uint256(1)]; // alice+carol pick g1, bob picks g2
+        bytes32[3] memory salts = [bytes32(uint256(1)), bytes32(uint256(2)), bytes32(uint256(3))];
         for (uint256 i = 0; i < 3; i++) {
-            bytes32 c = keccak256(abi.encode(roles[i], salts[i], players[i]));
-            vm.prank(players[i]);
-            game.commit{value: 0.001 ether}(c);
+            bytes32 c = keccak256(abi.encode(gids[i], salts[i], players[i]));
+            vm.prank(players[i]); game.commit{value: 0.001 ether}(c);
         }
 
-        PhantomDriver.Round memory r = game.getRound(1);
+        // Mint + enter two arena gladiators
+        address p1 = vm.addr(0xF001);
+        address p2 = vm.addr(0xF002);
+        vm.deal(p1, 1 ether); vm.deal(p2, 1 ether);
+        vm.prank(p1); snap.mintGladiator{value: 0.01 ether}(); // g1
+        vm.prank(p2); snap.mintGladiator{value: 0.01 ether}(); // g2
+        vm.prank(p1); snap.enterBout{value: 0.001 ether}(1);
+        vm.prank(p2); snap.enterBout{value: 0.001 ether}(2);
+
+        // Warp past commit phase, have players reveal
+        GladiatorOracle.Round memory r = game.getRound(1);
         vm.warp(r.commitEndAt);
         for (uint256 i = 0; i < 3; i++) {
-            vm.prank(players[i]);
-            game.reveal(roles[i], salts[i]);
+            vm.prank(players[i]); game.reveal(gids[i], salts[i]);
         }
 
-        vm.warp(r.revealEndAt);
+        // Warp past both deadlines, resolve arena, then measure oracle settlement gas
+        uint256 t = r.revealEndAt > snap.lastBoutAt() + 60 ? r.revealEndAt : snap.lastBoutAt() + 60;
+        vm.warp(t);
+        snap.tickForTest(bytes32(uint256(0))); // g1 wins
 
-        uint256 gasBefore = gasleft();
-        game.tickForTest(bytes32(uint256(1)));
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("PhantomDriver.tick (3 players, committed+revealed)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "PhantomDriver tick exceeds ceiling");
+        bytes memory data = abi.encode(uint256(1));
+        uint256 g = gasleft(); game.progressLoop(data); uint256 used = g - gasleft();
+        _reportGas("GladiatorOracle.settle (3 players, g1 wins)", used);
+        assertLt(used, GAS_CEILING, "GladiatorOracle settle exceeds ceiling");
     }
 
     // ===============================================================
@@ -318,64 +341,131 @@ contract GameGasSnapshotTest is Test {
 
     function test_Gas_OracleRun_Expedition() public {
         OracleRunSnap game = new OracleRunSnap(
-            0.01 ether, // characterMintFee
-            0.002 ether, // entryFee
-            60, // interval
-            500, // 5% rake
-            300, // baseDifficulty
-            50, // difficultyPerFloor
-            400 // initialPower
+            0.01 ether, 0.002 ether, 60, 500, 300, 50, 400
         );
-
         for (uint256 i = 0; i < 4; i++) {
-            address p = vm.addr(0x5000 + i);
+            address p = vm.addr(0x9000 + i);
             vm.deal(p, 1 ether);
-            vm.prank(p);
-            game.mintCharacter{value: 0.01 ether}();
-            vm.prank(p);
-            game.registerForExpedition{value: 0.002 ether}(i + 1);
+            vm.prank(p); game.mintCharacter{value: 0.01 ether}();
+            vm.prank(p); game.registerForExpedition{value: 0.002 ether}(i + 1);
         }
-
         vm.warp(block.timestamp + 60);
-
-        uint256 gasBefore = gasleft();
-        game.tickForTest(bytes32(uint256(type(uint256).max)));
-        uint256 gasUsed = gasBefore - gasleft();
-
-        _reportGas("OracleRun.tick (4 entrants, all survive)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING, "OracleRun tick exceeds ceiling");
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(type(uint256).max))); uint256 used = g - gasleft();
+        _reportGas("OracleRun.tick (4 entrants, all survive)", used);
+        assertLt(used, GAS_CEILING, "OracleRun tick exceeds ceiling");
     }
 
     function test_Gas_OracleRun_Wipe() public {
-        // All characters die on a high-difficulty floor
         OracleRunSnap game = new OracleRunSnap(
-            0.01 ether,
-            0.002 ether,
-            60,
-            500,
-            900, // baseDifficulty high enough to kill with initialPower=100
-            50,
-            100
+            0.01 ether, 0.002 ether, 60, 500, 900, 50, 100
+        );
+        for (uint256 i = 0; i < 4; i++) {
+            address p = vm.addr(0xA000 + i);
+            vm.deal(p, 1 ether);
+            vm.prank(p); game.mintCharacter{value: 0.01 ether}();
+            vm.prank(p); game.registerForExpedition{value: 0.002 ether}(i + 1);
+        }
+        vm.warp(block.timestamp + 60);
+        uint256 g = gasleft(); game.tickForTest(bytes32(uint256(0))); uint256 used = g - gasleft();
+        _reportGas("OracleRun.tick (4 entrants, wipe)", used);
+        assertLt(used, GAS_CEILING);
+    }
+
+    // ===============================================================
+    //  KaijuOracle
+    // ===============================================================
+
+    function test_Gas_KaijuOracle_Settlement() public {
+        LeagueSnapForKaijuOracle snap = new LeagueSnapForKaijuOracle(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        KaijuOracle game = new KaijuOracle(
+            address(snap), 120, 120, 0.001 ether, 500
         );
 
-        for (uint256 i = 0; i < 4; i++) {
-            address p = vm.addr(0x6000 + i);
-            vm.deal(p, 1 ether);
-            vm.prank(p);
-            game.mintCharacter{value: 0.01 ether}();
-            vm.prank(p);
-            game.registerForExpedition{value: 0.002 ether}(i + 1);
+        address[3] memory players = [alice, bob, carol];
+        uint256[3] memory kids = [uint256(1), uint256(2), uint256(1)];
+        bytes32[3] memory salts = [bytes32(uint256(1)), bytes32(uint256(2)), bytes32(uint256(3))];
+        for (uint256 i = 0; i < 3; i++) {
+            bytes32 c = keccak256(abi.encode(kids[i], salts[i], players[i]));
+            vm.prank(players[i]); game.commit{value: 0.001 ether}(c);
         }
 
-        vm.warp(block.timestamp + 60);
+        // Mint and enter two kaijus
+        address p1 = vm.addr(0xF101); address p2 = vm.addr(0xF102);
+        vm.deal(p1, 1 ether); vm.deal(p2, 1 ether);
+        vm.prank(p1); snap.hatchKaiju{value: 0.01 ether}(); // k1
+        vm.prank(p2); snap.hatchKaiju{value: 0.01 ether}(); // k2
+        vm.prank(p1); snap.enterClash{value: 0.001 ether}(1);
+        vm.prank(p2); snap.enterClash{value: 0.001 ether}(2);
 
-        // Zero randomness guarantees every character rolls 0 → dies
-        uint256 gasBefore = gasleft();
-        game.tickForTest(bytes32(uint256(0)));
-        uint256 gasUsed = gasBefore - gasleft();
+        KaijuOracle.Round memory r = game.getRound(1);
+        vm.warp(r.commitEndAt);
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(players[i]); game.reveal(kids[i], salts[i]);
+        }
 
-        _reportGas("OracleRun.tick (4 entrants, wipe)", gasUsed);
-        assertLt(gasUsed, GAS_CEILING);
+        uint256 t = r.revealEndAt > snap.lastClashAt() + 60 ? r.revealEndAt : snap.lastClashAt() + 60;
+        vm.warp(t);
+        snap.tickForTest(bytes32(uint256(0))); // k1 wins
+
+        bytes memory data = abi.encode(uint256(1));
+        uint256 g = gasleft(); game.progressLoop(data); uint256 used = g - gasleft();
+        _reportGas("KaijuOracle.settle (3 players, k1 wins)", used);
+        assertLt(used, GAS_CEILING, "KaijuOracle settle exceeds ceiling");
+    }
+
+    // ===============================================================
+    //  ForecasterLeaderboard
+    // ===============================================================
+
+    function test_Gas_ForecasterLeaderboard_Distribution() public {
+        LeagueSnapForKaijuOracle snap = new LeagueSnapForKaijuOracle(
+            0.01 ether, 0.001 ether, 60, 500, 500, 50, 8
+        );
+        KaijuOracle oracleGame = new KaijuOracle(
+            address(snap), 60, 60, 0.001 ether, 500
+        );
+        ForecasterLeaderboard board = new ForecasterLeaderboard(
+            address(oracleGame), 3600, 3, 20, 500
+        );
+
+        // Fund the prize pool
+        board.fundPrizePool{value: 1 ether}();
+
+        // Three forecasters commit and reveal
+        address[3] memory players = [alice, bob, carol];
+        uint256[3] memory kids = [uint256(1), uint256(1), uint256(2)];
+        bytes32[3] memory salts = [bytes32(uint256(10)), bytes32(uint256(11)), bytes32(uint256(12))];
+        for (uint256 i = 0; i < 3; i++) {
+            bytes32 c = keccak256(abi.encode(kids[i], salts[i], players[i]));
+            vm.prank(players[i]); oracleGame.commit{value: 0.001 ether}(c);
+        }
+
+        address lp1 = vm.addr(0xF201); address lp2 = vm.addr(0xF202);
+        vm.deal(lp1, 1 ether); vm.deal(lp2, 1 ether);
+        vm.prank(lp1); snap.hatchKaiju{value: 0.01 ether}();
+        vm.prank(lp2); snap.hatchKaiju{value: 0.01 ether}();
+        vm.prank(lp1); snap.enterClash{value: 0.001 ether}(1);
+        vm.prank(lp2); snap.enterClash{value: 0.001 ether}(2);
+
+        KaijuOracle.Round memory r = oracleGame.getRound(1);
+        vm.warp(r.commitEndAt);
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(players[i]); oracleGame.reveal(kids[i], salts[i]);
+        }
+
+        uint256 t = r.revealEndAt > snap.lastClashAt() + 60 ? r.revealEndAt : snap.lastClashAt() + 60;
+        vm.warp(t);
+        snap.tickForTest(bytes32(uint256(0)));                 // k1 wins
+        oracleGame.progressLoop(abi.encode(uint256(1)));       // oracle settles round 1
+
+        // Warp to distribution time
+        vm.warp(board.nextDistributionAt());
+        bytes memory data = abi.encode(uint256(1));
+        uint256 g = gasleft(); board.progressLoop(data); uint256 used = g - gasleft();
+        _reportGas("ForecasterLeaderboard.distribution (3 forecasters, 1 round)", used);
+        assertLt(used, GAS_CEILING, "ForecasterLeaderboard distribution exceeds ceiling");
     }
 
     // ===============================================================

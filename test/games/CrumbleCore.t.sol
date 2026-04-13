@@ -8,15 +8,15 @@ import "../../src/AutoLoop.sol";
 import "../../src/AutoLoopRegistry.sol";
 import "../../src/AutoLoopRegistrar.sol";
 import "../../src/AutoLoopCompatibleInterface.sol";
-import "../../src/games/PitRow.sol";
+import "../../src/games/CrumbleCore.sol";
 
 /**
- * @title PitRowHarness
+ * @title CrumbleCoreHarness
  * @notice Test harness that exposes `_progressInternal` directly so tests can
  *         inject deterministic randomness without constructing ECVRF proofs
- *         in Solidity. Production deploys use plain `PitRow`.
+ *         in Solidity. Production deploys use plain `CrumbleCore`.
  */
-contract PitRowHarness is PitRow {
+contract CrumbleCoreHarness is CrumbleCore {
     constructor(
         uint256 _baseMintFee,
         uint256 _repairFee,
@@ -26,7 +26,7 @@ contract PitRowHarness is PitRow {
         uint256 _insurancePremiumBps,
         uint256 _salvageTargetBps
     )
-        PitRow(
+        CrumbleCore(
             _baseMintFee,
             _repairFee,
             _tickInterval,
@@ -51,17 +51,17 @@ contract PitRowHarness is PitRow {
 }
 
 /**
- * @title PitRowTest
- * @notice Forge test suite for PitRow.
+ * @title CrumbleCoreTest
+ * @notice Forge test suite for CrumbleCore.
  */
-contract PitRowTest is Test {
+contract CrumbleCoreTest is Test {
     // ---- Infra ----
     AutoLoop public autoLoop;
     AutoLoopRegistry public registry;
     AutoLoopRegistrar public registrar;
 
     // ---- Game ----
-    PitRowHarness public game;
+    CrumbleCoreHarness public game;
 
     // ---- Actors ----
     address public proxyAdmin;
@@ -136,8 +136,8 @@ contract PitRowTest is Test {
         registry.setRegistrar(address(registrar));
         autoLoop.setRegistrar(address(registrar));
 
-        // ---- Deploy PitRow harness ----
-        game = new PitRowHarness(
+        // ---- Deploy CrumbleCore harness ----
+        game = new CrumbleCoreHarness(
             BASE_MINT_FEE,
             REPAIR_FEE,
             TICK_INTERVAL,
@@ -217,43 +217,43 @@ contract PitRowTest is Test {
     // ===============================================================
 
     function test_ConstructorRejectsZeroInterval() public {
-        vm.expectRevert("PitRow: tickInterval=0");
-        new PitRowHarness(
+        vm.expectRevert("CrumbleCore: tickInterval=0");
+        new CrumbleCoreHarness(
             BASE_MINT_FEE, REPAIR_FEE, 0, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsZeroMaxHealth() public {
-        vm.expectRevert("PitRow: maxHealth=0");
-        new PitRowHarness(
+        vm.expectRevert("CrumbleCore: maxHealth=0");
+        new CrumbleCoreHarness(
             BASE_MINT_FEE, REPAIR_FEE, TICK_INTERVAL, 0, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsZeroBaseMintFee() public {
-        vm.expectRevert("PitRow: baseMintFee=0");
-        new PitRowHarness(
+        vm.expectRevert("CrumbleCore: baseMintFee=0");
+        new CrumbleCoreHarness(
             0, REPAIR_FEE, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsZeroRepairFee() public {
-        vm.expectRevert("PitRow: repairFee=0");
-        new PitRowHarness(
+        vm.expectRevert("CrumbleCore: repairFee=0");
+        new CrumbleCoreHarness(
             BASE_MINT_FEE, 0, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsInsuranceOver50() public {
-        vm.expectRevert("PitRow: insurance premium > 50%");
-        new PitRowHarness(
+        vm.expectRevert("CrumbleCore: insurance premium > 50%");
+        new CrumbleCoreHarness(
             BASE_MINT_FEE, REPAIR_FEE, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, 5001, SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsSalvageTargetOver100() public {
-        vm.expectRevert("PitRow: target > 100%");
-        new PitRowHarness(
+        vm.expectRevert("CrumbleCore: target > 100%");
+        new CrumbleCoreHarness(
             BASE_MINT_FEE, REPAIR_FEE, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, 10001
         );
     }
@@ -270,7 +270,7 @@ contract PitRowTest is Test {
         assertEq(game.nextFloorId(), 2, "nextFloorId should advance");
         assertEq(game.activeFloorCount(), 1, "one active floor");
 
-        PitRow.Floor memory f = game.getFloor(1);
+        CrumbleCore.Floor memory f = game.getFloor(1);
         assertEq(f.owner, alice);
         assertFalse(f.insured);
         assertFalse(f.collapsed);
@@ -287,7 +287,7 @@ contract PitRowTest is Test {
         vm.prank(alice);
         uint256 id = game.mintFloor{value: totalCost}(true);
 
-        PitRow.Floor memory f = game.getFloor(id);
+        CrumbleCore.Floor memory f = game.getFloor(id);
         assertTrue(f.insured, "floor should be insured");
         assertEq(game.protocolFeeBalance(), BASE_MINT_FEE, "protocol fee excludes insurance");
         assertEq(game.insurancePool(), insuranceCost, "insurance pool collected premium");
@@ -295,7 +295,7 @@ contract PitRowTest is Test {
 
     function test_MintRejectsInsufficientValue() public {
         vm.prank(alice);
-        vm.expectRevert("PitRow: insufficient value");
+        vm.expectRevert("CrumbleCore: insufficient value");
         game.mintFloor{value: BASE_MINT_FEE - 1}(false);
     }
 
@@ -311,7 +311,7 @@ contract PitRowTest is Test {
 
     function test_MintEmitsEvent() public {
         vm.expectEmit(true, true, false, true, address(game));
-        emit PitRow.FloorMinted(1, alice, BASE_MINT_FEE, false);
+        emit CrumbleCore.FloorMinted(1, alice, BASE_MINT_FEE, false);
 
         vm.prank(alice);
         game.mintFloor{value: BASE_MINT_FEE}(false);
@@ -389,7 +389,7 @@ contract PitRowTest is Test {
         game.mintFloor{value: BASE_MINT_FEE}(false);
 
         vm.prank(bob);
-        vm.expectRevert("PitRow: not owner");
+        vm.expectRevert("CrumbleCore: not owner");
         game.repair{value: REPAIR_FEE}(1);
     }
 
@@ -398,13 +398,13 @@ contract PitRowTest is Test {
         game.mintFloor{value: BASE_MINT_FEE}(false);
 
         vm.prank(alice);
-        vm.expectRevert("PitRow: insufficient fee");
+        vm.expectRevert("CrumbleCore: insufficient fee");
         game.repair{value: REPAIR_FEE - 1}(1);
     }
 
     function test_RepairRejectsNonExistentFloor() public {
         vm.prank(alice);
-        vm.expectRevert("PitRow: no such floor");
+        vm.expectRevert("CrumbleCore: no such floor");
         game.repair{value: REPAIR_FEE}(999);
     }
 
@@ -414,7 +414,7 @@ contract PitRowTest is Test {
         _collapseFloor(1);
 
         vm.prank(alice);
-        vm.expectRevert("PitRow: floor collapsed");
+        vm.expectRevert("CrumbleCore: floor collapsed");
         game.repair{value: REPAIR_FEE}(1);
     }
 
@@ -519,7 +519,7 @@ contract PitRowTest is Test {
         game.mintFloor{value: BASE_MINT_FEE}(false);
         _warpToNextTick();
 
-        vm.expectRevert("PitRow: stale loop id");
+        vm.expectRevert("CrumbleCore: stale loop id");
         game.tickForTestRaw(bytes32(uint256(0)), 999);
     }
 
@@ -528,13 +528,13 @@ contract PitRowTest is Test {
         game.mintFloor{value: BASE_MINT_FEE}(false);
 
         // no warp — should be too soon
-        vm.expectRevert("PitRow: too soon");
+        vm.expectRevert("CrumbleCore: too soon");
         game.tickForTest(bytes32(uint256(0)));
     }
 
     function test_TickRejectsNoActiveFloors() public {
         _warpToNextTick();
-        vm.expectRevert("PitRow: no active floors");
+        vm.expectRevert("CrumbleCore: no active floors");
         game.tickForTest(bytes32(uint256(0)));
     }
 
@@ -547,7 +547,7 @@ contract PitRowTest is Test {
 
         // Check only the indexed topics — avoids coupling to exact damage math.
         vm.expectEmit(true, true, false, false, address(game));
-        emit PitRow.FloorDamaged(1, 0, 0, 1, bytes32(0));
+        emit CrumbleCore.FloorDamaged(1, 0, 0, 1, bytes32(0));
         game.tickForTest(r);
     }
 
@@ -682,7 +682,7 @@ contract PitRowTest is Test {
         game.salvage(1);
 
         vm.prank(alice);
-        vm.expectRevert("PitRow: already salvaged");
+        vm.expectRevert("CrumbleCore: already salvaged");
         game.salvage(1);
     }
 
@@ -691,7 +691,7 @@ contract PitRowTest is Test {
         game.mintFloor{value: BASE_MINT_FEE}(false);
 
         vm.prank(alice);
-        vm.expectRevert("PitRow: not collapsed");
+        vm.expectRevert("CrumbleCore: not collapsed");
         game.salvage(1);
     }
 
@@ -701,7 +701,7 @@ contract PitRowTest is Test {
         _collapseFloor(1);
 
         vm.prank(bob);
-        vm.expectRevert("PitRow: not owner");
+        vm.expectRevert("CrumbleCore: not owner");
         game.salvage(1);
     }
 
@@ -712,13 +712,13 @@ contract PitRowTest is Test {
     function test_DonateToInsurancePool() public {
         uint256 before = game.insurancePool();
         vm.expectEmit(true, false, false, true, address(game));
-        emit PitRow.InsurancePoolDonation(address(this), 0.5 ether);
+        emit CrumbleCore.InsurancePoolDonation(address(this), 0.5 ether);
         game.donateToInsurancePool{value: 0.5 ether}();
         assertEq(game.insurancePool(), before + 0.5 ether);
     }
 
     function test_DonateRejectsZero() public {
-        vm.expectRevert("PitRow: donation=0");
+        vm.expectRevert("CrumbleCore: donation=0");
         game.donateToInsurancePool{value: 0}();
     }
 
@@ -771,14 +771,14 @@ contract PitRowTest is Test {
     }
 
     function test_WithdrawRejectsExceedsBalance() public {
-        vm.expectRevert("PitRow: exceeds balance");
+        vm.expectRevert("CrumbleCore: exceeds balance");
         game.withdrawProtocolFees(admin, 1 ether);
     }
 
     function test_WithdrawRejectsZeroAddress() public {
         vm.prank(alice);
         game.mintFloor{value: BASE_MINT_FEE}(false);
-        vm.expectRevert("PitRow: zero address");
+        vm.expectRevert("CrumbleCore: zero address");
         game.withdrawProtocolFees(address(0), BASE_MINT_FEE);
     }
 
@@ -1041,7 +1041,7 @@ contract PitRowTest is Test {
         uint256 count = game.activeFloorCount();
         for (uint256 i = 0; i < count; i++) {
             uint256 floorId = game.activeFloorIds(i);
-            PitRow.Floor memory f = game.getFloor(floorId);
+            CrumbleCore.Floor memory f = game.getFloor(floorId);
             assertFalse(f.collapsed, "active id should not be collapsed");
             assertTrue(f.owner != address(0), "active id should have owner");
         }

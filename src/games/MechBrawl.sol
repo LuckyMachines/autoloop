@@ -5,67 +5,67 @@ import "../AutoLoopVRFCompatible.sol";
 import "../AutoLoopRegistrar.sol";
 
 /**
- * @title GrandPrix (Always-On Race)
+ * @title MechBrawl (Iron Pit)
  * @author LuckyMachines LLC
- * @notice A persistent racing loop where races resolve autonomously on an
+ * @notice A persistent mech arena loop where brawls resolve autonomously on an
  *         unchangeable schedule. Entry fees pool into a prize pot, VRF picks
- *         a winner weighted by car power, and all entrants take wear each race.
+ *         a winner weighted by mech armor, and all entrants take hull damage
+ *         each brawl.
  *
  * @dev WHY THIS GAME STRUCTURALLY REQUIRES AUTOLOOP
  *      Two independent reasons:
  *
- *      1. TIMING AS ATTACK SURFACE. If any entrant could trigger the race
+ *      1. TIMING AS ATTACK SURFACE. If any entrant could trigger the brawl
  *         themselves they could pick the block in which the VRF reveal
  *         happens. Even though ECVRF is unpredictable given a fixed seed,
  *         the entrant can CHOOSE whether to actually submit based on their
  *         private anticipation of the outcome — a variant of the front-run
  *         problem. A neutral scheduler eliminates this choice.
  *
- *      2. NEGATIVE-EV FREE-RIDER. Every entrant takes wear damage each race.
+ *      2. NEGATIVE-EV FREE-RIDER. Every entrant takes hull damage each brawl.
  *         For most entrants the expected value is negative (only one wins the
- *         pot, everyone pays entry + takes wear). The rational move is to
- *         let SOMEONE ELSE trigger the race so you pay the gas only if you
+ *         pot, everyone pays entry + takes damage). The rational move is to
+ *         let SOMEONE ELSE trigger the brawl so you pay the gas only if you
  *         win. Everyone reasons identically, so nobody triggers. A paid
  *         keeper is the only neutral party whose incentives are aligned
  *         with actually running the loop.
  *
- *      Self-incentivized triggering — the basis of Boris Stanic's critique
- *      against paid-keeper models — fails on both counts. AutoLoop is the
+ *      Self-incentivized triggering fails on both counts. AutoLoop is the
  *      only way this game can run fairly and continuously.
  *
  * @dev REVENUE MODEL FOR LUCKYMACHINES
- *      - carMintFee on every new car             → protocolFeeBalance
- *      - protocolRakeBps on every race pot        → protocolFeeBalance
- *      - Non-custodial winnings (pull-payment)    → player mapping
+ *      - deployFee on every new mech                → protocolFeeBalance
+ *      - protocolRakeBps on every brawl pot          → protocolFeeBalance
+ *      - Non-custodial winnings (pull-payment)       → player mapping
  */
-contract GrandPrix is AutoLoopVRFCompatible {
+contract MechBrawl is AutoLoopVRFCompatible {
     // ===============================================================
     //  Events
     // ===============================================================
 
-    event CarMinted(
-        uint256 indexed carId,
+    event MechDeployed(
+        uint256 indexed mechId,
         address indexed owner,
-        uint32 initialPower
+        uint32 initialArmor
     );
-    event CarEntered(
-        uint256 indexed raceId,
-        uint256 indexed carId,
+    event MechJoined(
+        uint256 indexed brawlId,
+        uint256 indexed mechId,
         address indexed owner
     );
-    event RaceResolved(
-        uint256 indexed raceId,
-        uint256 indexed winningCarId,
+    event BrawlResolved(
+        uint256 indexed brawlId,
+        uint256 indexed winningMechId,
         address indexed winner,
         uint256 prize,
         uint256 protocolFee,
         bytes32 randomness
     );
-    event WearApplied(
-        uint256 indexed raceId,
-        uint256 indexed carId,
-        uint32 oldPower,
-        uint32 newPower
+    event HullDamaged(
+        uint256 indexed brawlId,
+        uint256 indexed mechId,
+        uint32 oldArmor,
+        uint32 newArmor
     );
     event WinningsClaimed(address indexed to, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
@@ -74,43 +74,43 @@ contract GrandPrix is AutoLoopVRFCompatible {
     //  Configuration (immutable)
     // ===============================================================
 
-    uint256 public immutable carMintFee;
+    uint256 public immutable deployFee;
     uint256 public immutable entryFee;
-    uint256 public immutable raceInterval;
+    uint256 public immutable brawlInterval;
     uint256 public immutable protocolRakeBps;
 
-    uint32 public immutable initialPower;
-    uint32 public immutable minPower;
+    uint32 public immutable initialArmor;
+    uint32 public immutable minArmor;
 
-    uint256 public immutable maxEntrantsPerRace;
+    uint256 public immutable maxEntrantsPerBrawl;
 
     uint256 public constant BPS_DENOMINATOR = 10_000;
-    uint32 public constant WEAR_MIN = 5;
-    uint32 public constant WEAR_MAX = 20;
+    uint32 public constant DAMAGE_MIN = 5;
+    uint32 public constant DAMAGE_MAX = 20;
 
     // ===============================================================
     //  State
     // ===============================================================
 
-    struct Car {
+    struct Mech {
         address owner;
-        uint32 power;
-        uint32 wins;
-        uint32 races;
+        uint32 armor;
+        uint32 victories;
+        uint32 brawls;
     }
 
-    mapping(uint256 => Car) internal _cars;
-    uint256 public nextCarId = 1;
+    mapping(uint256 => Mech) internal _mechs;
+    uint256 public nextMechId = 1;
 
-    uint256 public currentRaceId = 1;
+    uint256 public currentBrawlId = 1;
     uint256[] public currentEntrants;
-    mapping(uint256 => bool) public enteredInCurrentRace;
+    mapping(uint256 => bool) public enteredInCurrentBrawl;
     uint256 public currentPrizePool;
-    uint256 public lastRaceAt;
+    uint256 public lastBrawlAt;
 
     uint256 public protocolFeeBalance;
-    uint256 public totalRacesResolved;
-    uint256 public totalCarsBurned;
+    uint256 public totalBrawlsResolved;
+    uint256 public totalMechsScrapped;
 
     mapping(address => uint256) public pendingWithdrawals;
 
@@ -119,28 +119,28 @@ contract GrandPrix is AutoLoopVRFCompatible {
     // ===============================================================
 
     constructor(
-        uint256 _carMintFee,
+        uint256 _deployFee,
         uint256 _entryFee,
-        uint256 _raceInterval,
+        uint256 _brawlInterval,
         uint256 _protocolRakeBps,
-        uint32 _initialPower,
-        uint32 _minPower,
-        uint256 _maxEntrantsPerRace
+        uint32 _initialArmor,
+        uint32 _minArmor,
+        uint256 _maxEntrantsPerBrawl
     ) {
-        require(_raceInterval > 0, "GrandPrix: raceInterval=0");
-        require(_protocolRakeBps <= 2000, "GrandPrix: rake > 20%");
-        require(_initialPower > _minPower, "GrandPrix: power ordering");
-        require(_maxEntrantsPerRace >= 2, "GrandPrix: maxEntrants < 2");
-        require(_maxEntrantsPerRace <= 16, "GrandPrix: maxEntrants > 16");
+        require(_brawlInterval > 0, "MechBrawl: brawlInterval=0");
+        require(_protocolRakeBps <= 2000, "MechBrawl: rake > 20%");
+        require(_initialArmor > _minArmor, "MechBrawl: armor ordering");
+        require(_maxEntrantsPerBrawl >= 2, "MechBrawl: maxEntrants < 2");
+        require(_maxEntrantsPerBrawl <= 16, "MechBrawl: maxEntrants > 16");
 
-        carMintFee = _carMintFee;
+        deployFee = _deployFee;
         entryFee = _entryFee;
-        raceInterval = _raceInterval;
+        brawlInterval = _brawlInterval;
         protocolRakeBps = _protocolRakeBps;
-        initialPower = _initialPower;
-        minPower = _minPower;
-        maxEntrantsPerRace = _maxEntrantsPerRace;
-        lastRaceAt = block.timestamp;
+        initialArmor = _initialArmor;
+        minArmor = _minArmor;
+        maxEntrantsPerBrawl = _maxEntrantsPerBrawl;
+        lastBrawlAt = block.timestamp;
     }
 
     function register(address registrar) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -151,63 +151,63 @@ contract GrandPrix is AutoLoopVRFCompatible {
     //  Public Actions
     // ===============================================================
 
-    /// @notice Mint a new car at initialPower.
-    function mintCar() external payable returns (uint256 carId) {
-        require(msg.value >= carMintFee, "GrandPrix: insufficient mint fee");
+    /// @notice Deploy a new mech at initialArmor.
+    function deployMech() external payable returns (uint256 mechId) {
+        require(msg.value >= deployFee, "MechBrawl: insufficient deploy fee");
 
-        carId = nextCarId++;
-        _cars[carId] = Car({
+        mechId = nextMechId++;
+        _mechs[mechId] = Mech({
             owner: _msgSender(),
-            power: initialPower,
-            wins: 0,
-            races: 0
+            armor: initialArmor,
+            victories: 0,
+            brawls: 0
         });
-        protocolFeeBalance += carMintFee;
+        protocolFeeBalance += deployFee;
 
-        uint256 overpayment = msg.value - carMintFee;
+        uint256 overpayment = msg.value - deployFee;
         if (overpayment > 0) {
             (bool sent, ) = _msgSender().call{value: overpayment}("");
-            require(sent, "GrandPrix: refund failed");
+            require(sent, "MechBrawl: refund failed");
         }
 
-        emit CarMinted(carId, _msgSender(), initialPower);
+        emit MechDeployed(mechId, _msgSender(), initialArmor);
     }
 
-    /// @notice Enter a car in the current race.
-    function enterRace(uint256 carId) external payable {
-        require(msg.value >= entryFee, "GrandPrix: insufficient entry fee");
-        Car storage c = _cars[carId];
-        require(c.owner == _msgSender(), "GrandPrix: not owner");
-        require(c.power >= minPower, "GrandPrix: car retired");
+    /// @notice Enter a mech in the current brawl.
+    function joinBrawl(uint256 mechId) external payable {
+        require(msg.value >= entryFee, "MechBrawl: insufficient entry fee");
+        Mech storage m = _mechs[mechId];
+        require(m.owner == _msgSender(), "MechBrawl: not owner");
+        require(m.armor >= minArmor, "MechBrawl: mech scrapped");
         require(
-            !enteredInCurrentRace[carId],
-            "GrandPrix: already entered"
+            !enteredInCurrentBrawl[mechId],
+            "MechBrawl: already entered"
         );
         require(
-            currentEntrants.length < maxEntrantsPerRace,
-            "GrandPrix: race full"
+            currentEntrants.length < maxEntrantsPerBrawl,
+            "MechBrawl: brawl full"
         );
 
-        currentEntrants.push(carId);
-        enteredInCurrentRace[carId] = true;
+        currentEntrants.push(mechId);
+        enteredInCurrentBrawl[mechId] = true;
         currentPrizePool += entryFee;
 
         uint256 overpayment = msg.value - entryFee;
         if (overpayment > 0) {
             (bool sent, ) = _msgSender().call{value: overpayment}("");
-            require(sent, "GrandPrix: refund failed");
+            require(sent, "MechBrawl: refund failed");
         }
 
-        emit CarEntered(currentRaceId, carId, _msgSender());
+        emit MechJoined(currentBrawlId, mechId, _msgSender());
     }
 
     /// @notice Pull-payment winnings claim.
     function claimWinnings() external {
         uint256 amount = pendingWithdrawals[_msgSender()];
-        require(amount > 0, "GrandPrix: nothing to claim");
+        require(amount > 0, "MechBrawl: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
         (bool sent, ) = _msgSender().call{value: amount}("");
-        require(sent, "GrandPrix: withdraw failed");
+        require(sent, "MechBrawl: withdraw failed");
         emit WinningsClaimed(_msgSender(), amount);
     }
 
@@ -222,14 +222,12 @@ contract GrandPrix is AutoLoopVRFCompatible {
         returns (bool loopIsReady, bytes memory progressWithData)
     {
         loopIsReady =
-            (block.timestamp >= lastRaceAt + raceInterval) &&
+            (block.timestamp >= lastBrawlAt + brawlInterval) &&
             (currentEntrants.length >= 2);
         progressWithData = abi.encode(_loopID);
     }
 
-    function progressLoop(
-        bytes calldata progressWithData
-    ) external override {
+    function progressLoop(bytes calldata progressWithData) external override {
         (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
             progressWithData,
             tx.origin
@@ -238,35 +236,29 @@ contract GrandPrix is AutoLoopVRFCompatible {
         _progressInternal(randomness, loopID);
     }
 
-    /**
-     * @dev Core race resolution. Exposed to tests via harness.
-     */
-    function _progressInternal(
-        bytes32 randomness,
-        uint256 loopID
-    ) internal {
+    function _progressInternal(bytes32 randomness, uint256 loopID) internal {
         require(
-            block.timestamp >= lastRaceAt + raceInterval,
-            "GrandPrix: too soon"
+            block.timestamp >= lastBrawlAt + brawlInterval,
+            "MechBrawl: too soon"
         );
-        require(loopID == _loopID, "GrandPrix: stale loop id");
+        require(loopID == _loopID, "MechBrawl: stale loop id");
         require(
             currentEntrants.length >= 2,
-            "GrandPrix: not enough entrants"
+            "MechBrawl: not enough entrants"
         );
 
-        // ---- Pick winner weighted by power ----
-        uint256 totalPower = 0;
+        // ---- Pick winner weighted by armor ----
+        uint256 totalArmor = 0;
         for (uint256 i = 0; i < currentEntrants.length; i++) {
-            totalPower += uint256(_cars[currentEntrants[i]].power);
+            totalArmor += uint256(_mechs[currentEntrants[i]].armor);
         }
         uint256 r = uint256(randomness);
-        uint256 winningWeight = r % totalPower;
+        uint256 winningWeight = r % totalArmor;
 
         uint256 winnerId;
         uint256 cumulative = 0;
         for (uint256 i = 0; i < currentEntrants.length; i++) {
-            cumulative += uint256(_cars[currentEntrants[i]].power);
+            cumulative += uint256(_mechs[currentEntrants[i]].armor);
             if (cumulative > winningWeight) {
                 winnerId = currentEntrants[i];
                 break;
@@ -278,12 +270,12 @@ contract GrandPrix is AutoLoopVRFCompatible {
         uint256 protocolCut = (pot * protocolRakeBps) / BPS_DENOMINATOR;
         uint256 prize = pot - protocolCut;
         protocolFeeBalance += protocolCut;
-        Car storage winner = _cars[winnerId];
+        Mech storage winner = _mechs[winnerId];
         pendingWithdrawals[winner.owner] += prize;
-        winner.wins++;
+        winner.victories++;
 
-        emit RaceResolved(
-            currentRaceId,
+        emit BrawlResolved(
+            currentBrawlId,
             winnerId,
             winner.owner,
             prize,
@@ -291,39 +283,36 @@ contract GrandPrix is AutoLoopVRFCompatible {
             randomness
         );
 
-        // ---- Apply wear to all entrants ----
+        // ---- Apply hull damage to all entrants ----
         for (uint256 i = 0; i < currentEntrants.length; i++) {
             uint256 entrantId = currentEntrants[i];
-            Car storage c = _cars[entrantId];
-            c.races++;
+            Mech storage m = _mechs[entrantId];
+            m.brawls++;
 
-            uint256 wearRoll = uint256(
-                keccak256(abi.encodePacked(randomness, entrantId, "wear"))
+            uint256 damageRoll = uint256(
+                keccak256(abi.encodePacked(randomness, entrantId, "damage"))
             );
-            uint32 wearRange = WEAR_MAX - WEAR_MIN + 1;
-            uint32 wearAmount = uint32(
-                WEAR_MIN + (wearRoll % wearRange)
-            );
+            uint32 damageRange = DAMAGE_MAX - DAMAGE_MIN + 1;
+            uint32 damageAmount = uint32(DAMAGE_MIN + (damageRoll % damageRange));
 
-            uint32 oldPower = c.power;
-            uint32 newPower;
-            if (c.power > wearAmount + minPower) {
-                newPower = c.power - wearAmount;
+            uint32 oldArmor = m.armor;
+            uint32 newArmor;
+            if (m.armor > damageAmount + minArmor) {
+                newArmor = m.armor - damageAmount;
             } else {
-                newPower = minPower;
-                totalCarsBurned++;
+                newArmor = minArmor;
+                totalMechsScrapped++;
             }
-            c.power = newPower;
-            emit WearApplied(currentRaceId, entrantId, oldPower, newPower);
+            m.armor = newArmor;
+            emit HullDamaged(currentBrawlId, entrantId, oldArmor, newArmor);
 
-            // Clear entry flag for next race
-            enteredInCurrentRace[entrantId] = false;
+            enteredInCurrentBrawl[entrantId] = false;
         }
 
         // ---- Advance state ----
-        lastRaceAt = block.timestamp;
-        totalRacesResolved++;
-        currentRaceId++;
+        lastBrawlAt = block.timestamp;
+        totalBrawlsResolved++;
+        currentBrawlId++;
         delete currentEntrants;
         currentPrizePool = 0;
         ++_loopID;
@@ -333,8 +322,8 @@ contract GrandPrix is AutoLoopVRFCompatible {
     //  Views
     // ===============================================================
 
-    function getCar(uint256 carId) external view returns (Car memory) {
-        return _cars[carId];
+    function getMech(uint256 mechId) external view returns (Mech memory) {
+        return _mechs[mechId];
     }
 
     function currentEntrantCount() external view returns (uint256) {
@@ -353,11 +342,11 @@ contract GrandPrix is AutoLoopVRFCompatible {
         address to,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(to != address(0), "GrandPrix: zero address");
-        require(amount <= protocolFeeBalance, "GrandPrix: exceeds balance");
+        require(to != address(0), "MechBrawl: zero address");
+        require(amount <= protocolFeeBalance, "MechBrawl: exceeds balance");
         protocolFeeBalance -= amount;
         (bool sent, ) = to.call{value: amount}("");
-        require(sent, "GrandPrix: withdraw failed");
+        require(sent, "MechBrawl: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }
 

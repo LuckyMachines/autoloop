@@ -5,14 +5,14 @@ import "../AutoLoopVRFCompatible.sol";
 import "../AutoLoopRegistrar.sol";
 
 /**
- * @title PitRow (aka Decay Tower)
+ * @title CrumbleCore (aka Decay Tower)
  * @author LuckyMachines LLC
- * @notice A persistent on-chain tower where each floor holds a race car NFT
+ * @notice A persistent on-chain tower where each floor holds a structure
  *         that takes catastrophic damage on autonomous VRF ticks and decays
  *         passively between repairs.
  *
  * @dev WHY THIS GAME STRUCTURALLY REQUIRES AUTOLOOP
- *      The defining property of PitRow is that every tick has a chance of
+ *      The defining property of CrumbleCore is that every tick has a chance of
  *      damaging a random floor via VRF. A rational floor owner will NEVER
  *      call `progressLoop()` themselves — because the VRF output could pick
  *      their own floor. Every tick is a strict negative expectation for the
@@ -23,7 +23,7 @@ import "../AutoLoopRegistrar.sol";
  *      whose incentives align with running the loop is a neutral keeper
  *      that gets paid gas + fees. That keeper is AutoLoop.
  *
- *      This makes PitRow the cleanest possible demonstration of why
+ *      This makes CrumbleCore the cleanest possible demonstration of why
  *      AutoLoop's paid-keeper model is structurally necessary for a class
  *      of games where the loop imposes costs on every participant.
  *
@@ -45,7 +45,7 @@ import "../AutoLoopRegistrar.sol";
  *      - Passive decay accrues continuously based on wall-clock time since
  *        the floor's last repair. It requires no on-chain work.
  */
-contract PitRow is AutoLoopVRFCompatible {
+contract CrumbleCore is AutoLoopVRFCompatible {
     // ===============================================================
     //  Events
     // ===============================================================
@@ -170,12 +170,12 @@ contract PitRow is AutoLoopVRFCompatible {
         uint256 _insurancePremiumBps,
         uint256 _salvageTargetBps
     ) {
-        require(_tickInterval > 0, "PitRow: tickInterval=0");
-        require(_maxHealth > 0, "PitRow: maxHealth=0");
-        require(_insurancePremiumBps <= 5000, "PitRow: insurance premium > 50%");
-        require(_salvageTargetBps <= 10000, "PitRow: target > 100%");
-        require(_baseMintFee > 0, "PitRow: baseMintFee=0");
-        require(_repairFee > 0, "PitRow: repairFee=0");
+        require(_tickInterval > 0, "CrumbleCore: tickInterval=0");
+        require(_maxHealth > 0, "CrumbleCore: maxHealth=0");
+        require(_insurancePremiumBps <= 5000, "CrumbleCore: insurance premium > 50%");
+        require(_salvageTargetBps <= 10000, "CrumbleCore: target > 100%");
+        require(_baseMintFee > 0, "CrumbleCore: baseMintFee=0");
+        require(_repairFee > 0, "CrumbleCore: repairFee=0");
 
         baseMintFee = _baseMintFee;
         repairFee = _repairFee;
@@ -197,7 +197,7 @@ contract PitRow is AutoLoopVRFCompatible {
     // ===============================================================
 
     /**
-     * @notice Mint a new floor with a car on it.
+     * @notice Mint a new floor.
      * @param withInsurance If true, pay the insurance premium and receive
      *                      a salvage payout if the floor ever collapses.
      * @return floorId The newly minted floor's id.
@@ -210,7 +210,7 @@ contract PitRow is AutoLoopVRFCompatible {
             ? (currentMintFee * insurancePremiumBps) / BPS_DENOMINATOR
             : 0;
         uint256 totalCost = currentMintFee + insuranceCost;
-        require(msg.value >= totalCost, "PitRow: insufficient value");
+        require(msg.value >= totalCost, "CrumbleCore: insufficient value");
 
         floorId = nextFloorId++;
         _floors[floorId] = Floor({
@@ -232,7 +232,7 @@ contract PitRow is AutoLoopVRFCompatible {
         uint256 overpayment = msg.value - totalCost;
         if (overpayment > 0) {
             (bool sent, ) = _msgSender().call{value: overpayment}("");
-            require(sent, "PitRow: refund failed");
+            require(sent, "CrumbleCore: refund failed");
         }
 
         emit FloorMinted(floorId, _msgSender(), currentMintFee, withInsurance);
@@ -244,10 +244,10 @@ contract PitRow is AutoLoopVRFCompatible {
      */
     function repair(uint256 floorId) external payable {
         Floor storage f = _floors[floorId];
-        require(f.owner != address(0), "PitRow: no such floor");
-        require(!f.collapsed, "PitRow: floor collapsed");
-        require(_msgSender() == f.owner, "PitRow: not owner");
-        require(msg.value >= repairFee, "PitRow: insufficient fee");
+        require(f.owner != address(0), "CrumbleCore: no such floor");
+        require(!f.collapsed, "CrumbleCore: floor collapsed");
+        require(_msgSender() == f.owner, "CrumbleCore: not owner");
+        require(msg.value >= repairFee, "CrumbleCore: insufficient fee");
 
         uint256 healthBefore = effectiveHealth(floorId);
         f.lastRepairAt = uint32(block.timestamp);
@@ -258,7 +258,7 @@ contract PitRow is AutoLoopVRFCompatible {
         uint256 overpayment = msg.value - repairFee;
         if (overpayment > 0) {
             (bool sent, ) = _msgSender().call{value: overpayment}("");
-            require(sent, "PitRow: refund failed");
+            require(sent, "CrumbleCore: refund failed");
         }
 
         emit FloorRepaired(
@@ -275,9 +275,9 @@ contract PitRow is AutoLoopVRFCompatible {
      */
     function salvage(uint256 floorId) external {
         Floor storage f = _floors[floorId];
-        require(f.owner == _msgSender(), "PitRow: not owner");
-        require(f.collapsed, "PitRow: not collapsed");
-        require(!f.salvaged, "PitRow: already salvaged");
+        require(f.owner == _msgSender(), "CrumbleCore: not owner");
+        require(f.collapsed, "CrumbleCore: not collapsed");
+        require(!f.salvaged, "CrumbleCore: already salvaged");
         f.salvaged = true;
 
         uint256 salvageAmount = 0;
@@ -298,7 +298,7 @@ contract PitRow is AutoLoopVRFCompatible {
             insurancePool -= salvageAmount;
             if (salvageAmount > 0) {
                 (bool sent, ) = _msgSender().call{value: salvageAmount}("");
-                require(sent, "PitRow: salvage transfer failed");
+                require(sent, "CrumbleCore: salvage transfer failed");
             }
         }
 
@@ -351,11 +351,11 @@ contract PitRow is AutoLoopVRFCompatible {
     ) internal {
         require(
             block.timestamp >= lastTickAt + tickInterval,
-            "PitRow: too soon"
+            "CrumbleCore: too soon"
         );
-        require(loopID == _loopID, "PitRow: stale loop id");
+        require(loopID == _loopID, "CrumbleCore: stale loop id");
         uint256 activeCount = activeFloorIds.length;
-        require(activeCount > 0, "PitRow: no active floors");
+        require(activeCount > 0, "CrumbleCore: no active floors");
 
         lastTickAt = block.timestamp;
         uint256 r = uint256(randomness);
@@ -404,7 +404,7 @@ contract PitRow is AutoLoopVRFCompatible {
      * @dev Linear premium: floor N = base + base*(N-1)/10.
      */
     function mintFeeFor(uint256 floorNumber) public view returns (uint256) {
-        require(floorNumber > 0, "PitRow: floor=0");
+        require(floorNumber > 0, "CrumbleCore: floor=0");
         return
             baseMintFee +
             (baseMintFee * (floorNumber - 1)) /
@@ -451,11 +451,11 @@ contract PitRow is AutoLoopVRFCompatible {
         address to,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(to != address(0), "PitRow: zero address");
-        require(amount <= protocolFeeBalance, "PitRow: exceeds balance");
+        require(to != address(0), "CrumbleCore: zero address");
+        require(amount <= protocolFeeBalance, "CrumbleCore: exceeds balance");
         protocolFeeBalance -= amount;
         (bool sent, ) = to.call{value: amount}("");
-        require(sent, "PitRow: withdraw failed");
+        require(sent, "CrumbleCore: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }
 
@@ -465,7 +465,7 @@ contract PitRow is AutoLoopVRFCompatible {
 
     function _removeActive(uint256 floorId) internal {
         uint256 idxPlusOne = _activeIndexPlusOne[floorId];
-        require(idxPlusOne != 0, "PitRow: not active");
+        require(idxPlusOne != 0, "CrumbleCore: not active");
         uint256 realIdx = idxPlusOne - 1;
         uint256 lastIdx = activeFloorIds.length - 1;
 
@@ -482,7 +482,7 @@ contract PitRow is AutoLoopVRFCompatible {
     ///         lets the operator (or anyone feeling generous) subsidize
     ///         the pool for marketing / stress events.
     function donateToInsurancePool() external payable {
-        require(msg.value > 0, "PitRow: donation=0");
+        require(msg.value > 0, "CrumbleCore: donation=0");
         insurancePool += msg.value;
         emit InsurancePoolDonation(_msgSender(), msg.value);
     }

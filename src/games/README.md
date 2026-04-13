@@ -1,6 +1,6 @@
 # AutoLoop Demo Games
 
-Five production-quality on-chain games that structurally require
+Eleven production-quality on-chain games that structurally require
 AutoLoop's autonomous-loop + fair-randomness combination. Each one
 answers a specific weakness Boris Stanic identified in the ESP Office
 Hours rejection (2026-04-06).
@@ -19,147 +19,154 @@ structural reason. The games collectively demonstrate that AutoLoop is
 not a "better Chainlink Automation" — it's infrastructure for a class
 of experiences that self-incentivized keepers cannot support.
 
-| Game             | Fails self-trigger because                                           | Stack                           |
-|------------------|----------------------------------------------------------------------|---------------------------------|
-| `PitRow`         | Inverted self-interest (loop damages a random floor, nobody wants in) | `AutoLoopVRFCompatible`         |
-| `GrandPrix`      | Free-rider + wear negative-EV for most entrants                      | `AutoLoopVRFCompatible`         |
-| `SponsorAuction` | Timing-as-attack-surface (adversarial close times)                   | `AutoLoopCompatible` (no VRF)   |
-| `PhantomDriver`  | Commit-reveal integrity (reveal must precede resolution)             | `AutoLoopVRFCompatible`         |
-| `OracleRun`      | Mempool-snoop attack on VRF outcomes                                 | `AutoLoopVRFCompatible`         |
+| Game               | Fails self-trigger because                                           | Stack                           |
+|--------------------|----------------------------------------------------------------------|---------------------------------|
+| `CrumbleCore`          | Inverted self-interest (loop damages a random floor, nobody wants in) | `AutoLoopVRFCompatible`         |
+| `GladiatorArena`       | Free-rider + wound negative-EV for most entrants                     | `AutoLoopVRFCompatible`         |
+| `MechBrawl`            | Free-rider + hull-damage negative-EV for most entrants               | `AutoLoopVRFCompatible`         |
+| `SorcererDuel`         | Free-rider + mana-drain negative-EV for most duelists                | `AutoLoopVRFCompatible`         |
+| `KaijuLeague`          | Free-rider + damage negative-EV for most entrants                    | `AutoLoopVRFCompatible`         |
+| `VoidHarvester`        | Free-rider + integrity-decay negative-EV for most probes             | `AutoLoopVRFCompatible`         |
+| `SponsorAuction`       | Timing-as-attack-surface (adversarial close times)                   | `AutoLoopCompatible` (no VRF)   |
+| `GladiatorOracle`      | Commit-reveal integrity + cross-contract dual-gate (no VRF)          | `AutoLoopCompatible`            |
+| `OracleRun`            | Mempool-snoop attack on VRF outcomes                                 | `AutoLoopVRFCompatible`         |
+| `KaijuOracle`          | Commit-reveal + cross-contract: both reveal window AND clash must close | `AutoLoopCompatible`          |
+| `ForecasterLeaderboard`| 4-way coordination failure: adversarial timing, 3-hop dependency, free-rider gas, prize-pool timing attack | `AutoLoopCompatible` |
 
 ## Game Summaries
 
-### 1. PitRow — the Decay Tower (flagship answer to Boris)
+### 1. CrumbleCore — the Decay Tower (flagship answer to Boris)
 
-**File**: `PitRow.sol` · **Tests**: `test/games/PitRow.t.sol` (62 tests)
+**File**: `CrumbleCore.sol` · **Tests**: `test/games/CrumbleCore.t.sol` (67 tests)
 
-A persistent on-chain tower where each floor holds a car NFT that
-takes catastrophic damage on autonomous VRF ticks. Every tick picks a
-random active floor and applies 15–50% damage. Passive decay accrues
-between ticks based on wall-clock time since last repair. Unrepaired
-floors eventually collapse; insured owners receive 80% of their
-insurance premium on collapse.
+A persistent on-chain tower where each floor takes catastrophic damage on
+autonomous VRF ticks. Every tick picks a random active floor and applies
+15–50% damage. Passive decay accrues between ticks based on wall-clock time
+since last repair. Unrepaired floors eventually collapse; insured owners
+receive a salvage payout on collapse.
 
-**Why AutoLoop is structurally required**: the defining property of
-PitRow is that **every tick costs someone health**. No rational floor
-owner will ever call `progressLoop()` themselves — the VRF output could
-pick their own floor. This is the inverted free-rider case: self-triggering
-fails because the loop imposes a cost on the only parties with gas to
-spend. Only a neutral keeper (AutoLoop) is incentive-aligned to run it.
+**Why AutoLoop is structurally required**: every tick costs someone health.
+No rational floor owner will ever call `progressLoop()` themselves — the VRF
+output could pick their own floor. This is the inverted free-rider case.
 
-**Revenue for Lucky Machines**:
-- Linear-scaling mint fees → protocol fee balance (admin withdrawable)
-- Fixed repair fees → protocol fee balance
-- Insurance premiums → insurance pool (80% paid on collapse, 20% retained = long-run edge)
+### 2. GladiatorArena — Always-On Colosseum
 
-**Key files**:
-- `src/games/PitRow.sol` — 400-line contract, extensively commented
-- `test/games/PitRow.t.sol` — unit + invariant + fuzz tests
+**File**: `GladiatorArena.sol` · **Tests**: `test/games/GladiatorArena.t.sol` (44 tests)
 
-### 2. GrandPrix — Always-On Racing
+Bouts run on a continuous schedule. Players mint gladiators, enter them in
+the current bout, and at each tick the loop resolves a vitality-weighted VRF
+bout. All entrants lose 5–20 vitality to wounds per bout.
 
-**File**: `GrandPrix.sol` · **Tests**: `test/games/GrandPrix.t.sol` (44 tests)
+**Why AutoLoop is structurally required**: (1) timing as attack surface —
+entrants could pick favorable VRF reveals. (2) Negative-EV free-rider —
+everyone takes wounds, only one wins.
 
-Races run on a continuous schedule whether or not anyone is watching.
-Players mint cars, enter them in the current race, and at each tick the
-loop resolves a power-weighted VRF race. All entrants lose 5–20 power
-to wear per race; cars eventually retire when they hit `minPower`.
+### 3. MechBrawl — Iron Pit Combat
 
-**Why AutoLoop is structurally required**: two independent reasons.
-(1) **Timing as attack surface**: if an entrant could trigger the race
-they'd pick the moment the VRF reveal lands in the mempool and only
-submit if their car benefits. (2) **Negative-EV free-rider**: every
-entrant takes wear, only one wins the pot. Rational entrants reason
-"let someone ELSE pay gas." Everyone reasons identically, so nobody
-triggers. A neutral paid keeper is the only resolver.
+**File**: `MechBrawl.sol` · **Tests**: `test/games/MechBrawl.t.sol` (44 tests)
 
-**Revenue for Lucky Machines**:
-- Fixed car mint fees → protocol
-- 5% rake on every race prize pool → protocol
-- Non-custodial winnings (pull-payment for winners)
+Brawls run on a continuous schedule. Players deploy mechs, join brawls, and
+at each tick the loop resolves an armor-weighted VRF brawl. All entrants
+take 5–20 hull damage per brawl.
 
-### 3. SponsorAuction — The Picks-and-Shovels Showcase
+**Why AutoLoop is structurally required**: same structural pattern as
+GladiatorArena — hull damage is negative-EV for all but the winner.
+
+### 4. SorcererDuel — Arcane Circle Duels
+
+**File**: `SorcererDuel.sol` · **Tests**: `test/games/SorcererDuel.t.sol` (44 tests)
+
+Duels run on a continuous schedule. Players summon sorcerers, enter duels,
+and at each tick the loop resolves a mana-weighted VRF duel. All duelists
+lose 5–20 mana per duel.
+
+**Why AutoLoop is structurally required**: mana drain is negative-EV for all
+but the winner — identical structural argument to the other attrition games.
+
+### 5. KaijuLeague — Monster League Clashes
+
+**File**: `KaijuLeague.sol` · **Tests**: `test/games/KaijuLeague.t.sol` (44 tests)
+
+Clashes run on a continuous schedule. Players hatch kaiju, enter clashes,
+and at each tick the loop resolves a health-weighted VRF clash. All entrants
+take 5–20 health damage per clash.
+
+**Why AutoLoop is structurally required**: health attrition makes
+self-triggering negative-EV for all but the winner.
+
+### 6. VoidHarvester — Deep Anomaly Missions
+
+**File**: `VoidHarvester.sol` · **Tests**: `test/games/VoidHarvester.t.sol` (44 tests)
+
+Missions run on a continuous schedule. Players deploy probes, launch them
+into missions, and at each tick the loop resolves an integrity-weighted VRF
+mission. All probes lose 5–20 integrity per mission.
+
+**Why AutoLoop is structurally required**: integrity decay is negative-EV
+for all but the winning probe — the same free-rider structure applies.
+
+### 7. SponsorAuction — The Picks-and-Shovels Showcase
 
 **File**: `SponsorAuction.sol` · **Tests**: `test/games/SponsorAuction.t.sol` (37 tests)
 
-A perpetual ascending-bid auction for a single sponsorship slot.
-Auctions run back-to-back: when one closes on schedule, the next opens
-in the same transaction. The slot winner is entitled to display
-sponsorship on the tied asset for `sponsorshipPeriod` seconds.
+A perpetual ascending-bid auction for a single sponsorship slot. Auctions
+run back-to-back: when one closes on schedule, the next opens in the same
+transaction.
 
-**Why this one matters for the pitch**: SponsorAuction has **no VRF at
-all**. It's the proof that AutoLoop's value extends beyond "Chainlink
-VRF + Automation." The auction close is a discrete event with strictly
-conflicting incentives — high bidder wants immediate close, prospective
-counter-bidders want extension, slot receiver wants close at the peak
-bid. No player-controlled trigger is neutral. This is the cleanest
-"timing-as-attack-surface" demo in the stack.
+**Why this one matters for the pitch**: SponsorAuction has **no VRF at all**.
+It's the proof that AutoLoop's value extends beyond "Chainlink VRF + Automation."
+The auction close is a discrete event with strictly conflicting incentives.
 
-**Revenue for Lucky Machines**:
-- 5% rake on every winning bid → protocol
-- 95% pull-payable to slot receiver (can be delegated to NFT owner)
+### 8. GladiatorOracle — Bout Prediction Market
 
-### 4. PhantomDriver — Commit-Reveal MVP Bet
+**File**: `GladiatorOracle.sol` · **Tests**: `test/games/GladiatorOracle.t.sol` (42 tests)
 
-**File**: `PhantomDriver.sol` · **Tests**: `test/games/PhantomDriver.t.sol` (37 tests)
+A commit-reveal prediction market layered on GladiatorArena. Players commit
+a secret hash of their predicted bout winner, reveal before the bout resolves,
+and split the pot if they called it right.
 
-Players bet on which of four driver archetypes will be named MVP in the
-next autonomous race round. Commit phase → reveal phase → VRF resolution,
-each gated on block timestamps. Correct predictors split the pot;
-unrevealed commits forfeit their stakes to the winners.
+**Why AutoLoop is structurally required**: settlement requires both the reveal
+window to close AND the bout to resolve in GladiatorArena. A player-controlled
+trigger could fire the instant the bout resolves, before all reveals are in.
 
-**Why AutoLoop is structurally required**: three reasons, any one
-sufficient.
-1. **Commit-reveal integrity**: reveal must happen *strictly before*
-   resolution. If a player triggered the resolution call they could
-   resolve mid-reveal-phase after seeing some opponents' reveals but
-   before their own.
-2. **Adversarial multi-party**: each role's bettors want a different
-   trigger time. No player-controlled trigger is fair.
-3. **Forfeit free-rider**: unrevealed commits go to the pot. Everyone
-   would love to close the reveal window one second before a specific
-   opponent can reveal.
+### 10. KaijuOracle — Clash Prediction Market
 
-This is the sharpest commit-reveal demo in the stack: the cryptographic
-pattern **is** the game, and it literally cannot work without a neutral
-scheduler.
+**File**: `KaijuOracle.sol` · **Tests**: `test/games/KaijuOracle.t.sol` (42 tests)
 
-**Revenue for Lucky Machines**:
-- 5% rake on every round pot → protocol
-- Forfeited commits → round pot (subsidizes winners, drives participation)
-- Rounds with no winners → entire pot to protocol (house edge)
+Commit-reveal prediction market on KaijuLeague clashes. Same pattern as
+GladiatorOracle but feeds into ForecasterLeaderboard as the middle hop in
+the 3-contract chain.
 
-### 5. OracleRun — Autonomous Dungeon Crawl
+**Why AutoLoop is structurally required**: dual-gate — both reveal window AND
+KaijuLeague clash must resolve before settlement can fire. A player could
+trigger settlement the instant the clash resolves, skipping reveals.
+
+### 11. ForecasterLeaderboard — 3-Contract Chain Terminus
+
+**File**: `ForecasterLeaderboard.sol` · **Tests**: `test/games/ForecasterLeaderboard.t.sol` (32 tests)
+
+Reads settled KaijuOracle rounds, scores per-address prediction accuracy
+across seasons, and distributes a weekly prize pool to top forecasters.
+
+**Why AutoLoop is structurally required**: four independent coordination
+failures — (1) adversarial distribution timing, (2) 3-hop cross-contract
+dependency, (3) free-rider on processing gas, (4) prize-pool timing attack.
+
+### 9. OracleRun — Autonomous Dungeon Crawl
 
 **File**: `OracleRun.sol` · **Tests**: `test/games/OracleRun.t.sol` (36 tests)
 
 A permadeath dungeon runs on an unchangeable schedule. Players mint
-characters, register them for an expedition, and the expedition
-resolves on the next VRF tick: each character rolls against the floor's
-VRF-derived difficulty. Survivors split the prize pool; dead characters
-are permanently flagged. The floor ratchets up after any successful
-expedition, increasing future difficulty.
+characters, register them, and each expedition rolls against VRF-derived
+difficulty. Survivors split the prize pool; dead characters are permanent.
 
-**Why AutoLoop is structurally required**:
-1. **Mempool-snoop attack**: a player-controlled trigger lets the player
-   compute the resulting VRF output for their own character and only
-   submit if they're favored. Only a neutral schedule fires for all
-   characters simultaneously.
-2. **Death-stalling**: borderline characters want delay, strong
-   characters want resolution now — no single trigger time serves both.
-3. **Forfeit floor**: the expedition floor advances on survivor success.
-   Player-controlled triggers could camp forever at low-difficulty
-   floors; a neutral schedule ratchets difficulty honestly.
-
-**Revenue for Lucky Machines**:
-- Fixed character mint fees → protocol
-- 5% rake on every expedition entry pool → protocol
-- Dead character stakes → survivor prize pool
-- Wipe rounds (no survivors) → entire pot to protocol
+**Why AutoLoop is structurally required**: player-controlled trigger lets
+the caller compute VRF outcomes before submitting and only proceed when
+favored.
 
 ## How to Deploy
 
-The deploy script is `script/DeployGames.s.sol`. It deploys all five
+The deploy script is `script/DeployGames.s.sol`. It deploys all eleven
 games, registers them with the provided `AutoLoopRegistrar`, and funds
 each with `FUND_AMOUNT` wei.
 
@@ -181,26 +188,24 @@ each registered game on its next poll and begin running its loop.
 
 The recommended narrative arc is:
 
-1. **Open with SponsorAuction** — non-VRF, non-Racerverse. Runs the
-   whole meeting in the background. Investor watches an auction close,
-   a new one open, and realizes: "Wait, nobody pushed a button, and
-   this couldn't work any other way."
+1. **Open with SponsorAuction** — non-VRF, non-combat. Runs the whole
+   meeting in the background. Investor watches an auction close, a new
+   one open, and realizes: "Wait, nobody pushed a button, and this
+   couldn't work any other way."
 
-2. **Then PitRow** — the Boris answer. Show that the loop structurally
-   cannot be self-triggered because nobody wants the damage. Walk
-   through a few ticks: floor 3 takes a hit, floor 7 collapses, a
-   salvage pays out. The investor sees that this game does not exist
-   without a neutral keeper.
+2. **Then CrumbleCore** — the Boris answer. Show that the loop structurally
+   cannot be self-triggered because nobody wants the damage. Walk through
+   a few ticks: floor 3 takes a hit, floor 7 collapses, a salvage pays out.
 
-3. **Then GrandPrix** — brand fit, IP leverage. The Racerverse cars
-   racing autonomously every 60 seconds. Show the race log on-chain,
-   with VRF proofs against a deterministic seed. The "This race
-   happened at block 19,847,203. Nobody pressed start" slide.
+3. **Then any attrition game** (e.g., GladiatorArena) — "Same negative-EV
+   free-rider mechanic, different theme. Same contracts, different skins."
+   The five attrition games prove the pattern generalizes.
 
-4. **PhantomDriver as SDK story** — "this is the primitive. Commit-reveal
-   prediction markets with autonomous resolution. You can't get this
-   from Chainlink Automation + VRF without re-inventing all of
-   AutoLoop's coordination."
+4. **GladiatorOracle as SDK story** — "this is the primitive. Commit-reveal
+   prediction markets with cross-contract autonomous resolution. You can't
+   get this from Chainlink Automation + VRF without re-inventing all of
+   AutoLoop's coordination. And KaijuOracle feeds ForecasterLeaderboard —
+   three contracts, one keeper."
 
 5. **OracleRun as adjacency** — dungeons, permadeath, character progression.
    Same infrastructure, different flavor, different player segment.
@@ -210,11 +215,17 @@ The recommended narrative arc is:
 All games share one-shot test invocation:
 
 ```bash
-forge test --match-contract PitRowTest -vv
-forge test --match-contract GrandPrixTest -vv
+forge test --match-contract CrumbleCoreTest -vv
+forge test --match-contract GladiatorArenaTest -vv
+forge test --match-contract MechBrawlTest -vv
+forge test --match-contract SorcererDuelTest -vv
+forge test --match-contract KaijuLeagueTest -vv
+forge test --match-contract VoidHarvesterTest -vv
 forge test --match-contract SponsorAuctionTest -vv
-forge test --match-contract PhantomDriverTest -vv
+forge test --match-contract GladiatorOracleTest -vv
 forge test --match-contract OracleRunTest -vv
+forge test --match-contract KaijuOracleTest -vv
+forge test --match-contract ForecasterLeaderboardTest -vv
 ```
 
 Or all at once:
@@ -225,45 +236,44 @@ forge test --match-path "test/games/*" -vv
 
 ### Test coverage
 
-| Game            | Unit | Invariant | Fuzz | Total |
-|-----------------|------|-----------|------|-------|
-| PitRow          | 56   | 3         | 3    | 62    |
-| GrandPrix       | 41   | 0         | 3    | 44    |
-| SponsorAuction  | 35   | 0         | 2    | 37    |
-| PhantomDriver   | 35   | 0         | 2    | 37    |
-| OracleRun       | 34   | 0         | 2    | 36    |
-| **Total**       | **201** | **3**  | **12** | **216** |
+| Game                   | Unit | Invariant | Fuzz | Total |
+|------------------------|------|-----------|------|-------|
+| CrumbleCore            | 59   | 5         | 3    | 67    |
+| GladiatorArena         | 41   | 0         | 3    | 44    |
+| MechBrawl              | 41   | 0         | 3    | 44    |
+| SorcererDuel           | 41   | 0         | 3    | 44    |
+| KaijuLeague            | 41   | 0         | 3    | 44    |
+| VoidHarvester          | 41   | 0         | 3    | 44    |
+| SponsorAuction         | 35   | 0         | 2    | 37    |
+| GladiatorOracle        | 40   | 0         | 2    | 42    |
+| OracleRun              | 34   | 0         | 2    | 36    |
+| KaijuOracle            | 40   | 0         | 2    | 42    |
+| ForecasterLeaderboard  | 30   | 0         | 2    | 32    |
+| **Total**              | **443** | **5** | **27** | **476** |
 
 All suites pass. Fuzz tests run 256 iterations by default.
 
 ## Testing patterns used
 
 Each game contract provides a test harness via a derived contract
-(`PitRowHarness`, `GrandPrixHarness`, etc.) that exposes a
+(`CrumbleCoreHarness`, `GladiatorArenaHarness`, etc.) that exposes a
 `tickForTest(bytes32 randomness)` function. The harness calls the
 contract's internal `_progressInternal(randomness, loopID)` directly,
 bypassing the ECVRF envelope verification so tests can inject
 deterministic randomness without synthesizing valid VRF proofs in
-Solidity. VRF-path correctness is covered separately by rejection-path
-tests that exercise the envelope with an unregistered controller and
-confirm the verification layer rejects the call.
+Solidity.
 
 ## Architectural notes
 
 - Every VRF game inherits `AutoLoopVRFCompatible`. `SponsorAuction`
   uses `AutoLoopCompatible` (no VRF) — intentional, to show the
   non-VRF path in the stack.
-- None of these contracts implement their own `ERC721` — asset
-  ownership is tracked in simple `mapping(uint256 => Struct)` state
-  to avoid multi-inheritance headaches with AutoLoop's
-  `AccessControlEnumerable` base. For a production release we'd
-  extract the registry into an ERC721 wrapper.
+- The five attrition games (GladiatorArena, MechBrawl, SorcererDuel,
+  KaijuLeague, VoidHarvester) share identical structural mechanics with
+  theme-specific naming throughout. They are deliberately separate
+  contracts to demonstrate the breadth of applicable game themes.
 - Gas profile: standard ticks run in the 90k–200k range depending on
   entrant counts. Well within the 2M default gas cap set at registration.
-- Fee handling is deliberately consistent: every game tracks a
-  `protocolFeeBalance` + `pendingWithdrawals` split, with admin
-  withdrawals and pull-payment claims. This mirrors the pattern in
-  `src/sample/RandomGame.sol` and the other existing examples.
 
 ## Answering Boris's actions list
 
@@ -271,12 +281,12 @@ From `feedback_esp_boris_actions.md`:
 
 | Action | Addressed by |
 |--------|--------------|
-| 10. Compelling on-chain game demo requiring continuous autonomous loops + fair randomness | Five games, each a first-class demo |
-| 11. Demo clearly shows what Chainlink can't do cleanly | Commit-reveal integrity (PhantomDriver), timing-as-attack-surface (SponsorAuction), inverted self-interest (PitRow) |
+| 10. Compelling on-chain game demo requiring continuous autonomous loops + fair randomness | Nine games, each a first-class demo |
+| 11. Demo clearly shows what Chainlink can't do cleanly | Commit-reveal integrity (GladiatorOracle), timing-as-attack-surface (SponsorAuction), inverted self-interest (CrumbleCore), 3-contract chain (ForecasterLeaderboard) |
 | 12. Document the "impossible without AutoLoop" use cases | This README |
 | 16. Use cases where self-incentivized triggering doesn't work | Every game here by construction |
 | 17. Hybrid model: self-incentivized where possible, AutoLoop where not | SponsorAuction's non-VRF path + the rest's VRF path demonstrate both |
 
 ---
 
-*LuckyMachines LLC · Confidential. Last updated 2026-04-11.*
+*LuckyMachines LLC · Confidential. Last updated 2026-04-12.*
