@@ -3,6 +3,7 @@ pragma solidity 0.8.34;
 
 import "../AutoLoopVRFCompatible.sol";
 import "../AutoLoopRegistrar.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title CrumbleCore (aka Decay Tower)
@@ -51,16 +52,9 @@ contract CrumbleCore is AutoLoopVRFCompatible {
     // ===============================================================
 
     event FloorMinted(
-        uint256 indexed floorId,
-        address indexed owner,
-        uint256 mintFee,
-        bool insured
+        uint256 indexed floorId, address indexed owner, uint256 mintFee, bool insured
     );
-    event FloorRepaired(
-        uint256 indexed floorId,
-        address indexed owner,
-        uint256 healthRestored
-    );
+    event FloorRepaired(uint256 indexed floorId, address indexed owner, uint256 healthRestored);
     event FloorDamaged(
         uint256 indexed floorId,
         uint256 damageApplied,
@@ -68,16 +62,8 @@ contract CrumbleCore is AutoLoopVRFCompatible {
         uint256 indexed loopID,
         bytes32 randomness
     );
-    event FloorCollapsed(
-        uint256 indexed floorId,
-        address indexed owner,
-        uint256 indexed loopID
-    );
-    event FloorSalvaged(
-        uint256 indexed floorId,
-        address indexed owner,
-        uint256 salvageAmount
-    );
+    event FloorCollapsed(uint256 indexed floorId, address indexed owner, uint256 indexed loopID);
+    event FloorSalvaged(uint256 indexed floorId, address indexed owner, uint256 salvageAmount);
     event InsurancePoolDonation(address indexed from, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
@@ -202,13 +188,10 @@ contract CrumbleCore is AutoLoopVRFCompatible {
      *                      a salvage payout if the floor ever collapses.
      * @return floorId The newly minted floor's id.
      */
-    function mintFloor(
-        bool withInsurance
-    ) external payable returns (uint256 floorId) {
+    function mintFloor(bool withInsurance) external payable returns (uint256 floorId) {
         uint256 currentMintFee = mintFeeFor(nextFloorId);
-        uint256 insuranceCost = withInsurance
-            ? (currentMintFee * insurancePremiumBps) / BPS_DENOMINATOR
-            : 0;
+        uint256 insuranceCost =
+            withInsurance ? (currentMintFee * insurancePremiumBps) / BPS_DENOMINATOR : 0;
         uint256 totalCost = currentMintFee + insuranceCost;
         require(msg.value >= totalCost, "CrumbleCore: insufficient value");
 
@@ -231,7 +214,7 @@ contract CrumbleCore is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - totalCost;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "CrumbleCore: refund failed");
         }
 
@@ -257,15 +240,11 @@ contract CrumbleCore is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - repairFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "CrumbleCore: refund failed");
         }
 
-        emit FloorRepaired(
-            floorId,
-            _msgSender(),
-            uint256(maxHealth) - healthBefore
-        );
+        emit FloorRepaired(floorId, _msgSender(), uint256(maxHealth) - healthBefore);
     }
 
     /**
@@ -290,14 +269,11 @@ contract CrumbleCore is AutoLoopVRFCompatible {
             //   - Late claimants against a depleted pool receive whatever
             //     remains
             uint256 originalMintFee = mintFeeFor(floorId);
-            uint256 targetPayout = (originalMintFee * salvageTargetBps) /
-                BPS_DENOMINATOR;
-            salvageAmount = targetPayout > insurancePool
-                ? insurancePool
-                : targetPayout;
+            uint256 targetPayout = (originalMintFee * salvageTargetBps) / BPS_DENOMINATOR;
+            salvageAmount = targetPayout > insurancePool ? insurancePool : targetPayout;
             insurancePool -= salvageAmount;
             if (salvageAmount > 0) {
-                (bool sent, ) = _msgSender().call{value: salvageAmount}("");
+                (bool sent,) = _msgSender().call{value: salvageAmount}("");
                 require(sent, "CrumbleCore: salvage transfer failed");
             }
         }
@@ -322,8 +298,7 @@ contract CrumbleCore is AutoLoopVRFCompatible {
         returns (bool loopIsReady, bytes memory progressWithData)
     {
         loopIsReady =
-            (block.timestamp >= lastTickAt + tickInterval) &&
-            (activeFloorIds.length > 0);
+            (block.timestamp >= lastTickAt + tickInterval) && (activeFloorIds.length > 0);
         progressWithData = abi.encode(_loopID);
     }
 
@@ -334,10 +309,8 @@ contract CrumbleCore is AutoLoopVRFCompatible {
      *      randomness without synthesizing valid ECVRF proofs in Solidity.
      */
     function progressLoop(bytes calldata progressWithData) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
@@ -345,14 +318,8 @@ contract CrumbleCore is AutoLoopVRFCompatible {
     /**
      * @dev Core tick logic. Visible to tests through a harness subclass.
      */
-    function _progressInternal(
-        bytes32 randomness,
-        uint256 loopID
-    ) internal {
-        require(
-            block.timestamp >= lastTickAt + tickInterval,
-            "CrumbleCore: too soon"
-        );
+    function _progressInternal(bytes32 randomness, uint256 loopID) internal {
+        require(block.timestamp >= lastTickAt + tickInterval, "CrumbleCore: too soon");
         require(loopID == _loopID, "CrumbleCore: stale loop id");
         uint256 activeCount = activeFloorIds.length;
         require(activeCount > 0, "CrumbleCore: no active floors");
@@ -367,9 +334,7 @@ contract CrumbleCore is AutoLoopVRFCompatible {
         uint256 rawDamage = DAMAGE_MIN_BPS + ((r >> 64) % damageRange);
 
         uint256 currentHealth = effectiveHealth(targetId);
-        uint256 damageApplied = rawDamage > currentHealth
-            ? currentHealth
-            : rawDamage;
+        uint256 damageApplied = rawDamage > currentHealth ? currentHealth : rawDamage;
 
         Floor storage f = _floors[targetId];
         // Fold catastrophic damage into accumulated damageTaken.
@@ -377,8 +342,8 @@ contract CrumbleCore is AutoLoopVRFCompatible {
         // resetting lastRepairAt, so f.damageTaken represents the full diff
         // between maxHealth and the new effective health at block.timestamp.
         uint256 lockedDamage = uint256(maxHealth) - currentHealth + damageApplied;
-        // uint16 max is 65535; maxHealth is also uint16, so this fits.
-        f.damageTaken = uint16(lockedDamage);
+        // SafeCast keeps this invariant enforced if the health model changes later.
+        f.damageTaken = SafeCast.toUint16(lockedDamage);
         f.lastRepairAt = uint32(block.timestamp);
 
         uint256 newHealth = currentHealth - damageApplied;
@@ -405,19 +370,14 @@ contract CrumbleCore is AutoLoopVRFCompatible {
      */
     function mintFeeFor(uint256 floorNumber) public view returns (uint256) {
         require(floorNumber > 0, "CrumbleCore: floor=0");
-        return
-            baseMintFee +
-            (baseMintFee * (floorNumber - 1)) /
-            MINT_FEE_SCALE_DENOM;
+        return baseMintFee + (baseMintFee * (floorNumber - 1)) / MINT_FEE_SCALE_DENOM;
     }
 
     /**
      * @notice Current effective health of a floor, including passive decay.
      *         Returns 0 for collapsed or non-existent floors.
      */
-    function effectiveHealth(
-        uint256 floorId
-    ) public view returns (uint256) {
+    function effectiveHealth(uint256 floorId) public view returns (uint256) {
         Floor memory f = _floors[floorId];
         if (f.owner == address(0) || f.collapsed) return 0;
 
@@ -429,9 +389,7 @@ contract CrumbleCore is AutoLoopVRFCompatible {
         return uint256(maxHealth) - totalDamage;
     }
 
-    function getFloor(
-        uint256 floorId
-    ) external view returns (Floor memory) {
+    function getFloor(uint256 floorId) external view returns (Floor memory) {
         return _floors[floorId];
     }
 
@@ -447,14 +405,14 @@ contract CrumbleCore is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "CrumbleCore: zero address");
         require(amount <= protocolFeeBalance, "CrumbleCore: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "CrumbleCore: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

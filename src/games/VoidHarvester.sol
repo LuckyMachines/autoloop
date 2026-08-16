@@ -43,16 +43,8 @@ contract VoidHarvester is AutoLoopVRFCompatible {
     //  Events
     // ===============================================================
 
-    event ProbeDeployed(
-        uint256 indexed probeId,
-        address indexed owner,
-        uint32 initialIntegrity
-    );
-    event ProbeLaunched(
-        uint256 indexed missionId,
-        uint256 indexed probeId,
-        address indexed owner
-    );
+    event ProbeDeployed(uint256 indexed probeId, address indexed owner, uint32 initialIntegrity);
+    event ProbeLaunched(uint256 indexed missionId, uint256 indexed probeId, address indexed owner);
     event MissionResolved(
         uint256 indexed missionId,
         uint256 indexed winningProbeId,
@@ -62,10 +54,7 @@ contract VoidHarvester is AutoLoopVRFCompatible {
         bytes32 randomness
     );
     event IntegrityLost(
-        uint256 indexed missionId,
-        uint256 indexed probeId,
-        uint32 oldIntegrity,
-        uint32 newIntegrity
+        uint256 indexed missionId, uint256 indexed probeId, uint32 oldIntegrity, uint32 newIntegrity
     );
     event WinningsClaimed(address indexed to, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
@@ -156,17 +145,13 @@ contract VoidHarvester is AutoLoopVRFCompatible {
         require(msg.value >= probeFee, "VoidHarvester: insufficient probe fee");
 
         probeId = nextProbeId++;
-        _probes[probeId] = Probe({
-            owner: _msgSender(),
-            integrity: initialIntegrity,
-            victories: 0,
-            missions: 0
-        });
+        _probes[probeId] =
+            Probe({owner: _msgSender(), integrity: initialIntegrity, victories: 0, missions: 0});
         protocolFeeBalance += probeFee;
 
         uint256 overpayment = msg.value - probeFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "VoidHarvester: refund failed");
         }
 
@@ -179,14 +164,8 @@ contract VoidHarvester is AutoLoopVRFCompatible {
         Probe storage p = _probes[probeId];
         require(p.owner == _msgSender(), "VoidHarvester: not owner");
         require(p.integrity >= minIntegrity, "VoidHarvester: probe decommissioned");
-        require(
-            !enteredInCurrentMission[probeId],
-            "VoidHarvester: already launched"
-        );
-        require(
-            currentEntrants.length < maxProbesPerMission,
-            "VoidHarvester: mission full"
-        );
+        require(!enteredInCurrentMission[probeId], "VoidHarvester: already launched");
+        require(currentEntrants.length < maxProbesPerMission, "VoidHarvester: mission full");
 
         currentEntrants.push(probeId);
         enteredInCurrentMission[probeId] = true;
@@ -194,7 +173,7 @@ contract VoidHarvester is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - missionFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "VoidHarvester: refund failed");
         }
 
@@ -206,7 +185,7 @@ contract VoidHarvester is AutoLoopVRFCompatible {
         uint256 amount = pendingWithdrawals[_msgSender()];
         require(amount > 0, "VoidHarvester: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "VoidHarvester: withdraw failed");
         emit WinningsClaimed(_msgSender(), amount);
     }
@@ -221,31 +200,22 @@ contract VoidHarvester is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady =
-            (block.timestamp >= lastMissionAt + missionInterval) &&
-            (currentEntrants.length >= 2);
+        loopIsReady = (block.timestamp >= lastMissionAt + missionInterval)
+            && (currentEntrants.length >= 2);
         progressWithData = abi.encode(_loopID);
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
 
     function _progressInternal(bytes32 randomness, uint256 loopID) internal {
-        require(
-            block.timestamp >= lastMissionAt + missionInterval,
-            "VoidHarvester: too soon"
-        );
+        require(block.timestamp >= lastMissionAt + missionInterval, "VoidHarvester: too soon");
         require(loopID == _loopID, "VoidHarvester: stale loop id");
-        require(
-            currentEntrants.length >= 2,
-            "VoidHarvester: not enough probes"
-        );
+        require(currentEntrants.length >= 2, "VoidHarvester: not enough probes");
 
         // ---- Pick winner weighted by integrity ----
         uint256 totalIntegrity = 0;
@@ -275,12 +245,7 @@ contract VoidHarvester is AutoLoopVRFCompatible {
         winner.victories++;
 
         emit MissionResolved(
-            currentMissionId,
-            winnerId,
-            winner.owner,
-            prize,
-            protocolCut,
-            randomness
+            currentMissionId, winnerId, winner.owner, prize, protocolCut, randomness
         );
 
         // ---- Apply integrity decay to all probes ----
@@ -289,9 +254,7 @@ contract VoidHarvester is AutoLoopVRFCompatible {
             Probe storage p = _probes[entrantId];
             p.missions++;
 
-            uint256 decayRoll = uint256(
-                keccak256(abi.encodePacked(randomness, entrantId, "decay"))
-            );
+            uint256 decayRoll = uint256(keccak256(abi.encodePacked(randomness, entrantId, "decay")));
             uint32 decayRange = DECAY_MAX - DECAY_MIN + 1;
             uint32 decayAmount = uint32(DECAY_MIN + (decayRoll % decayRange));
 
@@ -338,14 +301,14 @@ contract VoidHarvester is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "VoidHarvester: zero address");
         require(amount <= protocolFeeBalance, "VoidHarvester: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "VoidHarvester: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

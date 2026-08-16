@@ -36,14 +36,10 @@ contract AutoLoopVRFTest is Test {
     uint256 constant GAS_PRICE = 20 gwei;
 
     // secp256k1 generator point
-    uint256 constant GX =
-        0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
-    uint256 constant GY =
-        0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8;
-    uint256 constant PP =
-        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
-    uint256 constant NN =
-        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    uint256 constant GX = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
+    uint256 constant GY = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8;
+    uint256 constant PP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
+    uint256 constant NN = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
     receive() external payable {}
 
@@ -72,9 +68,7 @@ contract AutoLoopVRFTest is Test {
         // Deploy Registry behind proxy
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -84,10 +78,7 @@ contract AutoLoopVRFTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -120,7 +111,8 @@ contract AutoLoopVRFTest is Test {
 
     function test_HashToCurveProducesValidPoint() public view {
         uint256[2] memory pk = _getController1PublicKey();
-        bytes memory message = abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
+        bytes memory message =
+            abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
 
         (uint256 hx, uint256 hy) = VRFVerifier.hashToCurve(pk, message);
 
@@ -132,7 +124,8 @@ contract AutoLoopVRFTest is Test {
 
     function test_HashToCurveIsDeterministic() public view {
         uint256[2] memory pk = _getController1PublicKey();
-        bytes memory message = abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
+        bytes memory message =
+            abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
 
         (uint256 hx1, uint256 hy1) = VRFVerifier.hashToCurve(pk, message);
         (uint256 hx2, uint256 hy2) = VRFVerifier.hashToCurve(pk, message);
@@ -146,8 +139,8 @@ contract AutoLoopVRFTest is Test {
         bytes memory msg1 = abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
         bytes memory msg2 = abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(2))));
 
-        (uint256 hx1, ) = VRFVerifier.hashToCurve(pk, msg1);
-        (uint256 hx2, ) = VRFVerifier.hashToCurve(pk, msg2);
+        (uint256 hx1,) = VRFVerifier.hashToCurve(pk, msg1);
+        (uint256 hx2,) = VRFVerifier.hashToCurve(pk, msg2);
 
         assertTrue(hx1 != hx2, "Different messages should produce different points");
     }
@@ -213,7 +206,10 @@ contract AutoLoopVRFTest is Test {
         // Admin registers key for controller
         game.registerControllerKey(controller1, pk[0], pk[1]);
 
-        assertTrue(game.controllerKeyRegistered(controller1), "Controller key should be registered by admin");
+        assertTrue(
+            game.controllerKeyRegistered(controller1),
+            "Controller key should be registered by admin"
+        );
     }
 
     function test_NonControllerNonAdminCannotRegisterKey() public {
@@ -253,7 +249,7 @@ contract AutoLoopVRFTest is Test {
     }
 
     function test_ShouldProgressLoopReturnsTrue() public view {
-        (bool loopIsReady, ) = game.shouldProgressLoop();
+        (bool loopIsReady,) = game.shouldProgressLoop();
         assertTrue(loopIsReady, "Should be ready after interval");
     }
 
@@ -332,7 +328,8 @@ contract AutoLoopVRFTest is Test {
 
     function test_HashToCurveGasBudget() public view {
         uint256[2] memory pk = _getController1PublicKey();
-        bytes memory message = abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
+        bytes memory message =
+            abi.encodePacked(keccak256(abi.encodePacked(address(game), uint256(1))));
 
         uint256 gasBefore = gasleft();
         VRFVerifier.hashToCurve(pk, message);
@@ -377,17 +374,11 @@ contract AutoLoopVRFTest is Test {
 
     function test_SupportsERC165() public view {
         // ERC165 interface ID is 0x01ffc9a7
-        assertTrue(
-            game.supportsInterface(0x01ffc9a7),
-            "Should support ERC165"
-        );
+        assertTrue(game.supportsInterface(0x01ffc9a7), "Should support ERC165");
     }
 
     function test_DoesNotSupportRandomInterface() public view {
-        assertFalse(
-            game.supportsInterface(0xdeadbeef),
-            "Should not support random interface"
-        );
+        assertFalse(game.supportsInterface(0xdeadbeef), "Should not support random interface");
     }
 
     // ===============================================================

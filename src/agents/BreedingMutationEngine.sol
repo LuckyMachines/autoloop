@@ -13,9 +13,9 @@ import "../AutoLoopVRFCompatible.sol";
 contract BreedingMutationEngine is AutoLoopVRFCompatible {
     // ── Constants ──────────────────────────────────────────────────────────────
 
-    uint256 public constant NUM_TRAITS       = 5;
-    uint256 public constant MUTATION_RATE_BPS = 500;  // 5% per trait
-    uint256 public constant PROTOCOL_FEE_BPS  = 200;  // 2%
+    uint256 public constant NUM_TRAITS = 5;
+    uint256 public constant MUTATION_RATE_BPS = 500; // 5% per trait
+    uint256 public constant PROTOCOL_FEE_BPS = 200; // 2%
 
     string[5] public traitNames; // set in constructor
 
@@ -30,8 +30,8 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
 
     // ── State ──────────────────────────────────────────────────────────────────
 
-    mapping(uint256 => uint8[5]) public traits;   // tokenId → [0..99] per trait
-    mapping(uint256 => address)  public ownerOf;
+    mapping(uint256 => uint8[5]) public traits; // tokenId → [0..99] per trait
+    mapping(uint256 => address) public ownerOf;
 
     uint256 public nextTokenId;
     uint256 public breedingCooldown;
@@ -46,7 +46,12 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
 
     event TokenMinted(uint256 indexed tokenId, address indexed owner, uint8[5] traits);
     event BreedingQueued(uint256 indexed pairId, uint256 parent1, uint256 parent2, address owner);
-    event BreedingComplete(uint256 indexed parent1, uint256 indexed parent2, uint256 indexed offspringId, uint8[5] offspringTraits);
+    event BreedingComplete(
+        uint256 indexed parent1,
+        uint256 indexed parent2,
+        uint256 indexed offspringId,
+        uint8[5] offspringTraits
+    );
 
     // ── Construction ───────────────────────────────────────────────────────────
 
@@ -55,8 +60,8 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
     constructor(uint256 _breedingCooldown, uint256 _breedingFee) {
         require(_breedingCooldown > 0, "BreedingEngine: cooldown=0");
         breedingCooldown = _breedingCooldown;
-        breedingFee      = _breedingFee;
-        lastBreed        = block.timestamp;
+        breedingFee = _breedingFee;
+        lastBreed = block.timestamp;
         traitNames[0] = "Strength";
         traitNames[1] = "Speed";
         traitNames[2] = "Stamina";
@@ -80,7 +85,11 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
     }
 
     /// @notice Queue a breeding pair. Caller must own both parents.
-    function queueBreeding(uint256 parent1, uint256 parent2) external payable returns (uint256 pairId) {
+    function queueBreeding(uint256 parent1, uint256 parent2)
+        external
+        payable
+        returns (uint256 pairId)
+    {
         require(ownerOf[parent1] == msg.sender, "BreedingEngine: not owner of parent1");
         require(ownerOf[parent2] == msg.sender, "BreedingEngine: not owner of parent2");
         require(parent1 != parent2, "BreedingEngine: same token");
@@ -90,12 +99,11 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
         protocolFeeBalance += fee;
 
         pairId = breedingQueue.length;
-        breedingQueue.push(BreedingPair({
-            parent1:  parent1,
-            parent2:  parent2,
-            owner:    msg.sender,
-            queuedAt: block.timestamp
-        }));
+        breedingQueue.push(
+            BreedingPair({
+                parent1: parent1, parent2: parent2, owner: msg.sender, queuedAt: block.timestamp
+            })
+        );
         emit BreedingQueued(pairId, parent1, parent2, msg.sender);
     }
 
@@ -107,8 +115,8 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady = breedingQueue.length > 0
-            && (block.timestamp - lastBreed) >= breedingCooldown;
+        loopIsReady =
+            breedingQueue.length > 0 && (block.timestamp - lastBreed) >= breedingCooldown;
         progressWithData = abi.encode(_loopID, breedingQueue.length);
     }
 
@@ -145,10 +153,12 @@ contract BreedingMutationEngine is AutoLoopVRFCompatible {
             uint256 roll = uint256(traitRand) % 10_000;
             if (roll < MUTATION_RATE_BPS) {
                 // Mutation: random value 1..100
-                offspringTraits[i] = uint8((uint256(keccak256(abi.encodePacked(traitRand, "mut"))) % 100) + 1);
+                offspringTraits[i] =
+                    uint8((uint256(keccak256(abi.encodePacked(traitRand, "mut"))) % 100) + 1);
             } else {
                 // Inherit from one parent
-                offspringTraits[i] = (uint256(keccak256(abi.encodePacked(traitRand, "inh"))) % 2 == 0)
+                offspringTraits[i] = (uint256(keccak256(abi.encodePacked(traitRand, "inh"))) % 2
+                        == 0)
                     ? p1Traits[i]
                     : p2Traits[i];
             }

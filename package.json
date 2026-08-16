@@ -30,6 +30,7 @@
     "publish:registry": "node scripts/publish-registry.cjs",
     "build": "forge build",
     "test": "forge test -vvv",
+    "check": "forge fmt --check && forge lint --severity high --deny warnings && forge lint --severity med --deny warnings && forge build --sizes && forge test -q",
     "extract-abi": "node scripts/extract-abi.js"
   },
   "repository": {

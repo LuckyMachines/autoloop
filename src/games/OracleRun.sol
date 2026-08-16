@@ -40,11 +40,7 @@ contract OracleRun is AutoLoopVRFCompatible {
     //  Events
     // ===============================================================
 
-    event CharacterMinted(
-        uint256 indexed characterId,
-        address indexed owner,
-        uint32 power
-    );
+    event CharacterMinted(uint256 indexed characterId, address indexed owner, uint32 power);
     event CharacterRegistered(
         uint256 indexed expeditionId,
         uint256 indexed characterId,
@@ -61,16 +57,9 @@ contract OracleRun is AutoLoopVRFCompatible {
         bytes32 randomness
     );
     event CharacterSurvived(
-        uint256 indexed expeditionId,
-        uint256 indexed characterId,
-        uint32 roll,
-        uint256 payout
+        uint256 indexed expeditionId, uint256 indexed characterId, uint32 roll, uint256 payout
     );
-    event CharacterDied(
-        uint256 indexed expeditionId,
-        uint256 indexed characterId,
-        uint32 roll
-    );
+    event CharacterDied(uint256 indexed expeditionId, uint256 indexed characterId, uint32 roll);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
     // ===============================================================
@@ -164,7 +153,7 @@ contract OracleRun is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - characterMintFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "OracleRun: refund failed");
         }
         emit CharacterMinted(characterId, _msgSender(), initialPower);
@@ -176,10 +165,7 @@ contract OracleRun is AutoLoopVRFCompatible {
         require(c.owner == _msgSender(), "OracleRun: not owner");
         require(!c.dead, "OracleRun: character dead");
         require(!c.registered, "OracleRun: already registered");
-        require(
-            currentEntrants.length < MAX_ENTRANTS,
-            "OracleRun: expedition full"
-        );
+        require(currentEntrants.length < MAX_ENTRANTS, "OracleRun: expedition full");
 
         c.registered = true;
         currentEntrants.push(characterId);
@@ -187,23 +173,18 @@ contract OracleRun is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - entryFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "OracleRun: refund failed");
         }
 
-        emit CharacterRegistered(
-            currentExpeditionId,
-            characterId,
-            _msgSender(),
-            entryFee
-        );
+        emit CharacterRegistered(currentExpeditionId, characterId, _msgSender(), entryFee);
     }
 
     function claimWinnings() external {
         uint256 amount = pendingWithdrawals[_msgSender()];
         require(amount > 0, "OracleRun: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "OracleRun: withdraw failed");
     }
 
@@ -217,38 +198,25 @@ contract OracleRun is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady =
-            block.timestamp >= lastExpeditionAt + expeditionInterval &&
-            currentEntrants.length > 0;
+        loopIsReady = block.timestamp >= lastExpeditionAt + expeditionInterval
+            && currentEntrants.length > 0;
         progressWithData = abi.encode(_loopID);
     }
 
-    function progressLoop(
-        bytes calldata progressWithData
-    ) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+    function progressLoop(bytes calldata progressWithData) external override {
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
 
-    function _progressInternal(
-        bytes32 randomness,
-        uint256 loopID
-    ) internal {
+    function _progressInternal(bytes32 randomness, uint256 loopID) internal {
         require(loopID == _loopID, "OracleRun: stale loop id");
-        require(
-            block.timestamp >= lastExpeditionAt + expeditionInterval,
-            "OracleRun: too soon"
-        );
+        require(block.timestamp >= lastExpeditionAt + expeditionInterval, "OracleRun: too soon");
         require(currentEntrants.length > 0, "OracleRun: no entrants");
 
         // Compute floor difficulty — higher floors are harder
-        uint32 difficulty = baseDifficulty +
-            (currentFloor - 1) *
-            difficultyPerFloor;
+        uint32 difficulty = baseDifficulty + (currentFloor - 1) * difficultyPerFloor;
         if (difficulty >= ROLL_MAX) difficulty = ROLL_MAX - 1;
 
         // First pass: determine survivors
@@ -261,9 +229,7 @@ contract OracleRun is AutoLoopVRFCompatible {
             Character storage c = _characters[entrantId];
 
             uint32 roll = uint32(
-                uint256(
-                    keccak256(abi.encodePacked(randomness, entrantId, "roll"))
-                ) % ROLL_MAX
+                uint256(keccak256(abi.encodePacked(randomness, entrantId, "roll"))) % ROLL_MAX
             );
 
             // Survival: roll + power beats difficulty
@@ -286,8 +252,7 @@ contract OracleRun is AutoLoopVRFCompatible {
         }
 
         // Second pass: distribute pool
-        uint256 protocolCut = (currentPool * protocolRakeBps) /
-            BPS_DENOMINATOR;
+        uint256 protocolCut = (currentPool * protocolRakeBps) / BPS_DENOMINATOR;
         uint256 prizePool = currentPool - protocolCut;
         protocolFeeBalance += protocolCut;
 
@@ -334,9 +299,7 @@ contract OracleRun is AutoLoopVRFCompatible {
     //  Views
     // ===============================================================
 
-    function getCharacter(
-        uint256 characterId
-    ) external view returns (Character memory) {
+    function getCharacter(uint256 characterId) external view returns (Character memory) {
         return _characters[characterId];
     }
 
@@ -358,14 +321,14 @@ contract OracleRun is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "OracleRun: zero address");
         require(amount <= protocolFeeBalance, "OracleRun: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "OracleRun: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

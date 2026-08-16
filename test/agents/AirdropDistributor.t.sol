@@ -6,13 +6,16 @@ import "../../src/agents/AirdropDistributor.sol";
 
 contract AirdropDistributorHarness is AirdropDistributor {
     constructor(uint256 _interval, uint256 _winners, uint256 _prize)
-        AirdropDistributor(_interval, _winners, _prize) {}
+        AirdropDistributor(_interval, _winners, _prize)
+    {}
 
     function tickForTest(bytes32 randomness) external {
         require((block.timestamp - lastDraw) >= drawInterval, "AirdropDistributor: too soon");
         uint256 n = pool.length;
         address[] memory poolCopy = new address[](n);
-        for (uint256 i = 0; i < n; i++) poolCopy[i] = pool[i];
+        for (uint256 i = 0; i < n; i++) {
+            poolCopy[i] = pool[i];
+        }
 
         address[] memory winners = new address[](winnersPerDraw);
         for (uint256 i = 0; i < winnersPerDraw; i++) {
@@ -37,7 +40,9 @@ contract AirdropDistributorHarness is AirdropDistributor {
         rounds[roundId].winnersCount = winnersPerDraw;
         rounds[roundId].settled = true;
         rounds[roundId].timestamp = block.timestamp;
-        for (uint256 i = 0; i < winners.length; i++) rounds[roundId].winners.push(winners[i]);
+        for (uint256 i = 0; i < winners.length; i++) {
+            rounds[roundId].winners.push(winners[i]);
+        }
 
         for (uint256 i = 0; i < winners.length; i++) {
             (bool ok,) = winners[i].call{value: payoutEach}("");
@@ -94,7 +99,7 @@ contract AirdropDistributorTest is Test {
 
     // ── register / deregister ─────────────────────────────────────────────────
 
-    function test_RegisterAddsToPool() public {
+    function test_RegisterAddsToPool() public view {
         assertEq(dist.poolSize(), 5);
     }
 
@@ -121,11 +126,11 @@ contract AirdropDistributorTest is Test {
     function test_DrawPicksWinners() public {
         vm.warp(block.timestamp + interval);
         bytes32 seed = keccak256("test_seed");
-        uint256 before0 = participants[0].balance + participants[1].balance +
-                          participants[2].balance + participants[3].balance + participants[4].balance;
+        uint256 before0 = participants[0].balance + participants[1].balance
+            + participants[2].balance + participants[3].balance + participants[4].balance;
         dist.tickForTest(seed);
-        uint256 after0 = participants[0].balance + participants[1].balance +
-                         participants[2].balance + participants[3].balance + participants[4].balance;
+        uint256 after0 = participants[0].balance + participants[1].balance + participants[2].balance
+            + participants[3].balance + participants[4].balance;
         assertGt(after0, before0);
     }
 

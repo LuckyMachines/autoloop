@@ -66,9 +66,7 @@ contract HybridGameTest is Test {
         // Deploy Registry behind proxy
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -78,10 +76,7 @@ contract HybridGameTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -178,13 +173,13 @@ contract HybridGameTest is Test {
 
     function test_ShouldProgressReturnsFalseBeforeInterval() public view {
         // setUp doesn't warp, so lastTimestamp == block.timestamp
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready, "Should not be ready before interval elapses");
     }
 
     function test_ShouldProgressReturnsTrueAfterInterval() public {
         vm.warp(block.timestamp + INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready, "Should be ready after interval elapses");
     }
 
@@ -193,9 +188,8 @@ contract HybridGameTest is Test {
         vm.warp(block.timestamp + INTERVAL);
         (, bytes memory data) = game.shouldProgressLoop();
 
-        (bool needsVRF, uint256 loopID, bytes memory gameData) = abi.decode(
-            data, (bool, uint256, bytes)
-        );
+        (bool needsVRF, uint256 loopID, bytes memory gameData) =
+            abi.decode(data, (bool, uint256, bytes));
 
         assertFalse(needsVRF, "Tick 1 should not need VRF");
         assertEq(loopID, 1, "Should return loopID 1");
@@ -210,9 +204,7 @@ contract HybridGameTest is Test {
         vm.warp(block.timestamp + INTERVAL);
         (, bytes memory data) = game.shouldProgressLoop();
 
-        (bool needsVRF, uint256 loopID, ) = abi.decode(
-            data, (bool, uint256, bytes)
-        );
+        (bool needsVRF, uint256 loopID,) = abi.decode(data, (bool, uint256, bytes));
 
         assertTrue(needsVRF, "Tick 10 should need VRF");
         assertEq(loopID, 10, "Should return loopID 10");
@@ -222,18 +214,20 @@ contract HybridGameTest is Test {
         // Verify the VRF flag pattern for loopIDs 1-20
         // VRF should only be true at 10 and 20
         bool[] memory expectedVRF = new bool[](20);
-        expectedVRF[9] = true;  // loopID 10 (index 9)
+        expectedVRF[9] = true; // loopID 10 (index 9)
         expectedVRF[19] = true; // loopID 20 (index 19)
 
         for (uint256 i = 0; i < 20; i++) {
             vm.warp(block.timestamp + INTERVAL);
             (, bytes memory data) = game.shouldProgressLoop();
-            (bool needsVRF, uint256 loopID, ) = abi.decode(data, (bool, uint256, bytes));
+            (bool needsVRF, uint256 loopID,) = abi.decode(data, (bool, uint256, bytes));
 
             assertEq(loopID, i + 1, "loopID should match iteration");
-            assertEq(needsVRF, expectedVRF[i], string.concat(
-                "VRF flag mismatch at loopID ", vm.toString(i + 1)
-            ));
+            assertEq(
+                needsVRF,
+                expectedVRF[i],
+                string.concat("VRF flag mismatch at loopID ", vm.toString(i + 1))
+            );
 
             // Only execute standard ticks (skip VRF ticks since we can't generate proofs)
             if (!needsVRF) {
@@ -310,7 +304,7 @@ contract HybridGameTest is Test {
         // After tick 1, shouldProgressLoop should return loopID 2
         vm.warp(block.timestamp + INTERVAL);
         (, bytes memory nextData) = game.shouldProgressLoop();
-        (, uint256 nextLoopID, ) = abi.decode(nextData, (bool, uint256, bytes));
+        (, uint256 nextLoopID,) = abi.decode(nextData, (bool, uint256, bytes));
         assertEq(nextLoopID, 2, "loopID should increment to 2");
     }
 
@@ -349,7 +343,7 @@ contract HybridGameTest is Test {
         (bool ready, bytes memory pollData) = game.shouldProgressLoop();
         assertTrue(ready, "Should be ready for tick 10");
 
-        (bool needsVRF, uint256 loopID, ) = abi.decode(pollData, (bool, uint256, bytes));
+        (bool needsVRF, uint256 loopID,) = abi.decode(pollData, (bool, uint256, bytes));
         assertTrue(needsVRF, "Tick 10 must signal VRF");
         assertEq(loopID, 10, "loopID should be 10");
     }
@@ -425,7 +419,7 @@ contract HybridGameTest is Test {
 
         vm.warp(block.timestamp + INTERVAL);
         (, bytes memory data) = game.shouldProgressLoop();
-        (, uint256 loopID, ) = abi.decode(data, (bool, uint256, bytes));
+        (, uint256 loopID,) = abi.decode(data, (bool, uint256, bytes));
         assertEq(loopID, 6, "loopID should be 6 after 5 ticks");
     }
 
@@ -434,7 +428,7 @@ contract HybridGameTest is Test {
         for (uint256 i = 1; i <= 9; i++) {
             vm.warp(block.timestamp + INTERVAL);
             (, bytes memory data) = game.shouldProgressLoop();
-            (bool needsVRF, , ) = abi.decode(data, (bool, uint256, bytes));
+            (bool needsVRF,,) = abi.decode(data, (bool, uint256, bytes));
             assertFalse(needsVRF, string.concat("Tick ", vm.toString(i), " should not need VRF"));
 
             _executeStandardTickDirect(i);
@@ -467,7 +461,7 @@ contract HybridGameTest is Test {
 
         vm.warp(block.timestamp + INTERVAL);
         (, bytes memory data) = everyTickGame.shouldProgressLoop();
-        (bool needsVRF, , ) = abi.decode(data, (bool, uint256, bytes));
+        (bool needsVRF,,) = abi.decode(data, (bool, uint256, bytes));
         // loopID=1, 1%1==0 → true
         assertTrue(needsVRF, "Every tick should need VRF with frequency=1");
     }
@@ -479,7 +473,7 @@ contract HybridGameTest is Test {
         for (uint256 i = 1; i <= 4; i++) {
             vm.warp(block.timestamp + INTERVAL);
             (, bytes memory data) = freq5Game.shouldProgressLoop();
-            (bool needsVRF, , ) = abi.decode(data, (bool, uint256, bytes));
+            (bool needsVRF,,) = abi.decode(data, (bool, uint256, bytes));
             assertFalse(needsVRF, "Non-5th tick should not need VRF");
 
             bytes memory tickData = abi.encode(false, i, bytes(""));
@@ -489,7 +483,7 @@ contract HybridGameTest is Test {
         // Tick 5: VRF
         vm.warp(block.timestamp + INTERVAL);
         (, bytes memory data5) = freq5Game.shouldProgressLoop();
-        (bool needsVRF5, uint256 loopID5, ) = abi.decode(data5, (bool, uint256, bytes));
+        (bool needsVRF5, uint256 loopID5,) = abi.decode(data5, (bool, uint256, bytes));
         assertTrue(needsVRF5, "5th tick should need VRF");
         assertEq(loopID5, 5, "loopID should be 5");
     }

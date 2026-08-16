@@ -5,8 +5,7 @@ import "forge-std/Test.sol";
 import "../../src/agents/BreedingMutationEngine.sol";
 
 contract BreedingMutationEngineHarness is BreedingMutationEngine {
-    constructor(uint256 _cooldown, uint256 _fee)
-        BreedingMutationEngine(_cooldown, _fee) {}
+    constructor(uint256 _cooldown, uint256 _fee) BreedingMutationEngine(_cooldown, _fee) {}
 
     function tickForTest(bytes32 randomness) external {
         require(breedingQueue.length > 0, "BreedingEngine: queue empty");
@@ -20,15 +19,15 @@ contract BreedingMutationEngineHarness is BreedingMutationEngine {
 contract BreedingMutationEngineTest is Test {
     BreedingMutationEngineHarness public be;
     uint256 public cooldown = 1 hours;
-    uint256 public fee      = 0.01 ether;
+    uint256 public fee = 0.01 ether;
 
     address public alice = address(0xA1);
-    address public bob   = address(0xB2);
+    address public bob = address(0xB2);
 
     function setUp() public {
         be = new BreedingMutationEngineHarness(cooldown, fee);
         vm.deal(alice, 10 ether);
-        vm.deal(bob,   10 ether);
+        vm.deal(bob, 10 ether);
     }
 
     // ── Construction ──────────────────────────────────────────────────────────
@@ -63,7 +62,7 @@ contract BreedingMutationEngineTest is Test {
     function test_MintEmitsEvent() public {
         vm.prank(alice);
         vm.expectEmit(true, true, false, false);
-        emit BreedingMutationEngine.TokenMinted(0, alice, [uint8(0),0,0,0,0]);
+        emit BreedingMutationEngine.TokenMinted(0, alice, [uint8(0), 0, 0, 0, 0]);
         be.mint();
     }
 
@@ -208,7 +207,9 @@ contract BreedingMutationEngineTest is Test {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bool found;
         for (uint256 i = 0; i < logs.length; i++) {
-            if (logs[i].topics[0] == BreedingMutationEngine.BreedingComplete.selector) found = true;
+            if (logs[i].topics[0] == BreedingMutationEngine.BreedingComplete.selector) {
+                found = true;
+            }
         }
         assertTrue(found);
     }
@@ -243,8 +244,10 @@ contract BreedingMutationEngineTest is Test {
         be.queueBreeding{value: fee}(t1, t2);
 
         // Third and fourth tokens for second pair
-        vm.prank(alice); uint256 t3 = be.mint();
-        vm.prank(alice); uint256 t4 = be.mint();
+        vm.prank(alice);
+        uint256 t3 = be.mint();
+        vm.prank(alice);
+        uint256 t4 = be.mint();
         vm.prank(alice);
         be.queueBreeding{value: fee}(t3, t4);
         assertEq(be.queueLength(), 2);

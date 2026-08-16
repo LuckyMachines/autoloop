@@ -31,12 +31,18 @@ contract DeployNewAgents is Script {
         address registrarAddr = vm.envAddress("REGISTRAR_ADDRESS");
 
         uint256 fundAmount;
-        try vm.envUint("FUND_AMOUNT") returns (uint256 v) { fundAmount = v; }
-        catch { fundAmount = 0.1 ether; }
+        try vm.envUint("FUND_AMOUNT") returns (uint256 v) {
+            fundAmount = v;
+        } catch {
+            fundAmount = 0.1 ether;
+        }
 
         uint256 maxGas;
-        try vm.envUint("MAX_GAS") returns (uint256 v) { maxGas = v; }
-        catch { maxGas = 2_000_000; }
+        try vm.envUint("MAX_GAS") returns (uint256 v) {
+            maxGas = v;
+        } catch {
+            maxGas = 2_000_000;
+        }
 
         AutoLoopRegistrar registrar = AutoLoopRegistrar(registrarAddr);
 
@@ -44,15 +50,15 @@ contract DeployNewAgents is Script {
 
         // ── ParameterAlerter ───────────────────────────────────────────────────
         ParameterAlerter parameterAlerter = new ParameterAlerter(
-            3600  // 1hr snapshot interval
+            3600 // 1hr snapshot interval
         );
-        parameterAlerter.addTrackedParam("dropRate", 1000);    // 10%
+        parameterAlerter.addTrackedParam("dropRate", 1000); // 10%
         parameterAlerter.addTrackedParam("xpMultiplier", 100); // 1.0x
         registrar.registerAutoLoopFor{value: fundAmount}(address(parameterAlerter), maxGas);
 
         // ── SupplyGovernanceModule ─────────────────────────────────────────────
         SupplyGovernanceModule supplyGovernance = new SupplyGovernanceModule(
-            3600  // 1hr check interval
+            3600 // 1hr check interval
         );
         supplyGovernance.createItemType("Gold Sword", 1000);
         supplyGovernance.queueSupplyChange(0, 100, "Initial supply", 1800); // 30min timelock
@@ -66,22 +72,22 @@ contract DeployNewAgents is Script {
 
         // ── MatchmakingEngine (VRF) ────────────────────────────────────────────
         MatchmakingEngine matchmakingEngine = new MatchmakingEngine(
-            3600  // 1hr match interval
+            3600 // 1hr match interval
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(matchmakingEngine), maxGas);
 
         // ── BreedingMutationEngine (VRF) ───────────────────────────────────────
         BreedingMutationEngine breedingEngine = new BreedingMutationEngine(
-            3600,        // 1hr breeding cooldown
-            0.001 ether  // breeding fee
+            3600, // 1hr breeding cooldown
+            0.001 ether // breeding fee
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(breedingEngine), maxGas);
 
         // ── TournamentBracket (VRF) ────────────────────────────────────────────
         TournamentBracket tournamentBracket = new TournamentBracket(
-            3600,         // 1hr round interval
-            4,            // 4-player bracket
-            0.001 ether   // entry fee
+            3600, // 1hr round interval
+            4, // 4-player bracket
+            0.001 ether // entry fee
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(tournamentBracket), maxGas);
 

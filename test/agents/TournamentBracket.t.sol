@@ -6,7 +6,8 @@ import "../../src/agents/TournamentBracket.sol";
 
 contract TournamentBracketHarness is TournamentBracket {
     constructor(uint256 _interval, uint8 _max, uint256 _fee)
-        TournamentBracket(_interval, _max, _fee) {}
+        TournamentBracket(_interval, _max, _fee)
+    {}
 
     function seedBracketForTest(bytes32 randomness) external {
         require(phase == Phase.Active, "not active");
@@ -27,15 +28,17 @@ contract TournamentBracketHarness is TournamentBracket {
 
 contract TournamentBracketTest is Test {
     TournamentBracketHarness public tb;
-    uint256 public interval  = 1 hours;
-    uint8   public maxP      = 4;
-    uint256 public entryFee  = 0.01 ether;
+    uint256 public interval = 1 hours;
+    uint8 public maxP = 4;
+    uint256 public entryFee = 0.01 ether;
 
     address[4] public players;
 
     function setUp() public {
         tb = new TournamentBracketHarness(interval, maxP, entryFee);
         for (uint256 i = 0; i < 4; i++) {
+            // The test loop bounds make this value far smaller than uint160 max.
+            // forge-lint: disable-next-line(unsafe-typecast)
             players[i] = address(uint160(0xA000 + i));
             vm.deal(players[i], 1 ether);
         }
@@ -311,7 +314,9 @@ contract TournamentBracketTest is Test {
         tb.resolveRoundForTest(keccak256("r1"));
 
         uint256[4] memory before;
-        for (uint256 i = 0; i < 4; i++) before[i] = players[i].balance;
+        for (uint256 i = 0; i < 4; i++) {
+            before[i] = players[i].balance;
+        }
 
         vm.warp(block.timestamp + interval);
         tb.resolveRoundForTest(keccak256("r2"));

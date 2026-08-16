@@ -93,9 +93,7 @@ contract KaijuLeagueTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -104,10 +102,7 @@ contract KaijuLeagueTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -137,15 +132,11 @@ contract KaijuLeagueTest is Test {
     // ===============================================================
 
     function test_SupportsVRFInterface() public view {
-        assertTrue(
-            game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible")))
-        );
+        assertTrue(game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible"))));
     }
 
     function test_SupportsAutoLoopInterface() public view {
-        assertTrue(
-            game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId)
-        );
+        assertTrue(game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId));
     }
 
     function test_InitialState() public view {
@@ -174,40 +165,35 @@ contract KaijuLeagueTest is Test {
     function test_ConstructorRejectsZeroInterval() public {
         vm.expectRevert("KaijuLeague: clashInterval=0");
         new KaijuLeagueHarness(
-            HATCH_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS,
-            INITIAL_HEALTH, MIN_HEALTH, MAX_ENTRANTS
+            HATCH_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS, INITIAL_HEALTH, MIN_HEALTH, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("KaijuLeague: rake > 20%");
         new KaijuLeagueHarness(
-            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, 2001,
-            INITIAL_HEALTH, MIN_HEALTH, MAX_ENTRANTS
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, 2001, INITIAL_HEALTH, MIN_HEALTH, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsBadHealthOrdering() public {
         vm.expectRevert("KaijuLeague: health ordering");
         new KaijuLeagueHarness(
-            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS,
-            50, 500, MAX_ENTRANTS
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS, 50, 500, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsLowMaxEntrants() public {
         vm.expectRevert("KaijuLeague: maxEntrants < 2");
         new KaijuLeagueHarness(
-            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_HEALTH, MIN_HEALTH, 1
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS, INITIAL_HEALTH, MIN_HEALTH, 1
         );
     }
 
     function test_ConstructorRejectsHighMaxEntrants() public {
         vm.expectRevert("KaijuLeague: maxEntrants > 16");
         new KaijuLeagueHarness(
-            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_HEALTH, MIN_HEALTH, 17
+            HATCH_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE_BPS, INITIAL_HEALTH, MIN_HEALTH, 17
         );
     }
 
@@ -326,20 +312,20 @@ contract KaijuLeagueTest is Test {
         vm.prank(alice);
         game.enterClash{value: ENTRY_FEE}(1);
         vm.warp(block.timestamp + CLASH_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressTrueWithTwoKaiju() public {
         _enterPair();
         vm.warp(block.timestamp + CLASH_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready);
     }
 
     function test_ShouldProgressFalseBeforeInterval() public {
         _enterPair();
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
@@ -361,8 +347,7 @@ contract KaijuLeagueTest is Test {
         uint256 expectedRake = (poolBefore * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 expectedPrize = poolBefore - expectedRake;
 
-        uint256 withdrawable = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 withdrawable = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         assertEq(withdrawable, expectedPrize);
         assertEq(game.protocolFeeBalance() - HATCH_FEE * 2, expectedRake);
     }
@@ -472,9 +457,7 @@ contract KaijuLeagueTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             ts += CLASH_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("clash", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("clash", i)))));
 
             if (i < 4) {
                 vm.prank(alice);
@@ -495,15 +478,19 @@ contract KaijuLeagueTest is Test {
         for (uint256 i = 0; i < 80; i++) {
             ts += CLASH_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("destroy", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("destroy", i)))));
 
             if (game.getKaiju(1).health > MIN_HEALTH && i < 79) {
                 vm.prank(alice);
-                try game.enterClash{value: ENTRY_FEE}(1) {} catch { break; }
+                try game.enterClash{value: ENTRY_FEE}(1) {}
+                catch {
+                    break;
+                }
                 vm.prank(bob);
-                try game.enterClash{value: ENTRY_FEE}(2) {} catch { break; }
+                try game.enterClash{value: ENTRY_FEE}(2) {}
+                catch {
+                    break;
+                }
             } else {
                 break;
             }
@@ -600,8 +587,7 @@ contract KaijuLeagueTest is Test {
         uint256 rake = (pool * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 prize = pool - rake;
 
-        uint256 totalPending = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 totalPending = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         uint256 feeDelta = game.protocolFeeBalance() - feeBefore;
 
         assertEq(totalPending, prize, "prize to one winner");
@@ -640,9 +626,8 @@ contract KaijuLeagueTest is Test {
         vm.warp(block.timestamp + CLASH_INTERVAL);
         game.tickForTest(randomness);
 
-        uint256 totalVictories = game.getKaiju(1).victories +
-            game.getKaiju(2).victories +
-            game.getKaiju(3).victories;
+        uint256 totalVictories =
+            game.getKaiju(1).victories + game.getKaiju(2).victories + game.getKaiju(3).victories;
         assertEq(totalVictories, 1, "exactly one winner");
     }
 

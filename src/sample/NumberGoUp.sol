@@ -17,9 +17,7 @@ contract NumberGoUp is AutoLoopCompatible {
         number = 0;
     }
 
-    function registerAutoLoop(
-        address registrarAddress
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function registerAutoLoop(address registrarAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
         // Register auto loop
         bool success = AutoLoopRegistrar(registrarAddress).registerAutoLoop();
         if (!success) {
@@ -27,9 +25,7 @@ contract NumberGoUp is AutoLoopCompatible {
         }
     }
 
-    function deregisterAutoLoop(
-        address registrarAddress
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function deregisterAutoLoop(address registrarAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
         AutoLoopRegistrar(registrarAddress).deregisterAutoLoop();
     }
 

@@ -114,9 +114,7 @@ contract CrumbleCoreTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -125,10 +123,7 @@ contract CrumbleCoreTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -182,10 +177,7 @@ contract CrumbleCoreTest is Test {
     }
 
     function test_DoesNotSupportRandomInterface() public view {
-        assertFalse(
-            game.supportsInterface(0xdeadbeef),
-            "Should not support random interface"
-        );
+        assertFalse(game.supportsInterface(0xdeadbeef), "Should not support random interface");
     }
 
     // ===============================================================
@@ -219,42 +211,78 @@ contract CrumbleCoreTest is Test {
     function test_ConstructorRejectsZeroInterval() public {
         vm.expectRevert("CrumbleCore: tickInterval=0");
         new CrumbleCoreHarness(
-            BASE_MINT_FEE, REPAIR_FEE, 0, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
+            BASE_MINT_FEE,
+            REPAIR_FEE,
+            0,
+            MAX_HEALTH,
+            PASSIVE_DECAY_PER_HOUR,
+            INSURANCE_PREMIUM_BPS,
+            SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsZeroMaxHealth() public {
         vm.expectRevert("CrumbleCore: maxHealth=0");
         new CrumbleCoreHarness(
-            BASE_MINT_FEE, REPAIR_FEE, TICK_INTERVAL, 0, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
+            BASE_MINT_FEE,
+            REPAIR_FEE,
+            TICK_INTERVAL,
+            0,
+            PASSIVE_DECAY_PER_HOUR,
+            INSURANCE_PREMIUM_BPS,
+            SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsZeroBaseMintFee() public {
         vm.expectRevert("CrumbleCore: baseMintFee=0");
         new CrumbleCoreHarness(
-            0, REPAIR_FEE, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
+            0,
+            REPAIR_FEE,
+            TICK_INTERVAL,
+            MAX_HEALTH,
+            PASSIVE_DECAY_PER_HOUR,
+            INSURANCE_PREMIUM_BPS,
+            SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsZeroRepairFee() public {
         vm.expectRevert("CrumbleCore: repairFee=0");
         new CrumbleCoreHarness(
-            BASE_MINT_FEE, 0, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, SALVAGE_TARGET_BPS
+            BASE_MINT_FEE,
+            0,
+            TICK_INTERVAL,
+            MAX_HEALTH,
+            PASSIVE_DECAY_PER_HOUR,
+            INSURANCE_PREMIUM_BPS,
+            SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsInsuranceOver50() public {
         vm.expectRevert("CrumbleCore: insurance premium > 50%");
         new CrumbleCoreHarness(
-            BASE_MINT_FEE, REPAIR_FEE, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, 5001, SALVAGE_TARGET_BPS
+            BASE_MINT_FEE,
+            REPAIR_FEE,
+            TICK_INTERVAL,
+            MAX_HEALTH,
+            PASSIVE_DECAY_PER_HOUR,
+            5001,
+            SALVAGE_TARGET_BPS
         );
     }
 
     function test_ConstructorRejectsSalvageTargetOver100() public {
         vm.expectRevert("CrumbleCore: target > 100%");
         new CrumbleCoreHarness(
-            BASE_MINT_FEE, REPAIR_FEE, TICK_INTERVAL, MAX_HEALTH, PASSIVE_DECAY_PER_HOUR, INSURANCE_PREMIUM_BPS, 10001
+            BASE_MINT_FEE,
+            REPAIR_FEE,
+            TICK_INTERVAL,
+            MAX_HEALTH,
+            PASSIVE_DECAY_PER_HOUR,
+            INSURANCE_PREMIUM_BPS,
+            10001
         );
     }
 
@@ -317,7 +345,7 @@ contract CrumbleCoreTest is Test {
         game.mintFloor{value: BASE_MINT_FEE}(false);
     }
 
-    function test_MintFeeScalesWithFloorNumber() public {
+    function test_MintFeeScalesWithFloorNumber() public view {
         uint256 floor1Fee = game.mintFeeFor(1);
         uint256 floor10Fee = game.mintFeeFor(10);
         uint256 floor100Fee = game.mintFeeFor(100);
@@ -329,7 +357,7 @@ contract CrumbleCoreTest is Test {
         assertEq(floor100Fee, BASE_MINT_FEE + (BASE_MINT_FEE * 99) / 10);
     }
 
-    function test_SecondFloorCostsMoreThanFirst() public {
+    function test_SecondFloorCostsMoreThanFirst() public view {
         uint256 fee1 = game.mintFeeFor(1);
         uint256 fee2 = game.mintFeeFor(2);
         assertGt(fee2, fee1, "floor 2 should cost more than floor 1");
@@ -433,13 +461,13 @@ contract CrumbleCoreTest is Test {
     // ===============================================================
 
     function test_ShouldProgressLoopFalseInitially() public view {
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready, "not ready immediately after deploy");
     }
 
     function test_ShouldProgressLoopFalseWithNoActiveFloors() public {
         _warpToNextTick();
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready, "not ready with zero floors even after interval");
     }
 
@@ -593,8 +621,7 @@ contract CrumbleCoreTest is Test {
         for (uint256 i = 0; i < 20 && !collapsed; i++) {
             _warpToNextTick();
             bytes32 r = bytes32(
-                uint256(keccak256(abi.encodePacked(i, "collapse-seed"))) |
-                    (uint256(5000) << 64)
+                uint256(keccak256(abi.encodePacked(i, "collapse-seed"))) | (uint256(5000) << 64)
             );
             // Record the next log; we only care that some iteration emits a collapse
             game.tickForTest(r);
@@ -648,15 +675,10 @@ contract CrumbleCoreTest is Test {
         game.salvage(1);
 
         assertEq(
-            alice.balance - aliceBefore,
-            targetPayout,
-            "alice should receive full target payout"
+            alice.balance - aliceBefore, targetPayout, "alice should receive full target payout"
         );
         // Pool = original premium + donation - payout
-        assertEq(
-            game.insurancePool(),
-            insuranceCost + targetPayout - targetPayout
-        );
+        assertEq(game.insurancePool(), insuranceCost + targetPayout - targetPayout);
     }
 
     function test_SalvageUninsuredFloorPaysZero() public {
@@ -737,8 +759,7 @@ contract CrumbleCoreTest is Test {
         // Subsidize the pool so both floors can claim full target
         uint256 aliceTarget = (BASE_MINT_FEE * SALVAGE_TARGET_BPS) / 10_000;
         uint256 bobTarget = (bobMintFee * SALVAGE_TARGET_BPS) / 10_000;
-        uint256 needed = (aliceTarget + bobTarget) -
-            (insuranceCost + bobInsurance);
+        uint256 needed = (aliceTarget + bobTarget) - (insuranceCost + bobInsurance);
         game.donateToInsurancePool{value: needed}();
 
         _collapseFloor(1);

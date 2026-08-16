@@ -94,9 +94,7 @@ contract OracleRunTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -105,10 +103,7 @@ contract OracleRunTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -138,9 +133,7 @@ contract OracleRunTest is Test {
     // ===============================================================
 
     function test_SupportsVRFInterface() public view {
-        assertTrue(
-            game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible")))
-        );
+        assertTrue(game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible"))));
     }
 
     function test_InitialState() public view {
@@ -176,7 +169,13 @@ contract OracleRunTest is Test {
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("OracleRun: rake > 20%");
         new OracleRunHarness(
-            MINT_FEE, ENTRY_FEE, INTERVAL, 2001, BASE_DIFFICULTY, DIFFICULTY_PER_FLOOR, INITIAL_POWER
+            MINT_FEE,
+            ENTRY_FEE,
+            INTERVAL,
+            2001,
+            BASE_DIFFICULTY,
+            DIFFICULTY_PER_FLOOR,
+            INITIAL_POWER
         );
     }
 
@@ -285,7 +284,7 @@ contract OracleRunTest is Test {
 
     function test_ShouldProgressFalseWithNoEntrants() public {
         vm.warp(block.timestamp + INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
@@ -293,7 +292,7 @@ contract OracleRunTest is Test {
         _mintFor(alice);
         _enter(alice, 1);
         vm.warp(block.timestamp + INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready);
     }
 
@@ -424,10 +423,7 @@ contract OracleRunTest is Test {
         vm.warp(block.timestamp + INTERVAL);
         game.tickForTest(bytes32(uint256(type(uint256).max)));
 
-        assertEq(
-            game.currentDifficulty(),
-            BASE_DIFFICULTY + DIFFICULTY_PER_FLOOR
-        );
+        assertEq(game.currentDifficulty(), BASE_DIFFICULTY + DIFFICULTY_PER_FLOOR);
     }
 
     function test_DifficultyCaps() public {
@@ -442,9 +438,7 @@ contract OracleRunTest is Test {
             _enter(alice, 1);
             ts += INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("floor", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("floor", i)))));
         }
 
         // Difficulty is capped at ROLL_MAX - 1 = 999
@@ -529,8 +523,7 @@ contract OracleRunTest is Test {
         game.tickForTest(randomness);
 
         uint256 feeAfter = game.protocolFeeBalance();
-        uint256 payouts = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 payouts = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
 
         assertEq(feeAfter - feeBefore + payouts, poolBefore);
     }
@@ -548,5 +541,4 @@ contract OracleRunTest is Test {
         vm.prank(who);
         game.registerForExpedition{value: ENTRY_FEE}(charId);
     }
-
 }

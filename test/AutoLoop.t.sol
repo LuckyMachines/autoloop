@@ -90,9 +90,7 @@ contract AutoLoopTest is Test {
         // ---- Deploy AutoLoopRegistry behind proxy ----
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -102,10 +100,7 @@ contract AutoLoopTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -289,10 +284,12 @@ contract AutoLoopTest is Test {
         } catch (bytes memory reason) {
             assertEq(
                 keccak256(reason),
-                keccak256(abi.encodeWithSignature(
-                    "Error(string)",
-                    "AutoLoop compatible contract balance too low to run update + fee + reserve."
-                ))
+                keccak256(
+                    abi.encodeWithSignature(
+                        "Error(string)",
+                        "AutoLoop compatible contract balance too low to run update + fee + reserve."
+                    )
+                )
             );
         }
     }
@@ -342,9 +339,10 @@ contract AutoLoopTest is Test {
         vm.txGasPrice(41_000 gwei);
         vm.prank(controller1);
         try autoLoop.progressLoop(address(game1), progressWithData) {
-            // Succeeded — gas-report mode where tx.gasprice was not set correctly.
-            // Not a test failure; this is a known Foundry gas-report limitation.
-        } catch (bytes memory reason) {
+        // Succeeded — gas-report mode where tx.gasprice was not set correctly.
+        // Not a test failure; this is a known Foundry gas-report limitation.
+        }
+        catch (bytes memory reason) {
             assertEq(
                 keccak256(reason),
                 keccak256(abi.encodeWithSignature("Error(string)", "Gas price too high"))
@@ -425,7 +423,9 @@ contract AutoLoopTest is Test {
             uint256 txProfit = controllerBalanceAfter - controllerBalanceBefore;
             assertTrue(txProfit > 0, "Controller should profit from progressLoop");
             // Verify the controller fee portion (40% of total fee) is included in profit
-            assertTrue(txProfit >= (eventFee * 40) / 100, "Profit should include at least 40% of fee");
+            assertTrue(
+                txProfit >= (eventFee * 40) / 100, "Profit should include at least 40% of fee"
+            );
         }
     }
 
@@ -456,11 +456,7 @@ contract AutoLoopTest is Test {
 
         // Protocol should receive 50% of the fee
         uint256 expectedProtocolFee = (eventFee * 50) / 100;
-        assertEq(
-            protocolProfit,
-            expectedProtocolFee,
-            "Protocol should receive exactly 50% of fee"
-        );
+        assertEq(protocolProfit, expectedProtocolFee, "Protocol should receive exactly 50% of fee");
     }
 
     function test_CannotUpdateSameContractTwiceInOneBlock() public {
@@ -818,8 +814,7 @@ contract AutoLoopTest is Test {
         // Initiate transfer on the game itself
         game1.safeTransferAdmin(admin2);
 
-        address[] memory pendingLoops =
-            registry.getAdminTransferPendingAutoLoopsFor(admin2);
+        address[] memory pendingLoops = registry.getAdminTransferPendingAutoLoopsFor(admin2);
         assertEq(pendingLoops.length, 1);
         assertEq(pendingLoops[0], address(game1));
     }
@@ -906,9 +901,7 @@ contract AutoLoopTest is Test {
 
         // Protocol should receive the entire fee
         assertEq(
-            protocolCredit,
-            eventFee,
-            "Protocol should receive entire fee when controller fee is 0%"
+            protocolCredit, eventFee, "Protocol should receive entire fee when controller fee is 0%"
         );
 
         // Reset
@@ -1100,7 +1093,11 @@ contract AutoLoopTest is Test {
             // Withdraw the rest
             uint256 remaining = autoLoop.protocolBalance();
             autoLoop.withdrawProtocolFees(remaining, admin);
-            assertEq(autoLoop.protocolBalance(), 0, "Protocol balance should be zero after full withdrawal");
+            assertEq(
+                autoLoop.protocolBalance(),
+                0,
+                "Protocol balance should be zero after full withdrawal"
+            );
         }
     }
 
@@ -1241,7 +1238,10 @@ contract AutoLoopTest is Test {
     }
 
     /// @dev Progress game1 as controller1, record logs, and parse the AutoLoopProgressed event
-    function _progressAndCaptureEvent(address gameAddr) internal returns (ProgressEvent memory evt) {
+    function _progressAndCaptureEvent(address gameAddr)
+        internal
+        returns (ProgressEvent memory evt)
+    {
         (, bytes memory progressWithData) = NumberGoUp(gameAddr).shouldProgressLoop();
         vm.recordLogs();
         vm.txGasPrice(GAS_PRICE);
@@ -1252,16 +1252,17 @@ contract AutoLoopTest is Test {
     }
 
     /// @dev Parse AutoLoopProgressed event from recorded logs into a struct
-    function _parseProgressEvent(
-        Vm.Log[] memory entries
-    ) internal pure returns (ProgressEvent memory evt) {
+    function _parseProgressEvent(Vm.Log[] memory entries)
+        internal
+        pure
+        returns (ProgressEvent memory evt)
+    {
         bytes32 eventSig = keccak256(
             "AutoLoopProgressed(address,uint256,address,uint256,uint256,uint256,uint256)"
         );
         for (uint256 i = 0; i < entries.length; i++) {
             if (entries[i].topics[0] == eventSig) {
-                (
-                    , // controller (address)
+                (, // controller (address)
                     evt.gasUsed,
                     evt.gasPrice,
                     evt.gasCost,
@@ -1274,9 +1275,11 @@ contract AutoLoopTest is Test {
     }
 
     /// @dev Extract fee and gasCost from AutoLoopProgressed event logs
-    function _extractFeeFromLogs(
-        Vm.Log[] memory entries
-    ) internal pure returns (uint256 fee, uint256 gasCost) {
+    function _extractFeeFromLogs(Vm.Log[] memory entries)
+        internal
+        pure
+        returns (uint256 fee, uint256 gasCost)
+    {
         ProgressEvent memory evt = _parseProgressEvent(entries);
         require(evt.found, "AutoLoopProgressed event not found in logs");
         return (evt.fee, evt.gasCost);

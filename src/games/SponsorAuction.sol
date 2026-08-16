@@ -40,16 +40,8 @@ contract SponsorAuction is AutoLoopCompatible {
     //  Events
     // ===============================================================
 
-    event AuctionOpened(
-        uint256 indexed auctionId,
-        uint256 startedAt,
-        uint256 closesAt
-    );
-    event BidPlaced(
-        uint256 indexed auctionId,
-        address indexed bidder,
-        uint256 amount
-    );
+    event AuctionOpened(uint256 indexed auctionId, uint256 startedAt, uint256 closesAt);
+    event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount);
     event AuctionClosed(
         uint256 indexed auctionId,
         address indexed winner,
@@ -59,10 +51,7 @@ contract SponsorAuction is AutoLoopCompatible {
     );
     event AuctionClosedNoBids(uint256 indexed auctionId);
     event SponsorshipExpired(uint256 indexed auctionId);
-    event SlotReceiverUpdated(
-        address indexed oldReceiver,
-        address indexed newReceiver
-    );
+    event SlotReceiverUpdated(address indexed oldReceiver, address indexed newReceiver);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
     // ===============================================================
@@ -137,17 +126,13 @@ contract SponsorAuction is AutoLoopCompatible {
 
     function bid() external payable {
         require(auctionOpen, "SponsorAuction: auction closed");
-        require(
-            block.timestamp < auctionClosesAt,
-            "SponsorAuction: auction expired"
-        );
+        require(block.timestamp < auctionClosesAt, "SponsorAuction: auction expired");
 
         uint256 requiredBid;
         if (highestBid == 0) {
             requiredBid = minBid;
         } else {
-            uint256 increment = (highestBid * minIncrementBps) /
-                BPS_DENOMINATOR;
+            uint256 increment = (highestBid * minIncrementBps) / BPS_DENOMINATOR;
             if (increment == 0) increment = 1;
             requiredBid = highestBid + increment;
         }
@@ -169,7 +154,7 @@ contract SponsorAuction is AutoLoopCompatible {
         uint256 amount = refunds[_msgSender()];
         require(amount > 0, "SponsorAuction: no refund");
         refunds[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "SponsorAuction: refund failed");
     }
 
@@ -183,23 +168,15 @@ contract SponsorAuction is AutoLoopCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady =
-            auctionOpen &&
-            block.timestamp >= auctionClosesAt;
+        loopIsReady = auctionOpen && block.timestamp >= auctionClosesAt;
         progressWithData = abi.encode(currentAuctionId);
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
         uint256 expectedAuctionId = abi.decode(progressWithData, (uint256));
         require(auctionOpen, "SponsorAuction: not open");
-        require(
-            block.timestamp >= auctionClosesAt,
-            "SponsorAuction: too soon"
-        );
-        require(
-            expectedAuctionId == currentAuctionId,
-            "SponsorAuction: stale id"
-        );
+        require(block.timestamp >= auctionClosesAt, "SponsorAuction: too soon");
+        require(expectedAuctionId == currentAuctionId, "SponsorAuction: stale id");
 
         auctionOpen = false;
 
@@ -207,8 +184,7 @@ contract SponsorAuction is AutoLoopCompatible {
             emit AuctionClosedNoBids(currentAuctionId);
         } else {
             uint256 winningBid = highestBid;
-            uint256 protocolCut = (winningBid * protocolRakeBps) /
-                BPS_DENOMINATOR;
+            uint256 protocolCut = (winningBid * protocolRakeBps) / BPS_DENOMINATOR;
             uint256 payout = winningBid - protocolCut;
             protocolFeeBalance += protocolCut;
 
@@ -219,13 +195,7 @@ contract SponsorAuction is AutoLoopCompatible {
             currentSponsor = highestBidder;
             sponsorshipExpiresAt = block.timestamp + sponsorshipPeriod;
 
-            emit AuctionClosed(
-                currentAuctionId,
-                highestBidder,
-                winningBid,
-                payout,
-                protocolCut
-            );
+            emit AuctionClosed(currentAuctionId, highestBidder, winningBid, payout, protocolCut);
         }
 
         totalAuctionsClosed++;
@@ -244,34 +214,27 @@ contract SponsorAuction is AutoLoopCompatible {
     }
 
     function sponsorshipActive() external view returns (bool) {
-        return
-            currentSponsor != address(0) &&
-            block.timestamp < sponsorshipExpiresAt;
+        return currentSponsor != address(0) && block.timestamp < sponsorshipExpiresAt;
     }
 
     // ===============================================================
     //  Admin
     // ===============================================================
 
-    function setSlotReceiver(
-        address newReceiver
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setSlotReceiver(address newReceiver) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(newReceiver != address(0), "SponsorAuction: receiver=0");
         emit SlotReceiverUpdated(slotReceiver, newReceiver);
         slotReceiver = newReceiver;
     }
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "SponsorAuction: zero address");
-        require(
-            amount <= protocolFeeBalance,
-            "SponsorAuction: exceeds balance"
-        );
+        require(amount <= protocolFeeBalance, "SponsorAuction: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "SponsorAuction: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

@@ -97,25 +97,12 @@ library VRFVerifier {
         }
 
         // Step 4: Compute V = sH - cGamma (as sH + (-cGamma))
-        (uint256 vx, uint256 vy) = ecSub(
-            vComponents[0],
-            vComponents[1],
-            vComponents[2],
-            vComponents[3]
-        );
+        (uint256 vx, uint256 vy) =
+            ecSub(vComponents[0], vComponents[1], vComponents[2], vComponents[3]);
 
         // Step 5: Recompute c' = hash(G, H, PK, Gamma, U, V) and check c' == c
         uint256 derivedC = _hashPoints(
-            hx,
-            hy,
-            publicKey[0],
-            publicKey[1],
-            gammaX,
-            gammaY,
-            uPoint[0],
-            uPoint[1],
-            vx,
-            vy
+            hx, hy, publicKey[0], publicKey[1], gammaX, gammaY, uPoint[0], uPoint[1], vx, vy
         );
 
         return derivedC == c;
@@ -140,10 +127,11 @@ library VRFVerifier {
      * @return x The x-coordinate of the curve point.
      * @return y The y-coordinate of the curve point.
      */
-    function hashToCurve(
-        uint256[2] memory publicKey,
-        bytes memory message
-    ) internal pure returns (uint256 x, uint256 y) {
+    function hashToCurve(uint256[2] memory publicKey, bytes memory message)
+        internal
+        pure
+        returns (uint256 x, uint256 y)
+    {
         // TAI: try ctr = 0, 1, 2, ... until we find a valid x on the curve
         bytes32 hash;
         for (uint256 ctr = 0; ctr < 256; ctr++) {
@@ -154,6 +142,8 @@ library VRFVerifier {
                     publicKey[0],
                     publicKey[1],
                     message,
+                    // ctr is bounded to [0, 255] by the loop condition.
+                    // forge-lint: disable-next-line(unsafe-typecast)
                     uint8(ctr)
                 )
             );
@@ -186,12 +176,11 @@ library VRFVerifier {
      *        - The "message hash" encodes c and the public key
      *        - The signature (v, r, s_sig) encodes s and U
      */
-    function _verifyU(
-        uint256[2] memory publicKey,
-        uint256 c,
-        uint256 s,
-        uint256[2] memory uPoint
-    ) private pure returns (bool) {
+    function _verifyU(uint256[2] memory publicKey, uint256 c, uint256 s, uint256[2] memory uPoint)
+        private
+        pure
+        returns (bool)
+    {
         // H4: Validate public key is on curve and in valid range
         if (!_isOnCurve(publicKey[0], publicKey[1])) return false;
 
@@ -240,7 +229,11 @@ library VRFVerifier {
         uint256, // s
         uint256 shX,
         uint256 shY
-    ) private pure returns (bool) {
+    )
+        private
+        pure
+        returns (bool)
+    {
         // We want to verify: (shX, shY) = s * (hx, hy)
         // Using ecrecover with H as the "public key":
         // recovered = inv(hx) * (sParam * G - e * H)
@@ -301,7 +294,11 @@ library VRFVerifier {
         uint256, // c
         uint256 cgX,
         uint256 cgY
-    ) private pure returns (bool) {
+    )
+        private
+        pure
+        returns (bool)
+    {
         return _isOnCurve(cgX, cgY);
     }
 
@@ -324,11 +321,16 @@ library VRFVerifier {
             abi.encodePacked(
                 uint8(0xFE), // suite
                 uint8(0x02), // hash_points flag
-                hx, hy,
-                pkx, pky,
-                gammaX, gammaY,
-                ux, uy,
-                vx, vy
+                hx,
+                hy,
+                pkx,
+                pky,
+                gammaX,
+                gammaY,
+                ux,
+                uy,
+                vx,
+                vy
             )
         );
         return uint256(hash) % NN;
@@ -359,24 +361,22 @@ library VRFVerifier {
     /**
      * @dev EC point subtraction: (x1, y1) - (x2, y2) = (x1, y1) + (x2, -y2)
      */
-    function ecSub(
-        uint256 x1,
-        uint256 y1,
-        uint256 x2,
-        uint256 y2
-    ) internal pure returns (uint256, uint256) {
+    function ecSub(uint256 x1, uint256 y1, uint256 x2, uint256 y2)
+        internal
+        pure
+        returns (uint256, uint256)
+    {
         return ecAdd(x1, y1, x2, PP - y2);
     }
 
     /**
      * @dev EC point addition using the standard formulas.
      */
-    function ecAdd(
-        uint256 x1,
-        uint256 y1,
-        uint256 x2,
-        uint256 y2
-    ) internal pure returns (uint256 x3, uint256 y3) {
+    function ecAdd(uint256 x1, uint256 y1, uint256 x2, uint256 y2)
+        internal
+        pure
+        returns (uint256 x3, uint256 y3)
+    {
         if (x1 == 0 && y1 == 0) return (x2, y2);
         if (x2 == 0 && y2 == 0) return (x1, y1);
 
@@ -390,11 +390,7 @@ library VRFVerifier {
         }
 
         // Point addition
-        uint256 lambda = mulmod(
-            addmod(y2, PP - y1, PP),
-            _invMod(addmod(x2, PP - x1, PP), PP),
-            PP
-        );
+        uint256 lambda = mulmod(addmod(y2, PP - y1, PP), _invMod(addmod(x2, PP - x1, PP), PP), PP);
         x3 = addmod(mulmod(lambda, lambda, PP), PP - addmod(x1, x2, PP), PP);
         y3 = addmod(mulmod(lambda, addmod(x1, PP - x3, PP), PP), PP - y1, PP);
     }
@@ -403,11 +399,7 @@ library VRFVerifier {
      * @dev EC point doubling.
      */
     function _ecDouble(uint256 x, uint256 y) private pure returns (uint256 x3, uint256 y3) {
-        uint256 lambda = mulmod(
-            mulmod(3, mulmod(x, x, PP), PP),
-            _invMod(mulmod(2, y, PP), PP),
-            PP
-        );
+        uint256 lambda = mulmod(mulmod(3, mulmod(x, x, PP), PP), _invMod(mulmod(2, y, PP), PP), PP);
         x3 = addmod(mulmod(lambda, lambda, PP), PP - mulmod(2, x, PP), PP);
         y3 = addmod(mulmod(lambda, addmod(x, PP - x3, PP), PP), PP - y, PP);
     }

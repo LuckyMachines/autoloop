@@ -5,11 +5,9 @@ import "forge-std/Test.sol";
 import "../../src/agents/TreasuryRebalancer.sol";
 
 contract TreasuryRebalancerHarness is TreasuryRebalancer {
-    constructor(
-        address _t0, uint256 _t0Target,
-        address _t1,
-        uint256 _drift, uint256 _interval
-    ) TreasuryRebalancer(_t0, _t0Target, _t1, _drift, _interval) {}
+    constructor(address _t0, uint256 _t0Target, address _t1, uint256 _drift, uint256 _interval)
+        TreasuryRebalancer(_t0, _t0Target, _t1, _drift, _interval)
+    {}
 
     function tickForTest() external {
         (uint256 t0Bps, uint256 drift) = this.currentDrift();
@@ -25,15 +23,11 @@ contract TreasuryRebalancerTest is Test {
     address public token1 = address(0xBEEF);
 
     uint256 public constant TARGET_BPS = 6000; // 60% ETH, 40% token1
-    uint256 public constant DRIFT_BPS = 500;   // 5% threshold
+    uint256 public constant DRIFT_BPS = 500; // 5% threshold
     uint256 public interval = 1 days;
 
     function setUp() public {
-        rebalancer = new TreasuryRebalancerHarness(
-            ETH, TARGET_BPS,
-            token1,
-            DRIFT_BPS, interval
-        );
+        rebalancer = new TreasuryRebalancerHarness(ETH, TARGET_BPS, token1, DRIFT_BPS, interval);
     }
 
     // ── shouldProgressLoop ────────────────────────────────────────────────────

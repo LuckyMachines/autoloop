@@ -6,7 +6,8 @@ import "../../src/agents/VaultDeadSwitch.sol";
 
 contract VaultDeadSwitchHarness is VaultDeadSwitch {
     constructor(address _owner, address _beneficiary, uint256 _interval)
-        VaultDeadSwitch(_owner, _beneficiary, _interval) {}
+        VaultDeadSwitch(_owner, _beneficiary, _interval)
+    {}
 
     function tickForTest() external {
         bytes memory data = abi.encode(_loopID);
@@ -16,9 +17,9 @@ contract VaultDeadSwitchHarness is VaultDeadSwitch {
 
 contract VaultDeadSwitchTest is Test {
     VaultDeadSwitchHarness public dsw;
-    address public owner   = address(0xA1);
+    address public owner = address(0xA1);
     address public beneficiary = address(0xB2);
-    address public admin   = address(this);
+    address public admin = address(this);
     uint256 public interval = 30 days;
 
     function setUp() public {

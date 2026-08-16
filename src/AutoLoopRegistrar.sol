@@ -10,11 +10,10 @@ contract AutoLoopRegistrar is AutoLoopBase {
     AutoLoop AUTO_LOOP;
     AutoLoopRegistry REGISTRY;
 
-    function initialize(
-        address autoLoopAddress,
-        address registryAddress,
-        address adminAddress
-    ) public initializer {
+    function initialize(address autoLoopAddress, address registryAddress, address adminAddress)
+        public
+        initializer
+    {
         AutoLoopBase.initialize();
         AUTO_LOOP = AutoLoop(autoLoopAddress);
         REGISTRY = AutoLoopRegistry(registryAddress);
@@ -35,10 +34,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AUTO_LOOP.requestRefund(_msgSender(), toAddress);
     }
 
-    function requestRefundFor(
-        address registeredContract,
-        address toAddress
-    ) external {
+    function requestRefundFor(address registeredContract, address toAddress) external {
         require(
             _isAdmin(_msgSender(), registeredContract),
             "Cannot request refund. Caller is not admin on contract."
@@ -46,10 +42,9 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AUTO_LOOP.requestRefund(registeredContract, toAddress);
     }
 
-    function registerSafeTransfer(
-        address autoLoopCompatibleContract,
-        address newAdminAddress
-    ) external {
+    function registerSafeTransfer(address autoLoopCompatibleContract, address newAdminAddress)
+        external
+    {
         require(
             _isAdmin(_msgSender(), autoLoopCompatibleContract),
             "Cannot set gas, caller is not admin on contract"
@@ -65,10 +60,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AUTO_LOOP.setMaxGas(_msgSender(), maxGasPerUpdate);
     }
 
-    function setMaxGasFor(
-        address registeredContract,
-        uint256 maxGasPerUpdate
-    ) external {
+    function setMaxGasFor(address registeredContract, uint256 maxGasPerUpdate) external {
         require(
             _isAdmin(_msgSender(), registeredContract),
             "Cannot set gas, caller is not admin on contract"
@@ -88,10 +80,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AUTO_LOOP.setMaxGasPrice(_msgSender(), maxGasPricePerUpdate);
     }
 
-    function setMaxGasPriceFor(
-        address registeredContract,
-        uint256 maxGasPricePerUpdate
-    ) external {
+    function setMaxGasPriceFor(address registeredContract, uint256 maxGasPricePerUpdate) external {
         require(
             _isAdmin(_msgSender(), registeredContract),
             "Cannot set gas price, caller is not admin on contract"
@@ -111,10 +100,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
         AUTO_LOOP.setMinBalance(_msgSender(), minBalanceAmount);
     }
 
-    function setMinBalanceFor(
-        address registeredContract,
-        uint256 minBalanceAmount
-    ) external {
+    function setMinBalanceFor(address registeredContract, uint256 minBalanceAmount) external {
         require(
             _isAdmin(_msgSender(), registeredContract),
             "Cannot set min balance, caller is not admin on contract"
@@ -132,21 +118,22 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @param autoLoopCompatibleContract the AutoLoop compatible contract to be registered
      * @return canRegister - whether or not the contract can be registered
      */
-    function canRegisterAutoLoop(
-        address registrantAddress,
-        address autoLoopCompatibleContract
-    ) public view returns (bool canRegister) {
+    function canRegisterAutoLoop(address registrantAddress, address autoLoopCompatibleContract)
+        public
+        view
+        returns (bool canRegister)
+    {
         // some logic to determine if address can register
         if (registrantAddress == address(0)) {
             // zero address can't register
             return false;
         } else if (
             !autoLoopCompatibleContract.supportsInterface(
-                type(AutoLoopCompatibleInterface).interfaceId
-            ) ||
-            !autoLoopCompatibleContract.supportsInterface(
-                type(IAccessControlEnumerable).interfaceId
-            )
+                    type(AutoLoopCompatibleInterface).interfaceId
+                )
+                || !autoLoopCompatibleContract.supportsInterface(
+                    type(IAccessControlEnumerable).interfaceId
+                )
         ) {
             // contract doesn't support AutoLoopCompatibleInterface or AccessControlEnumerable
             return false;
@@ -166,9 +153,11 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @param registrantAddress the address of the controller to be registered
      * @return canRegister - whether or not the controller can be registered
      */
-    function canRegisterController(
-        address registrantAddress
-    ) public view returns (bool canRegister) {
+    function canRegisterController(address registrantAddress)
+        public
+        view
+        returns (bool canRegister)
+    {
         // some logic to determine if address can register
         if (registrantAddress == address(0)) {
             // zero address can't register
@@ -188,8 +177,8 @@ contract AutoLoopRegistrar is AutoLoopBase {
     function registerAutoLoop() external nonReentrant whenNotPaused returns (bool success) {
         // pass _msgSender() as both arguments since it is both registrant and contract being registered
         if (canRegisterAutoLoop(_msgSender(), _msgSender())) {
-            address adminAddress = AutoLoopCompatible(_msgSender())
-                .getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+            address adminAddress =
+                AutoLoopCompatible(_msgSender()).getRoleMember(DEFAULT_ADMIN_ROLE, 0);
             _registerAutoLoop(_msgSender(), adminAddress);
             success = true;
         }
@@ -200,20 +189,19 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @param autoLoopCompatibleContract the address of the contract to register
      * @return success - whether or not the contract was registered
      */
-    function registerAutoLoopFor(
-        address autoLoopCompatibleContract,
-        uint256 maxGasPerUpdate
-    ) external payable whenNotPaused returns (bool success) {
+    function registerAutoLoopFor(address autoLoopCompatibleContract, uint256 maxGasPerUpdate)
+        external
+        payable
+        whenNotPaused
+        returns (bool success)
+    {
         if (canRegisterAutoLoop(_msgSender(), autoLoopCompatibleContract)) {
             _registerAutoLoop(autoLoopCompatibleContract, _msgSender());
             if (msg.value > 0) {
                 AUTO_LOOP.deposit{value: msg.value}(autoLoopCompatibleContract);
             }
             if (maxGasPerUpdate > 0) {
-                AUTO_LOOP.setMaxGas(
-                    autoLoopCompatibleContract,
-                    maxGasPerUpdate
-                );
+                AUTO_LOOP.setMaxGas(autoLoopCompatibleContract, maxGasPerUpdate);
             }
             success = true;
         }
@@ -226,11 +214,8 @@ contract AutoLoopRegistrar is AutoLoopBase {
     function registerController() external payable whenNotPaused returns (bool success) {
         require(msg.value > 0, "Insufficient registration fee");
         if (canRegisterController(_msgSender())) {
-            (bool sent, ) = _msgSender().call{value: msg.value}("");
-            require(
-                sent,
-                "Registration failed. Controller unable to receive funds."
-            );
+            (bool sent,) = _msgSender().call{value: msg.value}("");
+            require(sent, "Registration failed. Controller unable to receive funds.");
             _registerController(_msgSender());
             success = true;
         }
@@ -264,9 +249,10 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @param autoLoopCompatibleContract the address of the contract to deregister
      * @return success - whether or not the contract was deregistered
      */
-    function deregisterAutoLoopFor(
-        address autoLoopCompatibleContract
-    ) external returns (bool success) {
+    function deregisterAutoLoopFor(address autoLoopCompatibleContract)
+        external
+        returns (bool success)
+    {
         if (_isAdmin(_msgSender(), autoLoopCompatibleContract)) {
             _refundOnDeregister(autoLoopCompatibleContract);
             _deregisterAutoLoop(autoLoopCompatibleContract);
@@ -280,14 +266,8 @@ contract AutoLoopRegistrar is AutoLoopBase {
      * @param registeredContract the AutoLoop-compatible contract address
      * @param toAddress the address to send the refund to
      */
-    function emergencyWithdraw(
-        address registeredContract,
-        address toAddress
-    ) external {
-        require(
-            _isAdmin(_msgSender(), registeredContract),
-            "Caller is not admin on contract"
-        );
+    function emergencyWithdraw(address registeredContract, address toAddress) external {
+        require(_isAdmin(_msgSender(), registeredContract), "Caller is not admin on contract");
         if (AUTO_LOOP.balance(registeredContract) > 0) {
             AUTO_LOOP.requestRefund(registeredContract, toAddress);
         }
@@ -301,15 +281,8 @@ contract AutoLoopRegistrar is AutoLoopBase {
     }
 
     // internal
-    function _isAdmin(
-        address testAddress,
-        address contractAddress
-    ) internal view returns (bool) {
-        return
-            AutoLoopCompatible(contractAddress).hasRole(
-                DEFAULT_ADMIN_ROLE,
-                testAddress
-            );
+    function _isAdmin(address testAddress, address contractAddress) internal view returns (bool) {
+        return AutoLoopCompatible(contractAddress).hasRole(DEFAULT_ADMIN_ROLE, testAddress);
     }
 
     /**
@@ -317,10 +290,8 @@ contract AutoLoopRegistrar is AutoLoopBase {
      */
     function _refundOnDeregister(address registrant) internal {
         if (AUTO_LOOP.balance(registrant) > 0) {
-            address primaryAdmin = AutoLoopCompatible(registrant).getRoleMember(
-                DEFAULT_ADMIN_ROLE,
-                0
-            );
+            address primaryAdmin =
+                AutoLoopCompatible(registrant).getRoleMember(DEFAULT_ADMIN_ROLE, 0);
             AUTO_LOOP.requestRefund(registrant, primaryAdmin);
         }
     }
@@ -328,10 +299,7 @@ contract AutoLoopRegistrar is AutoLoopBase {
     /**
      * @dev registers AutoLoop compatible contract. This should not be called unless a pre-check has been made to verify the contract can be registered.
      */
-    function _registerAutoLoop(
-        address registrant,
-        address adminAddress
-    ) internal {
+    function _registerAutoLoop(address registrant, address adminAddress) internal {
         REGISTRY.registerAutoLoop(registrant, adminAddress);
     }
 

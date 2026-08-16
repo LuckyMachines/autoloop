@@ -16,8 +16,8 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
         uint256 prizePerWinner;
         uint256 winnersCount;
         address[] winners;
-        bool     settled;
-        uint256  timestamp;
+        bool settled;
+        uint256 timestamp;
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
@@ -28,7 +28,7 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
     uint256 public drawInterval;
     uint256 public lastDraw;
     uint256 public winnersPerDraw;
-    uint256 public prizePerWinner;   // fixed ETH prize per winner
+    uint256 public prizePerWinner; // fixed ETH prize per winner
     uint256 public roundCount;
     uint256 public protocolFeeBalance;
 
@@ -41,7 +41,9 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
 
     event Registered(address indexed participant);
     event Deregistered(address indexed participant);
-    event DrawSettled(uint256 indexed roundId, address[] winners, uint256 prizeEach, uint256 loopID);
+    event DrawSettled(
+        uint256 indexed roundId, address[] winners, uint256 prizeEach, uint256 loopID
+    );
 
     // ── Construction ───────────────────────────────────────────────────────────
 
@@ -78,7 +80,9 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
         emit Deregistered(msg.sender);
     }
 
-    function poolSize() external view returns (uint256) { return pool.length; }
+    function poolSize() external view returns (uint256) {
+        return pool.length;
+    }
 
     // ── Keeper interface ───────────────────────────────────────────────────────
 
@@ -88,8 +92,7 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        bool ready = pool.length >= winnersPerDraw
-            && (block.timestamp - lastDraw) >= drawInterval
+        bool ready = pool.length >= winnersPerDraw && (block.timestamp - lastDraw) >= drawInterval
             && address(this).balance >= prizePerWinner * winnersPerDraw;
         loopIsReady = ready;
         progressWithData = abi.encode(_loopID);
@@ -103,7 +106,10 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
 
         require(pool.length >= winnersPerDraw, "AirdropDistributor: pool too small");
         require((block.timestamp - lastDraw) >= drawInterval, "AirdropDistributor: too soon");
-        require(address(this).balance >= prizePerWinner * winnersPerDraw, "AirdropDistributor: insufficient funds");
+        require(
+            address(this).balance >= prizePerWinner * winnersPerDraw,
+            "AirdropDistributor: insufficient funds"
+        );
 
         lastDraw = block.timestamp;
         ++_loopID;
@@ -111,7 +117,9 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
         // VRF-seeded winner selection (Fisher-Yates partial shuffle)
         uint256 n = pool.length;
         address[] memory poolCopy = new address[](n);
-        for (uint256 i = 0; i < n; i++) poolCopy[i] = pool[i];
+        for (uint256 i = 0; i < n; i++) {
+            poolCopy[i] = pool[i];
+        }
 
         address[] memory winners = new address[](winnersPerDraw);
         for (uint256 i = 0; i < winnersPerDraw; i++) {
@@ -128,7 +136,9 @@ contract AirdropDistributor is AutoLoopVRFCompatible {
         rounds[roundId].winnersCount = winnersPerDraw;
         rounds[roundId].settled = true;
         rounds[roundId].timestamp = block.timestamp;
-        for (uint256 i = 0; i < winners.length; i++) rounds[roundId].winners.push(winners[i]);
+        for (uint256 i = 0; i < winners.length; i++) {
+            rounds[roundId].winners.push(winners[i]);
+        }
 
         // Distribute prizes
         uint256 totalPrize = prizePerWinner * winnersPerDraw;

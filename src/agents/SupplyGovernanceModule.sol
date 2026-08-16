@@ -13,26 +13,26 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
     // ── Types ──────────────────────────────────────────────────────────────────
 
     struct ItemType {
-        string  name;
+        string name;
         uint256 maxSupply;
         uint256 currentSupply;
-        bool    frozen;
+        bool frozen;
     }
 
     struct SupplyChange {
         uint256 itemTypeId;
-        int256  delta;         // positive = increase, negative = decrease
-        uint256 executeAfter;  // earliest execution timestamp (timelock)
-        string  reason;
-        bool    executed;
-        bool    cancelled;
+        int256 delta; // positive = increase, negative = decrease
+        uint256 executeAfter; // earliest execution timestamp (timelock)
+        string reason;
+        bool executed;
+        bool cancelled;
     }
 
     struct ChangeRecord {
         uint256 itemTypeId;
         uint256 oldSupply;
         uint256 newSupply;
-        string  reason;
+        string reason;
         uint256 timestamp;
     }
 
@@ -50,8 +50,16 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
     // ── Events ─────────────────────────────────────────────────────────────────
 
     event ItemTypeCreated(uint256 indexed itemTypeId, string name, uint256 maxSupply);
-    event ChangeQueued(uint256 indexed changeIndex, uint256 indexed itemTypeId, int256 delta, uint256 executeAfter, string reason);
-    event SupplyChanged(uint256 indexed itemTypeId, uint256 oldSupply, uint256 newSupply, string reason);
+    event ChangeQueued(
+        uint256 indexed changeIndex,
+        uint256 indexed itemTypeId,
+        int256 delta,
+        uint256 executeAfter,
+        string reason
+    );
+    event SupplyChanged(
+        uint256 indexed itemTypeId, uint256 oldSupply, uint256 newSupply, string reason
+    );
     event ChangeCancelled(uint256 indexed changeIndex);
     event ItemFrozen(uint256 indexed itemTypeId);
 
@@ -89,8 +97,8 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
         ++_loopID;
 
         SupplyChange storage sc = changeQueue[changeIdx];
-        require(!sc.executed,   "SupplyGovernance: already executed");
-        require(!sc.cancelled,  "SupplyGovernance: cancelled");
+        require(!sc.executed, "SupplyGovernance: already executed");
+        require(!sc.cancelled, "SupplyGovernance: cancelled");
         require(block.timestamp >= sc.executeAfter, "SupplyGovernance: timelock active");
 
         ItemType storage item = itemTypes[sc.itemTypeId];
@@ -111,13 +119,15 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
         item.currentSupply = newSupply;
         sc.executed = true;
 
-        _auditLog.push(ChangeRecord({
-            itemTypeId: sc.itemTypeId,
-            oldSupply:  oldSupply,
-            newSupply:  newSupply,
-            reason:     sc.reason,
-            timestamp:  block.timestamp
-        }));
+        _auditLog.push(
+            ChangeRecord({
+                itemTypeId: sc.itemTypeId,
+                oldSupply: oldSupply,
+                newSupply: newSupply,
+                reason: sc.reason,
+                timestamp: block.timestamp
+            })
+        );
 
         emit SupplyChanged(sc.itemTypeId, oldSupply, newSupply, sc.reason);
     }
@@ -132,12 +142,8 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
     {
         require(maxSupply > 0, "SupplyGovernance: zero maxSupply");
         itemTypeId = nextItemTypeId++;
-        itemTypes[itemTypeId] = ItemType({
-            name:          name,
-            maxSupply:     maxSupply,
-            currentSupply: 0,
-            frozen:        false
-        });
+        itemTypes[itemTypeId] =
+            ItemType({name: name, maxSupply: maxSupply, currentSupply: 0, frozen: false});
         emit ItemTypeCreated(itemTypeId, name, maxSupply);
     }
 
@@ -145,8 +151,8 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
     /// @param delay Minimum seconds that must pass before execution (timelock).
     function queueSupplyChange(
         uint256 itemTypeId,
-        int256  delta,
-        string  calldata reason,
+        int256 delta,
+        string calldata reason,
         uint256 delay
     ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 changeIdx) {
         require(itemTypeId < nextItemTypeId, "SupplyGovernance: unknown item");
@@ -154,20 +160,22 @@ contract SupplyGovernanceModule is AutoLoopCompatible {
         require(delta != 0, "SupplyGovernance: zero delta");
 
         changeIdx = changeQueue.length;
-        changeQueue.push(SupplyChange({
-            itemTypeId:   itemTypeId,
-            delta:        delta,
-            executeAfter: block.timestamp + delay,
-            reason:       reason,
-            executed:     false,
-            cancelled:    false
-        }));
+        changeQueue.push(
+            SupplyChange({
+                itemTypeId: itemTypeId,
+                delta: delta,
+                executeAfter: block.timestamp + delay,
+                reason: reason,
+                executed: false,
+                cancelled: false
+            })
+        );
         emit ChangeQueued(changeIdx, itemTypeId, delta, block.timestamp + delay, reason);
     }
 
     /// @notice Cancel a pending change.
     function cancelChange(uint256 changeIdx) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!changeQueue[changeIdx].executed,  "SupplyGovernance: already executed");
+        require(!changeQueue[changeIdx].executed, "SupplyGovernance: already executed");
         require(!changeQueue[changeIdx].cancelled, "SupplyGovernance: already cancelled");
         changeQueue[changeIdx].cancelled = true;
         emit ChangeCancelled(changeIdx);

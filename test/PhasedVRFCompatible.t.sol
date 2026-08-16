@@ -20,7 +20,9 @@ contract PhasedGame is PhasedVRFCompatible {
     event RoundSettled(uint256 indexed round, bytes32 randomness, uint256 result);
 
     // Public getter for the internal _loopID from AutoLoopCompatible
-    function loopID() public view returns (uint256) { return _loopID; }
+    function loopID() public view returns (uint256) {
+        return _loopID;
+    }
 
     constructor(uint256 _interval) {
         roundInterval = _interval;
@@ -38,7 +40,7 @@ contract PhasedGame is PhasedVRFCompatible {
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
-        (bool settled, bytes32 randomness, ) = _dispatchPhase(progressWithData);
+        (bool settled, bytes32 randomness,) = _dispatchPhase(progressWithData);
         if (!settled) return;
 
         result = uint256(randomness) % 100;
@@ -71,11 +73,11 @@ contract PhasedGame is PhasedVRFCompatible {
 
         uint256 settleBlock = block.number + SETTLE_DELAY;
         pendingCommit = Commit({
-            vrfOutput:   vrfOutput,
-            gameData:    gameData,
+            vrfOutput: vrfOutput,
+            gameData: gameData,
             settleBlock: settleBlock,
-            controller:  msg.sender,
-            exists:      true
+            controller: msg.sender,
+            exists: true
         });
         emit VRFCommitted(loopID(), vrfOutput, settleBlock, msg.sender);
     }
@@ -86,7 +88,6 @@ contract PhasedGame is PhasedVRFCompatible {
 // -----------------------------------------------------------------------
 
 contract PhasedVRFCompatibleTest is Test {
-
     PhasedGame internal game;
 
     address internal admin;
@@ -104,14 +105,14 @@ contract PhasedVRFCompatibleTest is Test {
     receive() external payable {}
 
     function setUp() public {
-        admin        = address(this);
-        controller1  = vm.addr(1);
-        controller2  = vm.addr(2);
+        admin = address(this);
+        controller1 = vm.addr(1);
+        controller2 = vm.addr(2);
         unregistered = vm.addr(99);
 
-        vm.deal(admin,        10 ether);
-        vm.deal(controller1,  10 ether);
-        vm.deal(controller2,  10 ether);
+        vm.deal(admin, 10 ether);
+        vm.deal(controller1, 10 ether);
+        vm.deal(controller2, 10 ether);
 
         game = new PhasedGame(0);
 
@@ -142,7 +143,7 @@ contract PhasedVRFCompatibleTest is Test {
     // ====================================================================
 
     function test_ShouldProgressReturnsTrueInitially() public view {
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready, "should be ready before any commit");
     }
 
@@ -151,18 +152,13 @@ contract PhasedVRFCompatibleTest is Test {
         vm.prank(controller1);
         game.testCommit(VRF_OUTPUT_A, data);
 
-        (
-            bytes32 storedOutput,
-            ,
-            uint256 settleBlock,
-            address ctrl,
-            bool exists
-        ) = game.pendingCommit();
+        (bytes32 storedOutput,, uint256 settleBlock, address ctrl, bool exists) =
+            game.pendingCommit();
 
-        assertTrue(exists,                                          "commit should be stored");
-        assertEq(storedOutput, VRF_OUTPUT_A,                        "vrfOutput mismatch");
-        assertEq(ctrl, controller1,                                 "controller mismatch");
-        assertEq(settleBlock, block.number + game.SETTLE_DELAY(),   "wrong settle block");
+        assertTrue(exists, "commit should be stored");
+        assertEq(storedOutput, VRF_OUTPUT_A, "vrfOutput mismatch");
+        assertEq(ctrl, controller1, "controller mismatch");
+        assertEq(settleBlock, block.number + game.SETTLE_DELAY(), "wrong settle block");
     }
 
     function test_ShouldProgressReturnsFalseWhileWaiting() public {
@@ -173,7 +169,7 @@ contract PhasedVRFCompatibleTest is Test {
         // Advance partway — settle block not reached
         vm.roll(block.number + game.SETTLE_DELAY() - 1);
 
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready, "should NOT be ready before settle block");
     }
 
@@ -185,7 +181,7 @@ contract PhasedVRFCompatibleTest is Test {
         uint256 settleBlock = block.number + game.SETTLE_DELAY();
         vm.roll(settleBlock + 1);
 
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready, "should be ready after settle block");
     }
 
@@ -212,7 +208,7 @@ contract PhasedVRFCompatibleTest is Test {
         uint256 settleBlock = commitBlock + game.SETTLE_DELAY();
         vm.roll(settleBlock + 1);
 
-        bytes32 expectedBlockhash  = blockhash(settleBlock);
+        bytes32 expectedBlockhash = blockhash(settleBlock);
         bytes32 expectedRandomness = keccak256(abi.encodePacked(VRF_OUTPUT_A, expectedBlockhash));
 
         // Precompute prog data before pranking to avoid staticcall consuming prank
@@ -221,7 +217,11 @@ contract PhasedVRFCompatibleTest is Test {
         vm.prank(controller1, controller1);
         game.progressLoop(prog);
 
-        assertEq(game.result(), uint256(expectedRandomness) % 100, "result must use blockhash-mixed randomness");
+        assertEq(
+            game.result(),
+            uint256(expectedRandomness) % 100,
+            "result must use blockhash-mixed randomness"
+        );
         assertEq(game.totalRounds(), 1, "one round should be settled");
     }
 
@@ -237,7 +237,7 @@ contract PhasedVRFCompatibleTest is Test {
         vm.prank(controller1, controller1);
         game.progressLoop(prog);
 
-        (, , , , bool exists) = game.pendingCommit();
+        (,,,, bool exists) = game.pendingCommit();
         assertFalse(exists, "pending commit should be cleared after settle");
     }
 
@@ -351,7 +351,10 @@ contract PhasedVRFCompatibleTest is Test {
 
         // Different VRF outputs → different randomness
         assertTrue(VRF_OUTPUT_A != VRF_OUTPUT_B, "test setup: VRF outputs must differ");
-        assertTrue(rand1 != rand2 || bh1 == bh2, "different VRF outputs should produce different final randomness");
+        assertTrue(
+            rand1 != rand2 || bh1 == bh2,
+            "different VRF outputs should produce different final randomness"
+        );
     }
 
     // ====================================================================
@@ -367,7 +370,7 @@ contract PhasedVRFCompatibleTest is Test {
         uint256 expireAt = block.number + game.SETTLE_DELAY() + game.SETTLE_EXPIRY() + 1;
         vm.roll(expireAt);
 
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready, "should be ready again after commit expiry");
     }
 
@@ -378,7 +381,7 @@ contract PhasedVRFCompatibleTest is Test {
         game.testCommit(VRF_OUTPUT_A, data);
 
         // Record settleBlock from pendingCommit
-        (, , uint256 settleBlock, , ) = game.pendingCommit();
+        (,, uint256 settleBlock,,) = game.pendingCommit();
 
         uint256 expireAt = settleBlock + game.SETTLE_EXPIRY() + 1;
         vm.roll(expireAt);
@@ -410,7 +413,7 @@ contract PhasedVRFCompatibleTest is Test {
         assertEq(game.totalRounds(), 1, "round 1 settled");
 
         // Should be ready for round 2
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready, "should be ready for round 2");
 
         // Round 2

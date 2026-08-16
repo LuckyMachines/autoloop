@@ -13,7 +13,7 @@ contract ParameterAlerter is AutoLoopCompatible {
     // ── Types ──────────────────────────────────────────────────────────────────
 
     struct ChangeRecord {
-        string  key;
+        string key;
         uint256 oldValue;
         uint256 newValue;
         uint256 snapshotBlock;
@@ -25,7 +25,7 @@ contract ParameterAlerter is AutoLoopCompatible {
     string[] public paramKeys;
     mapping(string => uint256) public currentParams;
     mapping(string => uint256) public lastSnapshotted;
-    mapping(string => bool)    public tracked;
+    mapping(string => bool) public tracked;
 
     uint256 public checkInterval;
     uint256 public lastCheck;
@@ -74,15 +74,17 @@ contract ParameterAlerter is AutoLoopCompatible {
         for (uint256 i = 0; i < paramKeys.length; i++) {
             string memory key = paramKeys[i];
             uint256 current = currentParams[key];
-            uint256 last    = lastSnapshotted[key];
+            uint256 last = lastSnapshotted[key];
             if (current != last) {
-                _auditLog.push(ChangeRecord({
-                    key:           key,
-                    oldValue:      last,
-                    newValue:      current,
-                    snapshotBlock: block.number,
-                    timestamp:     block.timestamp
-                }));
+                _auditLog.push(
+                    ChangeRecord({
+                        key: key,
+                        oldValue: last,
+                        newValue: current,
+                        snapshotBlock: block.number,
+                        timestamp: block.timestamp
+                    })
+                );
                 emit ParamChanged(key, last, current, block.timestamp);
                 lastSnapshotted[key] = current;
                 changeCount++;
@@ -103,16 +105,13 @@ contract ParameterAlerter is AutoLoopCompatible {
         require(!tracked[key], "ParameterAlerter: already tracked");
         tracked[key] = true;
         paramKeys.push(key);
-        currentParams[key]     = initialValue;
-        lastSnapshotted[key]   = initialValue;
+        currentParams[key] = initialValue;
+        lastSnapshotted[key] = initialValue;
         emit ParamAdded(key, initialValue);
     }
 
     /// @notice Simulate an operator changing a game parameter.
-    function setParam(string calldata key, uint256 value)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function setParam(string calldata key, uint256 value) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(tracked[key], "ParameterAlerter: unknown key");
         currentParams[key] = value;
     }

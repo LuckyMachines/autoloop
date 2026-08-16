@@ -48,10 +48,7 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
     ///         `randomness` is the final value delivered to the game —
     ///         vrfOutput mixed with block.prevrandao for additional entropy.
     event VRFRandomnessVerified(
-        uint256 indexed loopID,
-        bytes32 vrfOutput,
-        bytes32 randomness,
-        address indexed controller
+        uint256 indexed loopID, bytes32 vrfOutput, bytes32 randomness, address indexed controller
     );
 
     /**
@@ -62,14 +59,9 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
      * @param pkX The x-coordinate of the public key.
      * @param pkY The y-coordinate of the public key.
      */
-    function registerControllerKey(
-        address controller,
-        uint256 pkX,
-        uint256 pkY
-    ) external {
+    function registerControllerKey(address controller, uint256 pkX, uint256 pkY) external {
         require(
-            _msgSender() == controller ||
-                hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
+            _msgSender() == controller || hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
             "Only controller or admin can register key"
         );
         require(_isValidPublicKey(pkX, pkY), "Invalid public key");
@@ -103,10 +95,10 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
      * @return randomness The verified random bytes32 value.
      * @return gameData The original game-specific data extracted from the envelope.
      */
-    function _verifyAndExtractRandomness(
-        bytes calldata progressWithData,
-        address controller
-    ) internal returns (bytes32 randomness, bytes memory gameData) {
+    function _verifyAndExtractRandomness(bytes calldata progressWithData, address controller)
+        internal
+        returns (bytes32 randomness, bytes memory gameData)
+    {
         (
             uint8 vrfVersion,
             uint256[4] memory proof,
@@ -147,9 +139,7 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
      * @notice Decode the VRF envelope from progressWithData.
      * @param progressWithData The encoded VRF data.
      */
-    function _decodeVRFData(
-        bytes calldata progressWithData
-    )
+    function _decodeVRFData(bytes calldata progressWithData)
         internal
         pure
         returns (
@@ -161,8 +151,7 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
         )
     {
         (vrfVersion, proof, uPoint, vComponents, gameData) = abi.decode(
-            progressWithData,
-            (uint8, uint256[4], uint256[2], uint256[4], bytes)
+            progressWithData, (uint8, uint256[4], uint256[2], uint256[4], bytes)
         );
     }
 
@@ -182,11 +171,7 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
     /**
      * @notice ERC165 support — advertises VRF compatibility.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override returns (bool) {
-        return
-            interfaceId == VRF_INTERFACE_ID ||
-            super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == VRF_INTERFACE_ID || super.supportsInterface(interfaceId);
     }
 }

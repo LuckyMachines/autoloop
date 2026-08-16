@@ -15,9 +15,9 @@ contract NFTRegistryHarness is NFTRegistry {
 
 contract NFTRegistryTest is Test {
     NFTRegistryHarness public reg;
-    address public admin    = address(this);
+    address public admin = address(this);
     address public treasury = address(0x1ea1234500000000000000000000000000000001);
-    address public buyer    = address(0xBEEF);
+    address public buyer = address(0xBEEF);
 
     uint256 public releaseInFuture;
 
@@ -46,8 +46,8 @@ contract NFTRegistryTest is Test {
     function test_CreateCollection() public {
         uint256 id = reg.createCollection("CryptoKitties", 1000, 0.01 ether);
         assertEq(id, 0);
-        (string memory name, uint256 maxSupply, uint256 minted, uint256 price, bool complete)
-            = reg.collections(0);
+        (string memory name, uint256 maxSupply, uint256 minted, uint256 price, bool complete) =
+            reg.collections(0);
         assertEq(name, "CryptoKitties");
         assertEq(maxSupply, 1000);
         assertEq(minted, 0);

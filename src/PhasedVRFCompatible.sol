@@ -65,7 +65,6 @@ import "./AutoLoopVRFCompatible.sol";
  *    - If settled: apply randomness to game state, emit result, increment _loopID.
  */
 abstract contract PhasedVRFCompatible is AutoLoopVRFCompatible {
-
     // ── Config ─────────────────────────────────────────────────────────────────
 
     /// @notice Blocks between commit and settle.
@@ -81,11 +80,11 @@ abstract contract PhasedVRFCompatible is AutoLoopVRFCompatible {
     // ── State ──────────────────────────────────────────────────────────────────
 
     struct Commit {
-        bytes32 vrfOutput;    // Raw ECVRF output from the committing keeper
-        bytes   gameData;     // Inner payload from shouldProgressLoop
-        uint256 settleBlock;  // Block whose hash will be mixed at settle time
-        address controller;   // Keeper who committed
-        bool    exists;
+        bytes32 vrfOutput; // Raw ECVRF output from the committing keeper
+        bytes gameData; // Inner payload from shouldProgressLoop
+        uint256 settleBlock; // Block whose hash will be mixed at settle time
+        address controller; // Keeper who committed
+        bool exists;
     }
 
     Commit public pendingCommit;
@@ -94,10 +93,7 @@ abstract contract PhasedVRFCompatible is AutoLoopVRFCompatible {
 
     /// @notice Emitted when Phase 1 (commit) is accepted.
     event VRFCommitted(
-        uint256 indexed loopID,
-        bytes32 vrfOutput,
-        uint256 settleBlock,
-        address indexed controller
+        uint256 indexed loopID, bytes32 vrfOutput, uint256 settleBlock, address indexed controller
     );
 
     /// @notice Emitted when Phase 2 (settle) delivers final randomness.
@@ -110,11 +106,7 @@ abstract contract PhasedVRFCompatible is AutoLoopVRFCompatible {
     );
 
     /// @notice Emitted when a commit expires without being settled.
-    event VRFCommitExpired(
-        uint256 indexed loopID,
-        bytes32 vrfOutput,
-        uint256 settleBlock
-    );
+    event VRFCommitExpired(uint256 indexed loopID, bytes32 vrfOutput, uint256 settleBlock);
 
     // ── shouldProgressLoop helper ──────────────────────────────────────────────
 
@@ -245,11 +237,11 @@ abstract contract PhasedVRFCompatible is AutoLoopVRFCompatible {
         uint256 settleBlock = block.number + SETTLE_DELAY;
 
         pendingCommit = Commit({
-            vrfOutput:   vrfOutput,
-            gameData:    innerGameData,
+            vrfOutput: vrfOutput,
+            gameData: innerGameData,
             settleBlock: settleBlock,
-            controller:  controller,
-            exists:      true
+            controller: controller,
+            exists: true
         });
 
         emit VRFCommitted(_loopID, vrfOutput, settleBlock, controller);
@@ -267,13 +259,12 @@ abstract contract PhasedVRFCompatible is AutoLoopVRFCompatible {
      *      - blockhash(settleBlock) was not knowable at commit time
      *      - Neither the committer nor the settler alone determines the outcome
      */
-    function _doSettle()
-        private
-        returns (bytes32 finalRandomness, bytes memory gameData)
-    {
+    function _doSettle() private returns (bytes32 finalRandomness, bytes memory gameData) {
         // Settlement authorization: must be a registered controller
         // (prevents non-participants from triggering settlement as a gas attack)
-        require(controllerKeyRegistered[tx.origin], "PhasedVRF: settle caller not registered controller");
+        require(
+            controllerKeyRegistered[tx.origin], "PhasedVRF: settle caller not registered controller"
+        );
 
         bytes32 bh = blockhash(pendingCommit.settleBlock);
         require(bh != bytes32(0), "PhasedVRF: blockhash unavailable, settle expired");

@@ -13,18 +13,18 @@ contract NFTRegistry is AutoLoopCompatible {
     // ── Types ──────────────────────────────────────────────────────────────────
 
     struct Collection {
-        string  name;
+        string name;
         uint256 maxSupply;
         uint256 minted;
         uint256 mintPrice;
-        bool    releaseComplete;
+        bool releaseComplete;
     }
 
     struct ReleaseSlot {
         uint256 collectionId;
         uint256 quantity;
         uint256 releaseTime;
-        bool    executed;
+        bool executed;
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
@@ -34,9 +34,9 @@ contract NFTRegistry is AutoLoopCompatible {
 
     ReleaseSlot[] public releaseSchedule;
 
-    mapping(uint256 => address) public ownerOf;        // tokenId → holder (address(0) = treasury)
+    mapping(uint256 => address) public ownerOf; // tokenId → holder (address(0) = treasury)
     mapping(uint256 => uint256) public tokenCollection; // tokenId → collectionId
-    mapping(uint256 => bool)    public claimed;
+    mapping(uint256 => bool) public claimed;
 
     uint256 public nextTokenId;
 
@@ -46,9 +46,18 @@ contract NFTRegistry is AutoLoopCompatible {
 
     // ── Events ─────────────────────────────────────────────────────────────────
 
-    event CollectionCreated(uint256 indexed collectionId, string name, uint256 maxSupply, uint256 mintPrice);
-    event ReleaseScheduled(uint256 indexed slotIndex, uint256 indexed collectionId, uint256 quantity, uint256 releaseTime);
-    event SupplyReleased(uint256 indexed collectionId, uint256 quantity, uint256 totalMinted, uint256 scheduledTime);
+    event CollectionCreated(
+        uint256 indexed collectionId, string name, uint256 maxSupply, uint256 mintPrice
+    );
+    event ReleaseScheduled(
+        uint256 indexed slotIndex,
+        uint256 indexed collectionId,
+        uint256 quantity,
+        uint256 releaseTime
+    );
+    event SupplyReleased(
+        uint256 indexed collectionId, uint256 quantity, uint256 totalMinted, uint256 scheduledTime
+    );
     event TokenClaimed(uint256 indexed tokenId, address indexed claimer, uint256 collectionId);
 
     // ── Construction ───────────────────────────────────────────────────────────
@@ -83,10 +92,7 @@ contract NFTRegistry is AutoLoopCompatible {
         require(block.timestamp >= slot.releaseTime, "NFTRegistry: too early");
 
         Collection storage col = collections[slot.collectionId];
-        require(
-            col.minted + slot.quantity <= col.maxSupply,
-            "NFTRegistry: exceeds max supply"
-        );
+        require(col.minted + slot.quantity <= col.maxSupply, "NFTRegistry: exceeds max supply");
 
         ++_loopID;
         slot.executed = true;
@@ -94,7 +100,7 @@ contract NFTRegistry is AutoLoopCompatible {
         uint256 startToken = nextTokenId;
         for (uint256 i = 0; i < slot.quantity; i++) {
             uint256 tokenId = nextTokenId++;
-            ownerOf[tokenId]        = treasury;
+            ownerOf[tokenId] = treasury;
             tokenCollection[tokenId] = slot.collectionId;
         }
         col.minted += slot.quantity;
@@ -106,29 +112,29 @@ contract NFTRegistry is AutoLoopCompatible {
     // ── Admin ──────────────────────────────────────────────────────────────────
 
     /// @notice Register a new collection.
-    function createCollection(
-        string calldata name,
-        uint256 maxSupply,
-        uint256 mintPrice
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 collectionId) {
+    function createCollection(string calldata name, uint256 maxSupply, uint256 mintPrice)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (uint256 collectionId)
+    {
         require(maxSupply > 0, "NFTRegistry: zero maxSupply");
         collectionId = nextCollectionId++;
         collections[collectionId] = Collection({
-            name:            name,
-            maxSupply:       maxSupply,
-            minted:          0,
-            mintPrice:       mintPrice,
+            name: name,
+            maxSupply: maxSupply,
+            minted: 0,
+            mintPrice: mintPrice,
             releaseComplete: false
         });
         emit CollectionCreated(collectionId, name, maxSupply, mintPrice);
     }
 
     /// @notice Schedule a future release of `quantity` tokens from a collection.
-    function scheduleRelease(
-        uint256 collectionId,
-        uint256 quantity,
-        uint256 releaseTime
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 slotIndex) {
+    function scheduleRelease(uint256 collectionId, uint256 quantity, uint256 releaseTime)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (uint256 slotIndex)
+    {
         require(collectionId < nextCollectionId, "NFTRegistry: unknown collection");
         require(quantity > 0, "NFTRegistry: zero quantity");
         require(releaseTime > block.timestamp, "NFTRegistry: release in past");
@@ -147,12 +153,14 @@ contract NFTRegistry is AutoLoopCompatible {
         );
 
         slotIndex = releaseSchedule.length;
-        releaseSchedule.push(ReleaseSlot({
-            collectionId: collectionId,
-            quantity:     quantity,
-            releaseTime:  releaseTime,
-            executed:     false
-        }));
+        releaseSchedule.push(
+            ReleaseSlot({
+                collectionId: collectionId,
+                quantity: quantity,
+                releaseTime: releaseTime,
+                executed: false
+            })
+        );
         emit ReleaseScheduled(slotIndex, collectionId, quantity, releaseTime);
     }
 
@@ -181,10 +189,10 @@ contract NFTRegistry is AutoLoopCompatible {
         uint256 price = collections[colId].mintPrice;
         require(msg.value >= price, "NFTRegistry: insufficient payment");
 
-        claimed[tokenId]    = true;
-        ownerOf[tokenId]    = msg.sender;
+        claimed[tokenId] = true;
+        ownerOf[tokenId] = msg.sender;
 
-        uint256 fee     = (price * PROTOCOL_FEE_BPS) / 10_000;
+        uint256 fee = (price * PROTOCOL_FEE_BPS) / 10_000;
         protocolFeeBalance += fee;
 
         // Refund overpayment

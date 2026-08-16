@@ -17,7 +17,7 @@ contract SupplyGovernanceModuleTest is Test {
     SupplyGovernanceHarness public sgm;
     address public admin = address(this);
     uint256 public interval = 1 hours;
-    uint256 public delay    = 2 days;
+    uint256 public delay = 2 days;
 
     function setUp() public {
         sgm = new SupplyGovernanceHarness(interval);
@@ -42,8 +42,7 @@ contract SupplyGovernanceModuleTest is Test {
     function test_CreateItemType() public {
         uint256 id = sgm.createItemType("Gold Sword", 1000);
         assertEq(id, 0);
-        (string memory name, uint256 maxSupply, uint256 current, bool frozen)
-            = sgm.itemTypes(0);
+        (string memory name, uint256 maxSupply, uint256 current, bool frozen) = sgm.itemTypes(0);
         assertEq(name, "Gold Sword");
         assertEq(maxSupply, 1000);
         assertEq(current, 0);

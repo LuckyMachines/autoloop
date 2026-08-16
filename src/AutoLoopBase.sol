@@ -28,15 +28,11 @@ contract AutoLoopBase is
     }
 
     // Admin
-    function setRegistrar(
-        address registrarAddress
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setRegistrar(address registrarAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
         grantRole(REGISTRAR_ROLE, registrarAddress);
     }
 
-    function removeRegistrar(
-        address registrarAddress
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeRegistrar(address registrarAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(REGISTRAR_ROLE, registrarAddress);
     }
 

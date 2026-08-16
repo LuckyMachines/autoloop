@@ -6,10 +6,11 @@ import "../../src/agents/YieldHarvester.sol";
 
 contract YieldHarvesterHarness is YieldHarvester {
     constructor(address _vault, uint256 _interval, uint256 _minYield)
-        YieldHarvester(_vault, _interval, _minYield) {}
+        YieldHarvester(_vault, _interval, _minYield)
+    {}
 
     function tickForTest() external {
-        (,bytes memory data) = this.shouldProgressLoop();
+        (, bytes memory data) = this.shouldProgressLoop();
         this.progressLoop(data);
     }
 }

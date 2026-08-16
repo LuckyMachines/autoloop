@@ -12,12 +12,7 @@ import "../AutoLoopRegistrar.sol";
  *      implementation for AutoLoopVRFCompatible contracts.
  */
 contract RandomGame is AutoLoopVRFCompatible {
-    event DiceRolled(
-        uint256 indexed loopID,
-        uint256 roll,
-        bytes32 randomness,
-        uint256 timestamp
-    );
+    event DiceRolled(uint256 indexed loopID, uint256 roll, bytes32 randomness, uint256 timestamp);
 
     /// @notice The last dice roll result (1-6)
     uint256 public lastRoll;
@@ -44,18 +39,14 @@ contract RandomGame is AutoLoopVRFCompatible {
     //  AutoLoop registration helpers
     // ---------------------------------------------------------------
 
-    function registerAutoLoop(
-        address registrarAddress
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function registerAutoLoop(address registrarAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
         bool success = AutoLoopRegistrar(registrarAddress).registerAutoLoop();
         if (!success) {
             revert("unable to register auto loop");
         }
     }
 
-    function deregisterAutoLoop(
-        address registrarAddress
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function deregisterAutoLoop(address registrarAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
         AutoLoopRegistrar(registrarAddress).deregisterAutoLoop();
     }
 
@@ -84,10 +75,8 @@ contract RandomGame is AutoLoopVRFCompatible {
      */
     function progressLoop(bytes calldata progressWithData) external override {
         // Verify VRF proof and extract randomness + game data
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
 
         // Decode game data (the loop ID from shouldProgressLoop)
         uint256 loopID = abi.decode(gameData, (uint256));

@@ -15,10 +15,9 @@ import "../../src/games/KaijuOracle.sol";
 // ===============================================================
 
 contract LeagueForOracle is KaijuLeague {
-    constructor(
-        uint256 a, uint256 b, uint256 c,
-        uint256 d, uint32 e, uint32 f, uint256 g
-    ) KaijuLeague(a, b, c, d, e, f, g) {}
+    constructor(uint256 a, uint256 b, uint256 c, uint256 d, uint32 e, uint32 f, uint256 g)
+        KaijuLeague(a, b, c, d, e, f, g)
+    {}
 
     function tickForTest(bytes32 randomness) external {
         _progressInternal(randomness, _loopID);
@@ -47,69 +46,63 @@ contract KaijuOracleTest is Test {
 
     uint256 constant COMMIT_DURATION = 120;
     uint256 constant REVEAL_DURATION = 120;
-    uint256 constant MIN_STAKE       = 0.001 ether;
-    uint256 constant PROTOCOL_RAKE   = 500; // 5%
-    uint256 constant KAIJU_FEE       = 0.01 ether;
-    uint256 constant ENTRY_FEE       = 0.001 ether;
-    uint256 constant CLASH_INTERVAL  = 60;
+    uint256 constant MIN_STAKE = 0.001 ether;
+    uint256 constant PROTOCOL_RAKE = 500; // 5%
+    uint256 constant KAIJU_FEE = 0.01 ether;
+    uint256 constant ENTRY_FEE = 0.001 ether;
+    uint256 constant CLASH_INTERVAL = 60;
 
     receive() external payable {}
 
     function setUp() public {
-        proxyAdmin  = vm.addr(99);
-        alice       = vm.addr(0xA11CE);
-        bob         = vm.addr(0xB0B);
-        carol       = vm.addr(0xCA20A);
-        dave        = vm.addr(0xDA5E);
+        proxyAdmin = vm.addr(99);
+        alice = vm.addr(0xA11CE);
+        bob = vm.addr(0xB0B);
+        carol = vm.addr(0xCA20A);
+        dave = vm.addr(0xDA5E);
         controller1 = vm.addr(0xC0DE);
-        admin       = address(this);
+        admin = address(this);
 
-        vm.deal(admin,       1000 ether);
-        vm.deal(alice,        100 ether);
-        vm.deal(bob,          100 ether);
-        vm.deal(carol,        100 ether);
-        vm.deal(dave,         100 ether);
-        vm.deal(controller1,  100 ether);
+        vm.deal(admin, 1000 ether);
+        vm.deal(alice, 100 ether);
+        vm.deal(bob, 100 ether);
+        vm.deal(carol, 100 ether);
+        vm.deal(dave, 100 ether);
+        vm.deal(controller1, 100 ether);
 
         AutoLoop autoLoopImpl = new AutoLoop();
         TransparentUpgradeableProxy autoLoopProxy = new TransparentUpgradeableProxy(
-            address(autoLoopImpl), proxyAdmin,
+            address(autoLoopImpl),
+            proxyAdmin,
             abi.encodeWithSignature("initialize(string)", "0.0.1")
         );
         autoLoop = AutoLoop(address(autoLoopProxy));
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl), proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
         AutoLoopRegistrar registrarImpl = new AutoLoopRegistrar();
         TransparentUpgradeableProxy registrarProxy = new TransparentUpgradeableProxy(
-            address(registrarImpl), proxyAdmin,
+            address(registrarImpl),
+            proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop), address(registry), admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
         registry.setRegistrar(address(registrar));
         autoLoop.setRegistrar(address(registrar));
 
-        league = new LeagueForOracle(
-            KAIJU_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE,
-            500, 50, 8
-        );
+        league =
+            new LeagueForOracle(KAIJU_FEE, ENTRY_FEE, CLASH_INTERVAL, PROTOCOL_RAKE, 500, 50, 8);
         registrar.registerAutoLoopFor(address(league), 2_000_000);
         registrar.deposit{value: 10 ether}(address(league));
 
         oracle = new KaijuOracle(
-            address(league),
-            COMMIT_DURATION,
-            REVEAL_DURATION,
-            MIN_STAKE,
-            PROTOCOL_RAKE
+            address(league), COMMIT_DURATION, REVEAL_DURATION, MIN_STAKE, PROTOCOL_RAKE
         );
         registrar.registerAutoLoopFor(address(oracle), 2_000_000);
         registrar.deposit{value: 10 ether}(address(oracle));
@@ -195,7 +188,7 @@ contract KaijuOracleTest is Test {
 
     function test_CommitMultipleParticipants() public {
         _commitFor(alice, 1, bytes32(uint256(1)), MIN_STAKE);
-        _commitFor(bob,   2, bytes32(uint256(2)), MIN_STAKE);
+        _commitFor(bob, 2, bytes32(uint256(2)), MIN_STAKE);
         _commitFor(carol, 1, bytes32(uint256(3)), MIN_STAKE);
         assertEq(oracle.getRoundParticipantCount(1), 3);
     }
@@ -289,7 +282,8 @@ contract KaijuOracleTest is Test {
     function test_RevealRejectsDouble() public {
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
         vm.prank(alice);
         vm.expectRevert("KaijuOracle: already revealed");
         oracle.reveal(1, bytes32(uint256(42)));
@@ -312,19 +306,26 @@ contract KaijuOracleTest is Test {
     function test_SettleWithWinners() public {
         // alice and bob predict kaiju 1; carol predicts kaiju 2
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
-        _commitFor(bob,   1, bytes32(uint256(43)), MIN_STAKE);
+        _commitFor(bob, 1, bytes32(uint256(43)), MIN_STAKE);
         _commitFor(carol, 2, bytes32(uint256(44)), MIN_STAKE);
 
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
-        vm.prank(bob);   oracle.reveal(1, bytes32(uint256(43)));
-        vm.prank(carol); oracle.reveal(2, bytes32(uint256(44)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(bob);
+        oracle.reveal(1, bytes32(uint256(43)));
+        vm.prank(carol);
+        oracle.reveal(2, bytes32(uint256(44)));
 
         // Enter two kaiju into the league clash
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}(); // k1
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}(); // k2
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice); // k1
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol); // k2
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
 
         // Resolve league. rand=0 → winningWeight=0, first entrant (k1) wins.
         _warpPastDeadlines();
@@ -344,11 +345,13 @@ contract KaijuOracleTest is Test {
         uint256 share = (totalPot - rake) / 2;
 
         uint256 aliceBefore = alice.balance;
-        vm.prank(alice); oracle.claimWinnings(1);
+        vm.prank(alice);
+        oracle.claimWinnings(1);
         assertEq(alice.balance - aliceBefore, share);
 
         uint256 bobBefore = bob.balance;
-        vm.prank(bob); oracle.claimWinnings(1);
+        vm.prank(bob);
+        oracle.claimWinnings(1);
         assertEq(bob.balance - bobBefore, share);
 
         assertEq(oracle.protocolFeeBalance(), rake);
@@ -357,12 +360,17 @@ contract KaijuOracleTest is Test {
     function test_SettleWithNoWinners() public {
         _commitFor(alice, 2, bytes32(uint256(42)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(2, bytes32(uint256(42)));
+        vm.prank(alice);
+        oracle.reveal(2, bytes32(uint256(42)));
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}(); // k1
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}(); // k2
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice); // k1
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol); // k2
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
 
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0))); // k1 wins
@@ -377,15 +385,20 @@ contract KaijuOracleTest is Test {
 
     function test_SettleWithUnrevealedCommit() public {
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
-        _commitFor(bob,   1, bytes32(uint256(43)), MIN_STAKE);
+        _commitFor(bob, 1, bytes32(uint256(43)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
         // bob does NOT reveal
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}(); // k1
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}(); // k2
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice); // k1
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol); // k2
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
 
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0))); // k1 wins
@@ -401,7 +414,8 @@ contract KaijuOracleTest is Test {
         uint256 share = totalPot - rake;
 
         uint256 aliceBefore = alice.balance;
-        vm.prank(alice); oracle.claimWinnings(1);
+        vm.prank(alice);
+        oracle.claimWinnings(1);
         assertEq(alice.balance - aliceBefore, share);
     }
 
@@ -422,15 +436,21 @@ contract KaijuOracleTest is Test {
 
     function test_ClaimRejectsNonWinner() public {
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
-        _commitFor(bob,   2, bytes32(uint256(43)), MIN_STAKE);
+        _commitFor(bob, 2, bytes32(uint256(43)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
-        vm.prank(bob);   oracle.reveal(2, bytes32(uint256(43)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(bob);
+        oracle.reveal(2, bytes32(uint256(43)));
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
 
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0))); // k1 wins
@@ -444,18 +464,24 @@ contract KaijuOracleTest is Test {
     function test_ClaimRejectsDouble() public {
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
 
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0))); // k1 wins
         oracle.progressLoop(abi.encode(uint256(1)));
 
-        vm.prank(alice); oracle.claimWinnings(1);
+        vm.prank(alice);
+        oracle.claimWinnings(1);
         vm.prank(alice);
         vm.expectRevert("KaijuOracle: already claimed");
         oracle.claimWinnings(1);
@@ -466,32 +492,36 @@ contract KaijuOracleTest is Test {
     // ===============================================================
 
     function test_ShouldProgressFalseDuringCommit() public view {
-        (bool ready, ) = oracle.shouldProgressLoop();
+        (bool ready,) = oracle.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressFalseDuringReveal() public {
         _warpToReveal();
-        (bool ready, ) = oracle.shouldProgressLoop();
+        (bool ready,) = oracle.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressFalseRevealOverClashNotResolved() public {
         KaijuOracle.Round memory r = oracle.getRound(1);
         vm.warp(r.revealEndAt);
-        (bool ready, ) = oracle.shouldProgressLoop();
+        (bool ready,) = oracle.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressTrueWhenBothConditionsMet() public {
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0)));
 
-        (bool ready, ) = oracle.shouldProgressLoop();
+        (bool ready,) = oracle.shouldProgressLoop();
         assertTrue(ready);
     }
 
@@ -515,10 +545,14 @@ contract KaijuOracleTest is Test {
     }
 
     function test_ClashWinnersPopulatedOnLeagueResolve() public {
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
         vm.warp(league.lastClashAt() + CLASH_INTERVAL);
         assertEq(league.clashWinners(1), 0); // not yet resolved
         league.tickForTest(bytes32(uint256(0)));
@@ -532,12 +566,17 @@ contract KaijuOracleTest is Test {
     function test_WithdrawProtocolFees() public {
         _commitFor(alice, 2, bytes32(uint256(42)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(2, bytes32(uint256(42)));
+        vm.prank(alice);
+        oracle.reveal(2, bytes32(uint256(42)));
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0))); // k1 wins; alice predicted k2
         oracle.progressLoop(abi.encode(uint256(1)));
@@ -568,12 +607,17 @@ contract KaijuOracleTest is Test {
     function testFuzz_WinningKaijuMatchesClash(bytes32 leagueRandomness) public {
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
         _warpPastDeadlines();
         league.tickForTest(leagueRandomness);
         oracle.progressLoop(abi.encode(uint256(1)));
@@ -584,15 +628,21 @@ contract KaijuOracleTest is Test {
 
     function testFuzz_PotAccounting(bytes32 leagueRandomness) public {
         _commitFor(alice, 1, bytes32(uint256(42)), MIN_STAKE);
-        _commitFor(bob,   2, bytes32(uint256(43)), MIN_STAKE);
+        _commitFor(bob, 2, bytes32(uint256(43)), MIN_STAKE);
         _warpToReveal();
-        vm.prank(alice); oracle.reveal(1, bytes32(uint256(42)));
-        vm.prank(bob);   oracle.reveal(2, bytes32(uint256(43)));
+        vm.prank(alice);
+        oracle.reveal(1, bytes32(uint256(42)));
+        vm.prank(bob);
+        oracle.reveal(2, bytes32(uint256(43)));
 
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
         _warpPastDeadlines();
         league.tickForTest(leagueRandomness);
         oracle.progressLoop(abi.encode(uint256(1)));
@@ -612,20 +662,15 @@ contract KaijuOracleTest is Test {
     //  Helpers
     // ===============================================================
 
-    function _makeCommit(
-        address player,
-        uint256 kaijuId,
-        bytes32 salt
-    ) internal pure returns (bytes32) {
+    function _makeCommit(address player, uint256 kaijuId, bytes32 salt)
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(abi.encode(kaijuId, salt, player));
     }
 
-    function _commitFor(
-        address player,
-        uint256 kaijuId,
-        bytes32 salt,
-        uint256 stake
-    ) internal {
+    function _commitFor(address player, uint256 kaijuId, bytes32 salt, uint256 stake) internal {
         bytes32 c = _makeCommit(player, kaijuId, salt);
         vm.prank(player);
         oracle.commit{value: stake}(c);
@@ -644,10 +689,14 @@ contract KaijuOracleTest is Test {
     }
 
     function _setupAndSettle() internal {
-        vm.prank(alice); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(carol); league.hatchKaiju{value: KAIJU_FEE}();
-        vm.prank(alice); league.enterClash{value: ENTRY_FEE}(1);
-        vm.prank(carol); league.enterClash{value: ENTRY_FEE}(2);
+        vm.prank(alice);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(carol);
+        league.hatchKaiju{value: KAIJU_FEE}();
+        vm.prank(alice);
+        league.enterClash{value: ENTRY_FEE}(1);
+        vm.prank(carol);
+        league.enterClash{value: ENTRY_FEE}(2);
         _warpPastDeadlines();
         league.tickForTest(bytes32(uint256(0)));
         oracle.progressLoop(abi.encode(oracle.currentRoundId()));

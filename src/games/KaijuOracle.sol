@@ -61,16 +61,9 @@ contract KaijuOracle is AutoLoopCompatible {
         uint256 revealEndAt
     );
     event Committed(
-        uint256 indexed roundId,
-        address indexed player,
-        uint256 stake,
-        bytes32 commitHash
+        uint256 indexed roundId, address indexed player, uint256 stake, bytes32 commitHash
     );
-    event Revealed(
-        uint256 indexed roundId,
-        address indexed player,
-        uint256 kaijuId
-    );
+    event Revealed(uint256 indexed roundId, address indexed player, uint256 kaijuId);
     event RoundSettled(
         uint256 indexed roundId,
         uint256 indexed winningKaijuId,
@@ -79,11 +72,7 @@ contract KaijuOracle is AutoLoopCompatible {
         uint256 winnerCount
     );
     event RoundNoWinners(uint256 indexed roundId, uint256 potForfeited);
-    event WinningsClaimed(
-        uint256 indexed roundId,
-        address indexed winner,
-        uint256 amount
-    );
+    event WinningsClaimed(uint256 indexed roundId, address indexed winner, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
     // ===============================================================
@@ -167,14 +156,10 @@ contract KaijuOracle is AutoLoopCompatible {
      */
     function commit(bytes32 commitHash) external payable {
         Round storage r = rounds[currentRoundId];
-        require(
-            block.timestamp < r.commitEndAt,
-            "KaijuOracle: commit phase over"
-        );
+        require(block.timestamp < r.commitEndAt, "KaijuOracle: commit phase over");
         require(msg.value >= minStake, "KaijuOracle: stake too low");
         require(
-            commits[currentRoundId][_msgSender()] == bytes32(0),
-            "KaijuOracle: already committed"
+            commits[currentRoundId][_msgSender()] == bytes32(0), "KaijuOracle: already committed"
         );
         require(commitHash != bytes32(0), "KaijuOracle: empty commit");
 
@@ -193,14 +178,8 @@ contract KaijuOracle is AutoLoopCompatible {
      */
     function reveal(uint256 kaijuId, bytes32 salt) external {
         Round storage r = rounds[currentRoundId];
-        require(
-            block.timestamp >= r.commitEndAt,
-            "KaijuOracle: still commit phase"
-        );
-        require(
-            block.timestamp < r.revealEndAt,
-            "KaijuOracle: reveal phase over"
-        );
+        require(block.timestamp >= r.commitEndAt, "KaijuOracle: still commit phase");
+        require(block.timestamp < r.revealEndAt, "KaijuOracle: reveal phase over");
         require(kaijuId > 0, "KaijuOracle: invalid kaiju");
         require(
             revealedKaijus[currentRoundId][_msgSender()] == KAIJU_UNREVEALED,
@@ -208,10 +187,7 @@ contract KaijuOracle is AutoLoopCompatible {
         );
 
         bytes32 expected = keccak256(abi.encode(kaijuId, salt, _msgSender()));
-        require(
-            commits[currentRoundId][_msgSender()] == expected,
-            "KaijuOracle: bad reveal"
-        );
+        require(commits[currentRoundId][_msgSender()] == expected, "KaijuOracle: bad reveal");
 
         revealedKaijus[currentRoundId][_msgSender()] = kaijuId;
         uint256 playerStake = stakes[currentRoundId][_msgSender()];
@@ -229,20 +205,18 @@ contract KaijuOracle is AutoLoopCompatible {
         require(r.settled, "KaijuOracle: not settled");
         require(!claimed[roundId][_msgSender()], "KaijuOracle: already claimed");
         require(
-            revealedKaijus[roundId][_msgSender()] == r.winningKaijuId,
-            "KaijuOracle: not a winner"
+            revealedKaijus[roundId][_msgSender()] == r.winningKaijuId, "KaijuOracle: not a winner"
         );
 
         uint256 stake = stakes[roundId][_msgSender()];
         uint256 winningStake = r.winningTotalStake;
         require(winningStake > 0, "KaijuOracle: no pot");
 
-        uint256 totalPotAfterRake = r.totalPot -
-            (r.totalPot * protocolRakeBps) / BPS_DENOMINATOR;
+        uint256 totalPotAfterRake = r.totalPot - (r.totalPot * protocolRakeBps) / BPS_DENOMINATOR;
         uint256 share = (totalPotAfterRake * stake) / winningStake;
 
         claimed[roundId][_msgSender()] = true;
-        (bool sent, ) = _msgSender().call{value: share}("");
+        (bool sent,) = _msgSender().call{value: share}("");
         require(sent, "KaijuOracle: claim failed");
         emit WinningsClaimed(roundId, _msgSender(), share);
     }
@@ -263,10 +237,7 @@ contract KaijuOracle is AutoLoopCompatible {
     {
         Round storage r = rounds[currentRoundId];
         uint256 clashWinnerId = kaijuLeague.clashWinners(r.targetClashId);
-        loopIsReady =
-            block.timestamp >= r.revealEndAt &&
-            !r.settled &&
-            clashWinnerId != 0;
+        loopIsReady = block.timestamp >= r.revealEndAt && !r.settled && clashWinnerId != 0;
         progressWithData = abi.encode(currentRoundId);
     }
 
@@ -326,14 +297,14 @@ contract KaijuOracle is AutoLoopCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "KaijuOracle: zero address");
         require(amount <= protocolFeeBalance, "KaijuOracle: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "KaijuOracle: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

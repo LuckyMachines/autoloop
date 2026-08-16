@@ -59,9 +59,7 @@ contract SponsorAuctionTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -70,10 +68,7 @@ contract SponsorAuctionTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -102,9 +97,7 @@ contract SponsorAuctionTest is Test {
     // ===============================================================
 
     function test_SupportsAutoLoopInterface() public view {
-        assertTrue(
-            game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId)
-        );
+        assertTrue(game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId));
     }
 
     function test_InitialState() public view {
@@ -137,24 +130,14 @@ contract SponsorAuctionTest is Test {
     function test_ConstructorRejectsZeroDuration() public {
         vm.expectRevert("SponsorAuction: duration=0");
         new SponsorAuction(
-            0,
-            SPONSORSHIP_PERIOD,
-            MIN_BID,
-            MIN_INCREMENT_BPS,
-            PROTOCOL_RAKE_BPS,
-            slotReceiver
+            0, SPONSORSHIP_PERIOD, MIN_BID, MIN_INCREMENT_BPS, PROTOCOL_RAKE_BPS, slotReceiver
         );
     }
 
     function test_ConstructorRejectsZeroPeriod() public {
         vm.expectRevert("SponsorAuction: period=0");
         new SponsorAuction(
-            AUCTION_DURATION,
-            0,
-            MIN_BID,
-            MIN_INCREMENT_BPS,
-            PROTOCOL_RAKE_BPS,
-            slotReceiver
+            AUCTION_DURATION, 0, MIN_BID, MIN_INCREMENT_BPS, PROTOCOL_RAKE_BPS, slotReceiver
         );
     }
 
@@ -173,24 +156,14 @@ contract SponsorAuctionTest is Test {
     function test_ConstructorRejectsZeroIncrement() public {
         vm.expectRevert("SponsorAuction: increment=0");
         new SponsorAuction(
-            AUCTION_DURATION,
-            SPONSORSHIP_PERIOD,
-            MIN_BID,
-            0,
-            PROTOCOL_RAKE_BPS,
-            slotReceiver
+            AUCTION_DURATION, SPONSORSHIP_PERIOD, MIN_BID, 0, PROTOCOL_RAKE_BPS, slotReceiver
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("SponsorAuction: rake > 20%");
         new SponsorAuction(
-            AUCTION_DURATION,
-            SPONSORSHIP_PERIOD,
-            MIN_BID,
-            MIN_INCREMENT_BPS,
-            2001,
-            slotReceiver
+            AUCTION_DURATION, SPONSORSHIP_PERIOD, MIN_BID, MIN_INCREMENT_BPS, 2001, slotReceiver
         );
     }
 
@@ -284,7 +257,7 @@ contract SponsorAuctionTest is Test {
     // ===============================================================
 
     function test_ShouldProgressFalseBeforeClose() public view {
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 

@@ -44,16 +44,25 @@ contract DeployAgents is Script {
         address registrarAddr = vm.envAddress("REGISTRAR_ADDRESS");
 
         uint256 fundAmount;
-        try vm.envUint("FUND_AMOUNT") returns (uint256 v) { fundAmount = v; }
-        catch { fundAmount = 0.1 ether; }
+        try vm.envUint("FUND_AMOUNT") returns (uint256 v) {
+            fundAmount = v;
+        } catch {
+            fundAmount = 0.1 ether;
+        }
 
         uint256 maxGas;
-        try vm.envUint("MAX_GAS") returns (uint256 v) { maxGas = v; }
-        catch { maxGas = 2_000_000; }
+        try vm.envUint("MAX_GAS") returns (uint256 v) {
+            maxGas = v;
+        } catch {
+            maxGas = 2_000_000;
+        }
 
         address token1Addr;
-        try vm.envAddress("TOKEN1_ADDRESS") returns (address v) { token1Addr = v; }
-        catch { token1Addr = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9; } // Sepolia WETH
+        try vm.envAddress("TOKEN1_ADDRESS") returns (address v) {
+            token1Addr = v;
+        } catch { // Sepolia WETH
+            token1Addr = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;
+        }
 
         AutoLoopRegistrar registrar = AutoLoopRegistrar(registrarAddr);
 
@@ -63,9 +72,9 @@ contract DeployAgents is Script {
         // Owner = deployer; beneficiary = deployer (demo). Fund with ETH so the
         // trigger payout is observable.
         VaultDeadSwitch vaultDeadSwitch = new VaultDeadSwitch(
-            deployer,   // owner (must check in periodically)
-            deployer,   // beneficiary — change to another address for real use
-            86400       // 1-day check-in interval (testnet)
+            deployer, // owner (must check in periodically)
+            deployer, // beneficiary — change to another address for real use
+            86400 // 1-day check-in interval (testnet)
         );
         (bool _ok1,) = address(vaultDeadSwitch).call{value: 0.01 ether}("");
         require(_ok1, "VaultDeadSwitch fund failed");
@@ -78,9 +87,9 @@ contract DeployAgents is Script {
         //   3. Fund MockVault with ETH + accrue yield
         //   4. Update YieldHarvester's vault to point at MockVault
         YieldHarvester yieldHarvester = new YieldHarvester(
-            deployer,  // temp vault — overwritten in step 4
-            300,       // 5-min harvest interval (testnet)
-            0          // no minimum yield threshold
+            deployer, // temp vault — overwritten in step 4
+            300, // 5-min harvest interval (testnet)
+            0 // no minimum yield threshold
         );
         MockVault mockVault = new MockVault(address(yieldHarvester));
         (bool _ok2,) = address(mockVault).call{value: 0.01 ether}("");
@@ -91,26 +100,26 @@ contract DeployAgents is Script {
 
         // ── AIAgentLoop ────────────────────────────────────────────────────────
         AIAgentLoop aiAgentLoop = new AIAgentLoop(
-            3600,       // 1hr tick interval
+            3600, // 1hr tick interval
             bytes32(0), // empty instruction hash (update via setInstructionHash post-deploy)
-            0           // unlimited ticks
+            0 // unlimited ticks
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(aiAgentLoop), maxGas);
 
         // ── DAOExecutor ────────────────────────────────────────────────────────
         DAOExecutor daoExecutor = new DAOExecutor(
-            3600  // 1hr check interval
+            3600 // 1hr check interval
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(daoExecutor), maxGas);
 
         // ── TreasuryRebalancer ─────────────────────────────────────────────────
         // Fund with ETH so current allocation is 100% token0, drift > threshold.
         TreasuryRebalancer treasuryRebalancer = new TreasuryRebalancer(
-            address(0),  // token0: ETH (address(0))
-            6000,        // target: 60% ETH
-            token1Addr,  // token1: WETH or any ERC20
-            500,         // 5% drift threshold
-            86400        // 1-day check interval
+            address(0), // token0: ETH (address(0))
+            6000, // target: 60% ETH
+            token1Addr, // token1: WETH or any ERC20
+            500, // 5% drift threshold
+            86400 // 1-day check interval
         );
         (bool _ok3,) = address(treasuryRebalancer).call{value: 0.01 ether}("");
         require(_ok3, "TreasuryRebalancer fund failed");
@@ -119,9 +128,9 @@ contract DeployAgents is Script {
         // ── AirdropDistributor (VRF) ───────────────────────────────────────────
         // Pre-fund so prize payouts work: 3 winners × 0.001 ETH × 10 draws = 0.03 ETH
         AirdropDistributor airdropDistributor = new AirdropDistributor(
-            3600,        // 1hr draw interval (testnet)
-            3,           // 3 winners per draw
-            0.001 ether  // 0.001 ETH prize per winner (testnet-sized)
+            3600, // 1hr draw interval (testnet)
+            3, // 3 winners per draw
+            0.001 ether // 0.001 ETH prize per winner (testnet-sized)
         );
         (bool _ok4,) = address(airdropDistributor).call{value: 0.03 ether}("");
         require(_ok4, "AirdropDistributor fund failed");
@@ -129,14 +138,19 @@ contract DeployAgents is Script {
 
         // ── NFTReveal (VRF) ────────────────────────────────────────────────────
         uint256[] memory tiers = new uint256[](4);
-        tiers[0] = 5000; tiers[1] = 3000; tiers[2] = 1500; tiers[3] = 500;
+        tiers[0] = 5000;
+        tiers[1] = 3000;
+        tiers[2] = 1500;
+        tiers[3] = 500;
         string[] memory tierNames = new string[](4);
-        tierNames[0] = "Common"; tierNames[1] = "Uncommon";
-        tierNames[2] = "Rare";   tierNames[3] = "Legendary";
+        tierNames[0] = "Common";
+        tierNames[1] = "Uncommon";
+        tierNames[2] = "Rare";
+        tierNames[3] = "Legendary";
 
         NFTReveal nftReveal = new NFTReveal(
-            100,                       // max supply
-            0.001 ether,               // mint price
+            100, // max supply
+            0.001 ether, // mint price
             block.timestamp + 1 hours, // reveal after 1hr (testnet — short window)
             tiers,
             tierNames
@@ -147,23 +161,23 @@ contract DeployAgents is Script {
         // ── LotterySweepstakes (VRF) ───────────────────────────────────────────
         // Users fund by buying tickets; no pre-funding needed.
         LotterySweepstakes lotterySweepstakes = new LotterySweepstakes(
-            0.001 ether,  // ticket price
-            3600          // 1hr round interval (testnet)
+            0.001 ether, // ticket price
+            3600 // 1hr round interval (testnet)
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(lotterySweepstakes), maxGas);
 
         // ── ParameterAlerter ───────────────────────────────────────────────────
         ParameterAlerter parameterAlerter = new ParameterAlerter(
-            3600  // 1hr snapshot interval
+            3600 // 1hr snapshot interval
         );
         // Seed a couple of parameters for the demo
-        parameterAlerter.addTrackedParam("dropRate", 1000);   // 10%
+        parameterAlerter.addTrackedParam("dropRate", 1000); // 10%
         parameterAlerter.addTrackedParam("xpMultiplier", 100); // 1.0x
         registrar.registerAutoLoopFor{value: fundAmount}(address(parameterAlerter), maxGas);
 
         // ── SupplyGovernanceModule ─────────────────────────────────────────────
         SupplyGovernanceModule supplyGovernance = new SupplyGovernanceModule(
-            3600  // 1hr check interval
+            3600 // 1hr check interval
         );
         // Seed an item type for the demo
         supplyGovernance.createItemType("Gold Sword", 1000);
@@ -180,22 +194,22 @@ contract DeployAgents is Script {
 
         // ── MatchmakingEngine (VRF) ────────────────────────────────────────────
         MatchmakingEngine matchmakingEngine = new MatchmakingEngine(
-            3600  // 1hr match interval
+            3600 // 1hr match interval
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(matchmakingEngine), maxGas);
 
         // ── BreedingMutationEngine (VRF) ───────────────────────────────────────
         BreedingMutationEngine breedingEngine = new BreedingMutationEngine(
-            3600,        // 1hr breeding cooldown
-            0.001 ether  // breeding fee
+            3600, // 1hr breeding cooldown
+            0.001 ether // breeding fee
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(breedingEngine), maxGas);
 
         // ── TournamentBracket (VRF) ────────────────────────────────────────────
         TournamentBracket tournamentBracket = new TournamentBracket(
-            3600,          // 1hr round interval
-            4,             // 4-player bracket (easiest to fill on testnet)
-            0.001 ether    // entry fee
+            3600, // 1hr round interval
+            4, // 4-player bracket (easiest to fill on testnet)
+            0.001 ether // entry fee
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(tournamentBracket), maxGas);
 

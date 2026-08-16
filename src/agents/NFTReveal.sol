@@ -15,18 +15,18 @@ contract NFTReveal is AutoLoopVRFCompatible {
     uint256 public nextTokenId;
     uint256 public maxSupply;
     uint256 public mintPrice;
-    bool    public mintOpen;
-    bool    public revealed;
+    bool public mintOpen;
+    bool public revealed;
 
     /// @notice Configurable trait tiers (must sum to 10000 bps).
-    uint256[] public rarityTiersBps;   // e.g. [5000, 3000, 1500, 500] = Common/Uncommon/Rare/Legendary
-    string[]  public rarityTierNames;
+    uint256[] public rarityTiersBps; // e.g. [5000, 3000, 1500, 500] = Common/Uncommon/Rare/Legendary
+    string[] public rarityTierNames;
 
     mapping(uint256 => address) public ownerOf;
     mapping(uint256 => uint256) public tokenTier; // 0 = unrevealed
 
-    uint256 public revealTime;    // earliest timestamp for reveal
-    bytes32 public revealSeed;    // set by VRF on reveal
+    uint256 public revealTime; // earliest timestamp for reveal
+    bytes32 public revealSeed; // set by VRF on reveal
     uint256 public protocolFeeBalance;
 
     uint256 public constant PROTOCOL_FEE_BPS = 500; // 5% of mint proceeds
@@ -50,9 +50,13 @@ contract NFTReveal is AutoLoopVRFCompatible {
     ) {
         require(_maxSupply > 0, "NFTReveal: maxSupply=0");
         require(_revealTime > block.timestamp, "NFTReveal: reveal in past");
-        require(_rarityTiersBps.length == _rarityTierNames.length, "NFTReveal: tier length mismatch");
+        require(
+            _rarityTiersBps.length == _rarityTierNames.length, "NFTReveal: tier length mismatch"
+        );
         uint256 total;
-        for (uint256 i = 0; i < _rarityTiersBps.length; i++) total += _rarityTiersBps[i];
+        for (uint256 i = 0; i < _rarityTiersBps.length; i++) {
+            total += _rarityTiersBps[i];
+        }
         require(total == 10_000, "NFTReveal: tiers must sum to 10000");
 
         maxSupply = _maxSupply;
@@ -97,9 +101,7 @@ contract NFTReveal is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady = !revealed
-            && nextTokenId > 0
-            && block.timestamp >= revealTime;
+        loopIsReady = !revealed && nextTokenId > 0 && block.timestamp >= revealTime;
         progressWithData = abi.encode(_loopID, nextTokenId);
     }
 

@@ -6,8 +6,11 @@ import "../../src/agents/NFTReveal.sol";
 
 contract NFTRevealHarness is NFTReveal {
     constructor(
-        uint256 _max, uint256 _price, uint256 _revealTime,
-        uint256[] memory _tiers, string[] memory _names
+        uint256 _max,
+        uint256 _price,
+        uint256 _revealTime,
+        uint256[] memory _tiers,
+        string[] memory _names
     ) NFTReveal(_max, _price, _revealTime, _tiers, _names) {}
 
     function tickForTest(bytes32 randomness) external {
@@ -40,7 +43,7 @@ contract NFTRevealTest is Test {
     NFTRevealHarness public nft;
 
     uint256[] tiers;
-    string[]  tierNames;
+    string[] tierNames;
     uint256 public revealTime;
     uint256 public mintPrice = 0.01 ether;
     uint256 public maxSupply = 100;
@@ -49,7 +52,7 @@ contract NFTRevealTest is Test {
         tiers.push(5000); // Common
         tiers.push(3000); // Uncommon
         tiers.push(1500); // Rare
-        tiers.push(500);  // Legendary
+        tiers.push(500); // Legendary
         tierNames.push("Common");
         tierNames.push("Uncommon");
         tierNames.push("Rare");
@@ -147,7 +150,9 @@ contract NFTRevealTest is Test {
 
     function test_RevealAssignsAllTiers() public {
         vm.deal(address(this), 10 ether);
-        for (uint256 i = 0; i < 10; i++) nft.mint{value: mintPrice}();
+        for (uint256 i = 0; i < 10; i++) {
+            nft.mint{value: mintPrice}();
+        }
         vm.warp(revealTime);
         nft.tickForTest(keccak256("seed"));
         for (uint256 i = 1; i <= 10; i++) {
@@ -184,10 +189,10 @@ contract NFTRevealTest is Test {
         nft.tickForTest(keccak256("seed"));
         string memory name = nft.tierName(1);
         assertTrue(
-            keccak256(bytes(name)) == keccak256(bytes("Common")) ||
-            keccak256(bytes(name)) == keccak256(bytes("Uncommon")) ||
-            keccak256(bytes(name)) == keccak256(bytes("Rare")) ||
-            keccak256(bytes(name)) == keccak256(bytes("Legendary"))
+            keccak256(bytes(name)) == keccak256(bytes("Common"))
+                || keccak256(bytes(name)) == keccak256(bytes("Uncommon"))
+                || keccak256(bytes(name)) == keccak256(bytes("Rare"))
+                || keccak256(bytes(name)) == keccak256(bytes("Legendary"))
         );
     }
 
@@ -234,7 +239,9 @@ contract NFTRevealTest is Test {
     function testFuzz_AllTokensGetTiers(uint8 mintCount) public {
         vm.assume(mintCount > 0 && mintCount <= 50);
         vm.deal(address(this), uint256(mintCount) * mintPrice + 1 ether);
-        for (uint256 i = 0; i < mintCount; i++) nft.mint{value: mintPrice}();
+        for (uint256 i = 0; i < mintCount; i++) {
+            nft.mint{value: mintPrice}();
+        }
         vm.warp(revealTime);
         nft.tickForTest(keccak256(abi.encode(mintCount)));
         for (uint256 i = 1; i <= mintCount; i++) {

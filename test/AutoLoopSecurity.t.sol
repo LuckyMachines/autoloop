@@ -136,9 +136,7 @@ contract AutoLoopSecurityTest is Test {
         // Deploy Registry behind proxy
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -148,10 +146,7 @@ contract AutoLoopSecurityTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -262,13 +257,9 @@ contract AutoLoopSecurityTest is Test {
         // Upgrade to V2
         AutoLoopV2 v2Impl = new AutoLoopV2();
         vm.prank(proxyAdmin);
-        ProxyAdmin proxyAdminContract = ProxyAdmin(
-            _getProxyAdmin(address(autoLoopProxy))
-        );
+        ProxyAdmin proxyAdminContract = ProxyAdmin(_getProxyAdmin(address(autoLoopProxy)));
         proxyAdminContract.upgradeAndCall(
-            ITransparentUpgradeableProxy(address(autoLoopProxy)),
-            address(v2Impl),
-            ""
+            ITransparentUpgradeableProxy(address(autoLoopProxy)), address(v2Impl), ""
         );
 
         AutoLoopV2 autoLoopV2 = AutoLoopV2(address(autoLoopProxy));
@@ -310,9 +301,7 @@ contract AutoLoopSecurityTest is Test {
         vm.prank(controller1);
         vm.expectRevert();
         proxyAdminContract.upgradeAndCall(
-            ITransparentUpgradeableProxy(address(autoLoopProxy)),
-            address(v2Impl),
-            ""
+            ITransparentUpgradeableProxy(address(autoLoopProxy)), address(v2Impl), ""
         );
     }
 
@@ -394,9 +383,7 @@ contract AutoLoopSecurityTest is Test {
 
         // All ETH should be accounted for
         assertEq(
-            address(autoLoop).balance,
-            game1Bal + protocolBal,
-            "All ETH should be accounted for"
+            address(autoLoop).balance, game1Bal + protocolBal, "All ETH should be accounted for"
         );
     }
 
@@ -650,10 +637,7 @@ contract AutoLoopSecurityTest is Test {
     /// @dev Rapid cycles of deposit → refund → re-deposit should never
     ///      lose or create ETH. Tests the Chainlink-style "trapped funds"
     ///      scenario where repeated operations could leave dust behind.
-    function testFuzz_DepositRefundCycle(
-        uint256 amount,
-        uint8 cycles
-    ) public {
+    function testFuzz_DepositRefundCycle(uint256 amount, uint8 cycles) public {
         amount = bound(amount, 1 wei, 10 ether);
         cycles = uint8(bound(cycles, 1, 20));
 
@@ -665,38 +649,23 @@ contract AutoLoopSecurityTest is Test {
         for (uint256 i = 0; i < cycles; i++) {
             // Deposit
             registrar.deposit{value: amount}(address(game1));
-            assertEq(
-                autoLoop.balance(address(game1)),
-                amount,
-                "Balance should match deposit"
-            );
+            assertEq(autoLoop.balance(address(game1)), amount, "Balance should match deposit");
 
             // Refund
             registrar.requestRefundFor(address(game1), admin);
-            assertEq(
-                autoLoop.balance(address(game1)),
-                0,
-                "Balance should be zero after refund"
-            );
+            assertEq(autoLoop.balance(address(game1)), 0, "Balance should be zero after refund");
         }
 
         // Admin should have exactly what they started with
         assertEq(admin.balance, adminBalStart, "No ETH lost or created after cycling");
 
         // AutoLoop contract should hold zero for this game
-        assertEq(
-            autoLoop.balance(address(game1)),
-            0,
-            "No dust remaining in contract"
-        );
+        assertEq(autoLoop.balance(address(game1)), 0, "No dust remaining in contract");
     }
 
     /// @dev Variant: deposit multiple times before a single refund.
     ///      Ensures incremental deposits are fully refundable.
-    function testFuzz_MultiDepositSingleRefund(
-        uint256 depositCount,
-        uint256 amount
-    ) public {
+    function testFuzz_MultiDepositSingleRefund(uint256 depositCount, uint256 amount) public {
         depositCount = bound(depositCount, 1, 30);
         amount = bound(amount, 1 wei, 1 ether);
 
@@ -730,10 +699,7 @@ contract AutoLoopSecurityTest is Test {
     /// @dev Simulates a refund immediately after a progressLoop execution.
     ///      Ensures the user can always withdraw remaining balance after
     ///      fees have been deducted, and no ETH gets stuck.
-    function testFuzz_RefundAfterProgress(
-        uint256 deposit,
-        uint256 gasPrice
-    ) public {
+    function testFuzz_RefundAfterProgress(uint256 deposit, uint256 gasPrice) public {
         // Use realistic ranges: deposit must cover gas+buffer+fee at the fuzzed price.
         // At 200 gwei with ~2M gas + 94k buffer + 70% fee, max cost is ~0.7 ETH.
         deposit = bound(deposit, 1 ether, 50 ether);
@@ -786,9 +752,7 @@ contract AutoLoopSecurityTest is Test {
             autoLoop.withdrawProtocolFees(protocolBal, admin);
             assertEq(autoLoop.protocolBalance(), 0, "Protocol balance not zeroed");
             assertEq(
-                admin.balance,
-                adminBalBefore2 + protocolBal,
-                "Admin didn't receive protocol fees"
+                admin.balance, adminBalBefore2 + protocolBal, "Admin didn't receive protocol fees"
             );
         }
 
@@ -798,10 +762,7 @@ contract AutoLoopSecurityTest is Test {
 
     /// @dev Progress multiple times at different gas prices, then refund.
     ///      Tests that repeated fee deductions don't leave unrecoverable dust.
-    function testFuzz_MultiProgressThenRefund(
-        uint256 progressCount,
-        uint256 gasPrice
-    ) public {
+    function testFuzz_MultiProgressThenRefund(uint256 progressCount, uint256 gasPrice) public {
         progressCount = bound(progressCount, 1, 10);
         gasPrice = bound(gasPrice, 1 gwei, 100 gwei);
 
@@ -943,11 +904,7 @@ contract AutoLoopSecurityTest is Test {
             if (bal < 0.01 ether) break;
 
             // Vary gas price using seed
-            uint256 gp = bound(
-                uint256(keccak256(abi.encode(seed, i))),
-                1 gwei,
-                150 gwei
-            );
+            uint256 gp = bound(uint256(keccak256(abi.encode(seed, i))), 1 gwei, 150 gwei);
 
             vm.txGasPrice(gp);
             vm.prank(controller1);
@@ -959,9 +916,7 @@ contract AutoLoopSecurityTest is Test {
         uint256 protoBal = autoLoop.protocolBalance();
 
         assertEq(
-            address(autoLoop).balance,
-            userBal + protoBal,
-            "ETH invariant broken after 50 loops"
+            address(autoLoop).balance, userBal + protoBal, "ETH invariant broken after 50 loops"
         );
 
         // Withdraw everything
@@ -974,19 +929,14 @@ contract AutoLoopSecurityTest is Test {
 
         // No dust should remain
         assertEq(
-            address(autoLoop).balance,
-            0,
-            "Dust detected after full withdrawal - rounding error"
+            address(autoLoop).balance, 0, "Dust detected after full withdrawal - rounding error"
         );
     }
 
     /// @dev Fuzz the fee percentages themselves during active operation.
     ///      Change controller/protocol fee split mid-stream and verify
     ///      accounting still holds.
-    function testFuzz_FeeChangeMidStream(
-        uint256 newControllerPortion,
-        uint256 loops
-    ) public {
+    function testFuzz_FeeChangeMidStream(uint256 newControllerPortion, uint256 loops) public {
         newControllerPortion = bound(newControllerPortion, 0, 100);
         loops = bound(loops, 1, 10);
 
@@ -1030,11 +980,7 @@ contract AutoLoopSecurityTest is Test {
         uint256 userBal = autoLoop.balance(address(game1));
         uint256 protoBal = autoLoop.protocolBalance();
 
-        assertEq(
-            address(autoLoop).balance,
-            userBal + protoBal,
-            "Invariant broken after fee change"
-        );
+        assertEq(address(autoLoop).balance, userBal + protoBal, "Invariant broken after fee change");
 
         // Full drain
         if (userBal > 0) {
@@ -1059,10 +1005,8 @@ contract AutoLoopSecurityTest is Test {
         // The ProxyAdmin is stored at the admin slot
         // For OZ v5 TransparentUpgradeableProxy, the admin is a separate ProxyAdmin contract
         // deployed by the proxy constructor. We read it from storage.
-        bytes32 adminSlot = vm.load(
-            proxy,
-            0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103
-        );
+        bytes32 adminSlot =
+            vm.load(proxy, 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103);
         return address(uint160(uint256(adminSlot)));
     }
 }

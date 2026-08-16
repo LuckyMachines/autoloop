@@ -60,16 +60,9 @@ contract GladiatorOracle is AutoLoopCompatible {
         uint256 revealEndAt
     );
     event Committed(
-        uint256 indexed roundId,
-        address indexed player,
-        uint256 stake,
-        bytes32 commitHash
+        uint256 indexed roundId, address indexed player, uint256 stake, bytes32 commitHash
     );
-    event Revealed(
-        uint256 indexed roundId,
-        address indexed player,
-        uint256 gladiatorId
-    );
+    event Revealed(uint256 indexed roundId, address indexed player, uint256 gladiatorId);
     event RoundSettled(
         uint256 indexed roundId,
         uint256 indexed winningGladiatorId,
@@ -78,11 +71,7 @@ contract GladiatorOracle is AutoLoopCompatible {
         uint256 winnerCount
     );
     event RoundNoWinners(uint256 indexed roundId, uint256 potForfeited);
-    event WinningsClaimed(
-        uint256 indexed roundId,
-        address indexed winner,
-        uint256 amount
-    );
+    event WinningsClaimed(uint256 indexed roundId, address indexed winner, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
     // ===============================================================
@@ -164,10 +153,7 @@ contract GladiatorOracle is AutoLoopCompatible {
      */
     function commit(bytes32 commitHash) external payable {
         Round storage r = rounds[currentRoundId];
-        require(
-            block.timestamp < r.commitEndAt,
-            "GladiatorOracle: commit phase over"
-        );
+        require(block.timestamp < r.commitEndAt, "GladiatorOracle: commit phase over");
         require(msg.value >= minStake, "GladiatorOracle: stake too low");
         require(
             commits[currentRoundId][_msgSender()] == bytes32(0),
@@ -189,14 +175,8 @@ contract GladiatorOracle is AutoLoopCompatible {
      */
     function reveal(uint256 gladiatorId, bytes32 salt) external {
         Round storage r = rounds[currentRoundId];
-        require(
-            block.timestamp >= r.commitEndAt,
-            "GladiatorOracle: still commit phase"
-        );
-        require(
-            block.timestamp < r.revealEndAt,
-            "GladiatorOracle: reveal phase over"
-        );
+        require(block.timestamp >= r.commitEndAt, "GladiatorOracle: still commit phase");
+        require(block.timestamp < r.revealEndAt, "GladiatorOracle: reveal phase over");
         require(gladiatorId > 0, "GladiatorOracle: invalid gladiator");
         require(
             revealedGladiators[currentRoundId][_msgSender()] == GLADIATOR_UNREVEALED,
@@ -204,10 +184,7 @@ contract GladiatorOracle is AutoLoopCompatible {
         );
 
         bytes32 expected = keccak256(abi.encode(gladiatorId, salt, _msgSender()));
-        require(
-            commits[currentRoundId][_msgSender()] == expected,
-            "GladiatorOracle: bad reveal"
-        );
+        require(commits[currentRoundId][_msgSender()] == expected, "GladiatorOracle: bad reveal");
 
         revealedGladiators[currentRoundId][_msgSender()] = gladiatorId;
         uint256 playerStake = stakes[currentRoundId][_msgSender()];
@@ -223,10 +200,7 @@ contract GladiatorOracle is AutoLoopCompatible {
     function claimWinnings(uint256 roundId) external {
         Round storage r = rounds[roundId];
         require(r.settled, "GladiatorOracle: not settled");
-        require(
-            !claimed[roundId][_msgSender()],
-            "GladiatorOracle: already claimed"
-        );
+        require(!claimed[roundId][_msgSender()], "GladiatorOracle: already claimed");
         require(
             revealedGladiators[roundId][_msgSender()] == r.winningGladiatorId,
             "GladiatorOracle: not a winner"
@@ -236,12 +210,11 @@ contract GladiatorOracle is AutoLoopCompatible {
         uint256 winningStake = r.winningTotalStake;
         require(winningStake > 0, "GladiatorOracle: no pot");
 
-        uint256 totalPotAfterRake = r.totalPot -
-            (r.totalPot * protocolRakeBps) / BPS_DENOMINATOR;
+        uint256 totalPotAfterRake = r.totalPot - (r.totalPot * protocolRakeBps) / BPS_DENOMINATOR;
         uint256 share = (totalPotAfterRake * stake) / winningStake;
 
         claimed[roundId][_msgSender()] = true;
-        (bool sent, ) = _msgSender().call{value: share}("");
+        (bool sent,) = _msgSender().call{value: share}("");
         require(sent, "GladiatorOracle: claim failed");
         emit WinningsClaimed(roundId, _msgSender(), share);
     }
@@ -262,10 +235,7 @@ contract GladiatorOracle is AutoLoopCompatible {
     {
         Round storage r = rounds[currentRoundId];
         uint256 boutWinnerId = gladiatorArena.boutWinners(r.targetBoutId);
-        loopIsReady =
-            block.timestamp >= r.revealEndAt &&
-            !r.settled &&
-            boutWinnerId != 0;
+        loopIsReady = block.timestamp >= r.revealEndAt && !r.settled && boutWinnerId != 0;
         progressWithData = abi.encode(currentRoundId);
     }
 
@@ -274,10 +244,7 @@ contract GladiatorOracle is AutoLoopCompatible {
         require(roundId == currentRoundId, "GladiatorOracle: stale round");
 
         Round storage r = rounds[currentRoundId];
-        require(
-            block.timestamp >= r.revealEndAt,
-            "GladiatorOracle: reveal open"
-        );
+        require(block.timestamp >= r.revealEndAt, "GladiatorOracle: reveal open");
         require(!r.settled, "GladiatorOracle: already settled");
 
         uint256 boutWinnerId = gladiatorArena.boutWinners(r.targetBoutId);
@@ -320,17 +287,14 @@ contract GladiatorOracle is AutoLoopCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "GladiatorOracle: zero address");
-        require(
-            amount <= protocolFeeBalance,
-            "GladiatorOracle: exceeds balance"
-        );
+        require(amount <= protocolFeeBalance, "GladiatorOracle: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "GladiatorOracle: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }
@@ -345,12 +309,7 @@ contract GladiatorOracle is AutoLoopCompatible {
         r.targetBoutId = gladiatorArena.currentBoutId();
         r.commitEndAt = block.timestamp + commitDuration;
         r.revealEndAt = r.commitEndAt + revealDuration;
-        emit RoundOpened(
-            currentRoundId,
-            r.targetBoutId,
-            r.commitEndAt,
-            r.revealEndAt
-        );
+        emit RoundOpened(currentRoundId, r.targetBoutId, r.commitEndAt, r.revealEndAt);
     }
 
     receive() external payable {}

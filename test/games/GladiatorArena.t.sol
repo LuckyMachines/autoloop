@@ -93,9 +93,7 @@ contract GladiatorArenaTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -104,10 +102,7 @@ contract GladiatorArenaTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -137,15 +132,11 @@ contract GladiatorArenaTest is Test {
     // ===============================================================
 
     function test_SupportsVRFInterface() public view {
-        assertTrue(
-            game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible")))
-        );
+        assertTrue(game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible"))));
     }
 
     function test_SupportsAutoLoopInterface() public view {
-        assertTrue(
-            game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId)
-        );
+        assertTrue(game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId));
     }
 
     function test_InitialState() public view {
@@ -174,40 +165,59 @@ contract GladiatorArenaTest is Test {
     function test_ConstructorRejectsZeroInterval() public {
         vm.expectRevert("GladiatorArena: boutInterval=0");
         new GladiatorArenaHarness(
-            GLADIATOR_MINT_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS,
-            INITIAL_VITALITY, MIN_VITALITY, MAX_ENTRANTS
+            GLADIATOR_MINT_FEE,
+            ENTRY_FEE,
+            0,
+            PROTOCOL_RAKE_BPS,
+            INITIAL_VITALITY,
+            MIN_VITALITY,
+            MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("GladiatorArena: rake > 20%");
         new GladiatorArenaHarness(
-            GLADIATOR_MINT_FEE, ENTRY_FEE, BOUT_INTERVAL, 2001,
-            INITIAL_VITALITY, MIN_VITALITY, MAX_ENTRANTS
+            GLADIATOR_MINT_FEE,
+            ENTRY_FEE,
+            BOUT_INTERVAL,
+            2001,
+            INITIAL_VITALITY,
+            MIN_VITALITY,
+            MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsBadVitalityOrdering() public {
         vm.expectRevert("GladiatorArena: vitality ordering");
         new GladiatorArenaHarness(
-            GLADIATOR_MINT_FEE, ENTRY_FEE, BOUT_INTERVAL, PROTOCOL_RAKE_BPS,
-            50, 500, MAX_ENTRANTS
+            GLADIATOR_MINT_FEE, ENTRY_FEE, BOUT_INTERVAL, PROTOCOL_RAKE_BPS, 50, 500, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsLowMaxEntrants() public {
         vm.expectRevert("GladiatorArena: maxEntrants < 2");
         new GladiatorArenaHarness(
-            GLADIATOR_MINT_FEE, ENTRY_FEE, BOUT_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_VITALITY, MIN_VITALITY, 1
+            GLADIATOR_MINT_FEE,
+            ENTRY_FEE,
+            BOUT_INTERVAL,
+            PROTOCOL_RAKE_BPS,
+            INITIAL_VITALITY,
+            MIN_VITALITY,
+            1
         );
     }
 
     function test_ConstructorRejectsHighMaxEntrants() public {
         vm.expectRevert("GladiatorArena: maxEntrants > 16");
         new GladiatorArenaHarness(
-            GLADIATOR_MINT_FEE, ENTRY_FEE, BOUT_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_VITALITY, MIN_VITALITY, 17
+            GLADIATOR_MINT_FEE,
+            ENTRY_FEE,
+            BOUT_INTERVAL,
+            PROTOCOL_RAKE_BPS,
+            INITIAL_VITALITY,
+            MIN_VITALITY,
+            17
         );
     }
 
@@ -326,20 +336,20 @@ contract GladiatorArenaTest is Test {
         vm.prank(alice);
         game.enterBout{value: ENTRY_FEE}(1);
         vm.warp(block.timestamp + BOUT_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressTrueWithTwoEntrants() public {
         _enterPair();
         vm.warp(block.timestamp + BOUT_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready);
     }
 
     function test_ShouldProgressFalseBeforeInterval() public {
         _enterPair();
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
@@ -361,8 +371,7 @@ contract GladiatorArenaTest is Test {
         uint256 expectedRake = (poolBefore * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 expectedPrize = poolBefore - expectedRake;
 
-        uint256 withdrawable = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 withdrawable = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         assertEq(withdrawable, expectedPrize);
         assertEq(game.protocolFeeBalance() - GLADIATOR_MINT_FEE * 2, expectedRake);
     }
@@ -472,9 +481,7 @@ contract GladiatorArenaTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             ts += BOUT_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("bout", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("bout", i)))));
 
             if (i < 4) {
                 vm.prank(alice);
@@ -495,15 +502,19 @@ contract GladiatorArenaTest is Test {
         for (uint256 i = 0; i < 80; i++) {
             ts += BOUT_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("retirement", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("retirement", i)))));
 
             if (game.getGladiator(1).vitality > MIN_VITALITY && i < 79) {
                 vm.prank(alice);
-                try game.enterBout{value: ENTRY_FEE}(1) {} catch { break; }
+                try game.enterBout{value: ENTRY_FEE}(1) {}
+                catch {
+                    break;
+                }
                 vm.prank(bob);
-                try game.enterBout{value: ENTRY_FEE}(2) {} catch { break; }
+                try game.enterBout{value: ENTRY_FEE}(2) {}
+                catch {
+                    break;
+                }
             } else {
                 break;
             }
@@ -602,8 +613,7 @@ contract GladiatorArenaTest is Test {
         uint256 rake = (pool * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 prize = pool - rake;
 
-        uint256 totalPending = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 totalPending = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         uint256 feeDelta = game.protocolFeeBalance() - feeBefore;
 
         assertEq(totalPending, prize, "prize to one victor");
@@ -642,9 +652,8 @@ contract GladiatorArenaTest is Test {
         vm.warp(block.timestamp + BOUT_INTERVAL);
         game.tickForTest(randomness);
 
-        uint256 totalVictories = game.getGladiator(1).victories +
-            game.getGladiator(2).victories +
-            game.getGladiator(3).victories;
+        uint256 totalVictories = game.getGladiator(1).victories + game.getGladiator(2).victories
+            + game.getGladiator(3).victories;
         assertEq(totalVictories, 1, "exactly one victor");
     }
 

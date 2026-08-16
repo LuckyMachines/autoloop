@@ -6,8 +6,14 @@ import "../../src/agents/DAOExecutor.sol";
 
 contract MockTarget {
     uint256 public value;
-    function setValue(uint256 v) external { value = v; }
-    function revertAlways() external pure { revert("always reverts"); }
+
+    function setValue(uint256 v) external {
+        value = v;
+    }
+
+    function revertAlways() external pure {
+        revert("always reverts");
+    }
 }
 
 contract DAOExecutorHarness is DAOExecutor {
@@ -31,7 +37,9 @@ contract DAOExecutorTest is Test {
 
     function _queueProposal(uint256 etaOffset) internal returns (uint256 id) {
         bytes memory callData = abi.encodeWithSelector(MockTarget.setValue.selector, 42);
-        id = exec.queueProposal(address(target), callData, block.timestamp + etaOffset, "Set value to 42");
+        id = exec.queueProposal(
+            address(target), callData, block.timestamp + etaOffset, "Set value to 42"
+        );
     }
 
     // ── shouldProgressLoop ────────────────────────────────────────────────────
@@ -90,7 +98,7 @@ contract DAOExecutorTest is Test {
         uint256 id = _queueProposal(1 hours);
         vm.warp(block.timestamp + 2 hours);
         exec.tickForTest(id);
-        (,,,,bool executed,,) = exec.proposals(id);
+        (,,,, bool executed,,) = exec.proposals(id);
         assertTrue(executed);
     }
 
@@ -140,7 +148,8 @@ contract DAOExecutorTest is Test {
 
     function test_FailingCallEmitsWithSuccessFalse() public {
         bytes memory callData = abi.encodeWithSelector(MockTarget.revertAlways.selector);
-        uint256 id = exec.queueProposal(address(target), callData, block.timestamp + 1 hours, "will fail");
+        uint256 id =
+            exec.queueProposal(address(target), callData, block.timestamp + 1 hours, "will fail");
         vm.warp(block.timestamp + 2 hours);
         vm.expectEmit(true, false, false, false);
         emit DAOExecutor.ProposalExecuted(id, address(target), false, 0);

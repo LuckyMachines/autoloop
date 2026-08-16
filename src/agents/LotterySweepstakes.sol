@@ -26,7 +26,7 @@ contract LotterySweepstakes is AutoLoopVRFCompatible {
     // ── State ──────────────────────────────────────────────────────────────────
 
     uint256 public ticketPrice;
-    uint256 public roundInterval;    // minimum seconds between draws
+    uint256 public roundInterval; // minimum seconds between draws
     uint256 public lastDraw;
     uint256 public roundCount;
 
@@ -66,7 +66,9 @@ contract LotterySweepstakes is AutoLoopVRFCompatible {
         emit TicketPurchased(msg.sender, count, roundCount);
     }
 
-    function entrantCount() external view returns (uint256) { return currentEntrants.length; }
+    function entrantCount() external view returns (uint256) {
+        return currentEntrants.length;
+    }
 
     // ── Keeper interface ───────────────────────────────────────────────────────
 
@@ -76,8 +78,8 @@ contract LotterySweepstakes is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady = currentEntrants.length > 0
-            && (block.timestamp - lastDraw) >= roundInterval;
+        loopIsReady =
+            currentEntrants.length > 0 && (block.timestamp - lastDraw) >= roundInterval;
         progressWithData = abi.encode(_loopID, currentEntrants.length);
     }
 

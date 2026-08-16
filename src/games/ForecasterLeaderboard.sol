@@ -79,16 +79,8 @@ contract ForecasterLeaderboard is AutoLoopCompatible {
         uint256 winnersCount,
         uint256 roundsProcessed
     );
-    event PrizeClaimed(
-        address indexed forecaster,
-        uint256 indexed season,
-        uint256 amount
-    );
-    event ScoreUpdated(
-        address indexed forecaster,
-        uint256 indexed roundId,
-        bool correct
-    );
+    event PrizeClaimed(address indexed forecaster, uint256 indexed season, uint256 amount);
+    event ScoreUpdated(address indexed forecaster, uint256 indexed roundId, bool correct);
     event PrizePoolFunded(address indexed from, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
@@ -284,7 +276,7 @@ contract ForecasterLeaderboard is AutoLoopCompatible {
         uint256 amount = seasonPrizes[season][_msgSender()];
         require(amount > 0, "ForecasterLeaderboard: no prize");
         seasonClaimed[season][_msgSender()] = true;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "ForecasterLeaderboard: transfer failed");
         emit PrizeClaimed(_msgSender(), season, amount);
     }
@@ -312,14 +304,14 @@ contract ForecasterLeaderboard is AutoLoopCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "ForecasterLeaderboard: zero address");
         require(amount <= protocolFeeBalance, "ForecasterLeaderboard: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "ForecasterLeaderboard: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }
@@ -331,9 +323,7 @@ contract ForecasterLeaderboard is AutoLoopCompatible {
     /// @dev O(n * topN) selection sort returning the top N forecasters by
     ///      seasonCorrect (≥1). Ties broken by lifetimeCorrect.
     ///      Safe for demo-scale forecaster counts (< a few hundred).
-    function _findTopN(
-        uint256 n
-    ) internal view returns (address[] memory result, uint256 found) {
+    function _findTopN(uint256 n) internal view returns (address[] memory result, uint256 found) {
         uint256 total = allForecasters.length;
         result = new address[](n < total ? n : total);
         bool[] memory used = new bool[](total);

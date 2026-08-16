@@ -6,10 +6,11 @@ import "../../src/agents/AIAgentLoop.sol";
 
 contract AIAgentLoopHarness is AIAgentLoop {
     constructor(uint256 _interval, bytes32 _hash, uint256 _maxTicks)
-        AIAgentLoop(_interval, _hash, _maxTicks) {}
+        AIAgentLoop(_interval, _hash, _maxTicks)
+    {}
 
     function tickForTest() external {
-        (,bytes memory data) = this.shouldProgressLoop();
+        (, bytes memory data) = this.shouldProgressLoop();
         this.progressLoop(data);
     }
 }

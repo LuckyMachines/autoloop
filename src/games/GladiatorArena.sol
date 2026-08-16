@@ -44,14 +44,10 @@ contract GladiatorArena is AutoLoopVRFCompatible {
     // ===============================================================
 
     event GladiatorMinted(
-        uint256 indexed gladiatorId,
-        address indexed owner,
-        uint32 initialVitality
+        uint256 indexed gladiatorId, address indexed owner, uint32 initialVitality
     );
     event GladiatorEntered(
-        uint256 indexed boutId,
-        uint256 indexed gladiatorId,
-        address indexed owner
+        uint256 indexed boutId, uint256 indexed gladiatorId, address indexed owner
     );
     event BoutResolved(
         uint256 indexed boutId,
@@ -62,10 +58,7 @@ contract GladiatorArena is AutoLoopVRFCompatible {
         bytes32 randomness
     );
     event WoundsDealt(
-        uint256 indexed boutId,
-        uint256 indexed gladiatorId,
-        uint32 oldVitality,
-        uint32 newVitality
+        uint256 indexed boutId, uint256 indexed gladiatorId, uint32 oldVitality, uint32 newVitality
     );
     event VictoryClaimed(address indexed to, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
@@ -158,17 +151,13 @@ contract GladiatorArena is AutoLoopVRFCompatible {
         require(msg.value >= gladiatorMintFee, "GladiatorArena: insufficient mint fee");
 
         gladiatorId = nextGladiatorId++;
-        _gladiators[gladiatorId] = Gladiator({
-            owner: _msgSender(),
-            vitality: initialVitality,
-            victories: 0,
-            bouts: 0
-        });
+        _gladiators[gladiatorId] =
+            Gladiator({owner: _msgSender(), vitality: initialVitality, victories: 0, bouts: 0});
         protocolFeeBalance += gladiatorMintFee;
 
         uint256 overpayment = msg.value - gladiatorMintFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "GladiatorArena: refund failed");
         }
 
@@ -181,14 +170,8 @@ contract GladiatorArena is AutoLoopVRFCompatible {
         Gladiator storage g = _gladiators[gladiatorId];
         require(g.owner == _msgSender(), "GladiatorArena: not owner");
         require(g.vitality >= minVitality, "GladiatorArena: gladiator retired");
-        require(
-            !enteredInCurrentBout[gladiatorId],
-            "GladiatorArena: already entered"
-        );
-        require(
-            currentEntrants.length < maxEntrantsPerBout,
-            "GladiatorArena: bout full"
-        );
+        require(!enteredInCurrentBout[gladiatorId], "GladiatorArena: already entered");
+        require(currentEntrants.length < maxEntrantsPerBout, "GladiatorArena: bout full");
 
         currentEntrants.push(gladiatorId);
         enteredInCurrentBout[gladiatorId] = true;
@@ -196,7 +179,7 @@ contract GladiatorArena is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - entryFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "GladiatorArena: refund failed");
         }
 
@@ -208,7 +191,7 @@ contract GladiatorArena is AutoLoopVRFCompatible {
         uint256 amount = pendingWithdrawals[_msgSender()];
         require(amount > 0, "GladiatorArena: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "GladiatorArena: withdraw failed");
         emit VictoryClaimed(_msgSender(), amount);
     }
@@ -224,30 +207,21 @@ contract GladiatorArena is AutoLoopVRFCompatible {
         returns (bool loopIsReady, bytes memory progressWithData)
     {
         loopIsReady =
-            (block.timestamp >= lastBoutAt + boutInterval) &&
-            (currentEntrants.length >= 2);
+            (block.timestamp >= lastBoutAt + boutInterval) && (currentEntrants.length >= 2);
         progressWithData = abi.encode(_loopID);
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
 
     function _progressInternal(bytes32 randomness, uint256 loopID) internal {
-        require(
-            block.timestamp >= lastBoutAt + boutInterval,
-            "GladiatorArena: too soon"
-        );
+        require(block.timestamp >= lastBoutAt + boutInterval, "GladiatorArena: too soon");
         require(loopID == _loopID, "GladiatorArena: stale loop id");
-        require(
-            currentEntrants.length >= 2,
-            "GladiatorArena: not enough entrants"
-        );
+        require(currentEntrants.length >= 2, "GladiatorArena: not enough entrants");
 
         // ---- Pick victor weighted by vitality ----
         uint256 totalVitality = 0;
@@ -277,14 +251,7 @@ contract GladiatorArena is AutoLoopVRFCompatible {
         winner.victories++;
         boutWinners[currentBoutId] = winnerId;
 
-        emit BoutResolved(
-            currentBoutId,
-            winnerId,
-            winner.owner,
-            prize,
-            protocolCut,
-            randomness
-        );
+        emit BoutResolved(currentBoutId, winnerId, winner.owner, prize, protocolCut, randomness);
 
         // ---- Apply wounds to all entrants ----
         for (uint256 i = 0; i < currentEntrants.length; i++) {
@@ -292,9 +259,7 @@ contract GladiatorArena is AutoLoopVRFCompatible {
             Gladiator storage g = _gladiators[entrantId];
             g.bouts++;
 
-            uint256 woundRoll = uint256(
-                keccak256(abi.encodePacked(randomness, entrantId, "wound"))
-            );
+            uint256 woundRoll = uint256(keccak256(abi.encodePacked(randomness, entrantId, "wound")));
             uint32 woundRange = WOUND_MAX - WOUND_MIN + 1;
             uint32 woundAmount = uint32(WOUND_MIN + (woundRoll % woundRange));
 
@@ -341,14 +306,14 @@ contract GladiatorArena is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "GladiatorArena: zero address");
         require(amount <= protocolFeeBalance, "GladiatorArena: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "GladiatorArena: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

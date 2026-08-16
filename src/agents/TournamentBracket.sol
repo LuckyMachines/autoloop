@@ -13,7 +13,11 @@ import "../AutoLoopVRFCompatible.sol";
 contract TournamentBracket is AutoLoopVRFCompatible {
     // ── Types ──────────────────────────────────────────────────────────────────
 
-    enum Phase { Registration, Active, Complete }
+    enum Phase {
+        Registration,
+        Active,
+        Complete
+    }
 
     struct MatchResult {
         address winner;
@@ -25,8 +29,8 @@ contract TournamentBracket is AutoLoopVRFCompatible {
 
     // ── State ──────────────────────────────────────────────────────────────────
 
-    Phase   public phase;
-    uint8   public maxPlayers;
+    Phase public phase;
+    uint8 public maxPlayers;
     uint256 public roundInterval;
     uint256 public lastRoundTime;
 
@@ -53,7 +57,13 @@ contract TournamentBracket is AutoLoopVRFCompatible {
     event PlayerRegistered(address indexed player, uint256 slot);
     event TournamentStarted(uint256 playerCount, uint256 prizePool);
     event RoundComplete(uint256 indexed round, uint256 matchesPlayed, uint256 remainingPlayers);
-    event MatchPlayed(address indexed winner, address indexed loser, uint256 round, uint256 matchIndex, bytes32 seed);
+    event MatchPlayed(
+        address indexed winner,
+        address indexed loser,
+        uint256 round,
+        uint256 matchIndex,
+        bytes32 seed
+    );
     event ChampionCrowned(address indexed champion, uint256 prize);
     event Refunded(address indexed player, uint256 amount);
 
@@ -69,9 +79,9 @@ contract TournamentBracket is AutoLoopVRFCompatible {
             "TournamentBracket: maxPlayers must be 4, 8, or 16"
         );
         roundInterval = _roundInterval;
-        maxPlayers    = _maxPlayers;
-        entryFee      = _entryFee;
-        phase         = Phase.Registration;
+        maxPlayers = _maxPlayers;
+        entryFee = _entryFee;
+        phase = Phase.Registration;
     }
 
     // ── Registration ──────────────────────────────────────────────────────────
@@ -138,8 +148,7 @@ contract TournamentBracket is AutoLoopVRFCompatible {
         // Subsequent ticks: resolve the current round
         bool needsSeed = (phase == Phase.Active && currentRound == 0 && bracket[0] == address(0));
         bool roundReady = phase == Phase.Active
-            && (block.timestamp - lastRoundTime) >= roundInterval
-            && activePlayers > 1;
+            && (block.timestamp - lastRoundTime) >= roundInterval && activePlayers > 1;
 
         loopIsReady = needsSeed || roundReady;
         progressWithData = abi.encode(_loopID, activePlayers);
@@ -174,7 +183,9 @@ contract TournamentBracket is AutoLoopVRFCompatible {
     function _seedBracket(bytes32 randomness) internal {
         uint256 n = players.length;
         address[] memory shuffled = new address[](n);
-        for (uint256 i = 0; i < n; i++) shuffled[i] = players[i];
+        for (uint256 i = 0; i < n; i++) {
+            shuffled[i] = players[i];
+        }
 
         for (uint256 i = n - 1; i > 0; i--) {
             uint256 j = uint256(keccak256(abi.encodePacked(randomness, i))) % (i + 1);
@@ -212,19 +223,21 @@ contract TournamentBracket is AutoLoopVRFCompatible {
             bool p1wins = (uint256(matchSeed) % 2 == 0);
 
             address winner = p1wins ? p1 : p2;
-            address loser  = p1wins ? p2 : p1;
+            address loser = p1wins ? p2 : p1;
 
             // Eliminate loser — keep winner in lower slot, clear higher slot
             bracket[slotA] = winner;
             bracket[slotB] = address(0);
 
-            matchHistory.push(MatchResult({
-                winner:     winner,
-                loser:      loser,
-                round:      currentRound,
-                matchIndex: matchIdx++,
-                seed:       matchSeed
-            }));
+            matchHistory.push(
+                MatchResult({
+                    winner: winner,
+                    loser: loser,
+                    round: currentRound,
+                    matchIndex: matchIdx++,
+                    seed: matchSeed
+                })
+            );
 
             emit MatchPlayed(winner, loser, currentRound, matchIdx - 1, matchSeed);
         }
@@ -249,7 +262,7 @@ contract TournamentBracket is AutoLoopVRFCompatible {
         }
         phase = Phase.Complete;
 
-        uint256 fee   = (prizePool * PROTOCOL_FEE_BPS) / 10_000;
+        uint256 fee = (prizePool * PROTOCOL_FEE_BPS) / 10_000;
         uint256 prize = prizePool - fee;
         protocolFeeBalance += fee;
         prizePool = 0;
@@ -276,8 +289,13 @@ contract TournamentBracket is AutoLoopVRFCompatible {
 
     // ── Views ──────────────────────────────────────────────────────────────────
 
-    function playerCount() external view returns (uint256) { return players.length; }
-    function matchHistoryLength() external view returns (uint256) { return matchHistory.length; }
+    function playerCount() external view returns (uint256) {
+        return players.length;
+    }
+
+    function matchHistoryLength() external view returns (uint256) {
+        return matchHistory.length;
+    }
 
     receive() external payable {}
 }

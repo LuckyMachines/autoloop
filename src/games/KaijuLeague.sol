@@ -43,16 +43,8 @@ contract KaijuLeague is AutoLoopVRFCompatible {
     //  Events
     // ===============================================================
 
-    event KaijuHatched(
-        uint256 indexed kaijuId,
-        address indexed owner,
-        uint32 initialHealth
-    );
-    event KaijuEntered(
-        uint256 indexed clashId,
-        uint256 indexed kaijuId,
-        address indexed owner
-    );
+    event KaijuHatched(uint256 indexed kaijuId, address indexed owner, uint32 initialHealth);
+    event KaijuEntered(uint256 indexed clashId, uint256 indexed kaijuId, address indexed owner);
     event ClashResolved(
         uint256 indexed clashId,
         uint256 indexed winningKaijuId,
@@ -62,10 +54,7 @@ contract KaijuLeague is AutoLoopVRFCompatible {
         bytes32 randomness
     );
     event DamageDealt(
-        uint256 indexed clashId,
-        uint256 indexed kaijuId,
-        uint32 oldHealth,
-        uint32 newHealth
+        uint256 indexed clashId, uint256 indexed kaijuId, uint32 oldHealth, uint32 newHealth
     );
     event WinningsClaimed(address indexed to, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
@@ -158,17 +147,13 @@ contract KaijuLeague is AutoLoopVRFCompatible {
         require(msg.value >= hatchFee, "KaijuLeague: insufficient hatch fee");
 
         kaijuId = nextKaijuId++;
-        _kaijus[kaijuId] = Kaiju({
-            owner: _msgSender(),
-            health: initialHealth,
-            victories: 0,
-            clashes: 0
-        });
+        _kaijus[kaijuId] =
+            Kaiju({owner: _msgSender(), health: initialHealth, victories: 0, clashes: 0});
         protocolFeeBalance += hatchFee;
 
         uint256 overpayment = msg.value - hatchFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "KaijuLeague: refund failed");
         }
 
@@ -181,14 +166,8 @@ contract KaijuLeague is AutoLoopVRFCompatible {
         Kaiju storage k = _kaijus[kaijuId];
         require(k.owner == _msgSender(), "KaijuLeague: not owner");
         require(k.health >= minHealth, "KaijuLeague: kaiju destroyed");
-        require(
-            !enteredInCurrentClash[kaijuId],
-            "KaijuLeague: already entered"
-        );
-        require(
-            currentEntrants.length < maxEntrantsPerClash,
-            "KaijuLeague: clash full"
-        );
+        require(!enteredInCurrentClash[kaijuId], "KaijuLeague: already entered");
+        require(currentEntrants.length < maxEntrantsPerClash, "KaijuLeague: clash full");
 
         currentEntrants.push(kaijuId);
         enteredInCurrentClash[kaijuId] = true;
@@ -196,7 +175,7 @@ contract KaijuLeague is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - entryFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "KaijuLeague: refund failed");
         }
 
@@ -208,7 +187,7 @@ contract KaijuLeague is AutoLoopVRFCompatible {
         uint256 amount = pendingWithdrawals[_msgSender()];
         require(amount > 0, "KaijuLeague: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "KaijuLeague: withdraw failed");
         emit WinningsClaimed(_msgSender(), amount);
     }
@@ -223,31 +202,22 @@ contract KaijuLeague is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady =
-            (block.timestamp >= lastClashAt + clashInterval) &&
-            (currentEntrants.length >= 2);
+        loopIsReady = (block.timestamp >= lastClashAt + clashInterval)
+            && (currentEntrants.length >= 2);
         progressWithData = abi.encode(_loopID);
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
 
     function _progressInternal(bytes32 randomness, uint256 loopID) internal {
-        require(
-            block.timestamp >= lastClashAt + clashInterval,
-            "KaijuLeague: too soon"
-        );
+        require(block.timestamp >= lastClashAt + clashInterval, "KaijuLeague: too soon");
         require(loopID == _loopID, "KaijuLeague: stale loop id");
-        require(
-            currentEntrants.length >= 2,
-            "KaijuLeague: not enough entrants"
-        );
+        require(currentEntrants.length >= 2, "KaijuLeague: not enough entrants");
 
         // ---- Pick winner weighted by health ----
         uint256 totalHealth = 0;
@@ -277,14 +247,7 @@ contract KaijuLeague is AutoLoopVRFCompatible {
         winner.victories++;
         clashWinners[currentClashId] = winnerId;
 
-        emit ClashResolved(
-            currentClashId,
-            winnerId,
-            winner.owner,
-            prize,
-            protocolCut,
-            randomness
-        );
+        emit ClashResolved(currentClashId, winnerId, winner.owner, prize, protocolCut, randomness);
 
         // ---- Deal damage to all entrants ----
         for (uint256 i = 0; i < currentEntrants.length; i++) {
@@ -292,9 +255,8 @@ contract KaijuLeague is AutoLoopVRFCompatible {
             Kaiju storage k = _kaijus[entrantId];
             k.clashes++;
 
-            uint256 damageRoll = uint256(
-                keccak256(abi.encodePacked(randomness, entrantId, "stomp"))
-            );
+            uint256 damageRoll =
+                uint256(keccak256(abi.encodePacked(randomness, entrantId, "stomp")));
             uint32 damageRange = DAMAGE_MAX - DAMAGE_MIN + 1;
             uint32 damageAmount = uint32(DAMAGE_MIN + (damageRoll % damageRange));
 
@@ -341,14 +303,14 @@ contract KaijuLeague is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "KaijuLeague: zero address");
         require(amount <= protocolFeeBalance, "KaijuLeague: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "KaijuLeague: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

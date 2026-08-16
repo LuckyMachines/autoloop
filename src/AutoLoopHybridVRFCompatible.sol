@@ -50,11 +50,7 @@ abstract contract AutoLoopHybridVRFCompatible is AutoLoopVRFCompatible {
      * @return ready True if the loop is ready to progress.
      * @return gameData Arbitrary bytes to pass through to _onTick/_onVRFTick.
      */
-    function _shouldProgress()
-        internal
-        view
-        virtual
-        returns (bool ready, bytes memory gameData);
+    function _shouldProgress() internal view virtual returns (bool ready, bytes memory gameData);
 
     /**
      * @notice Called on standard ticks (no VRF randomness).
@@ -117,16 +113,12 @@ abstract contract AutoLoopHybridVRFCompatible is AutoLoopVRFCompatible {
 
         if (progressWithData.length >= 640) {
             // VRF tick — unwrap envelope and verify proof
-            (bytes32 randomness, bytes memory innerData) = _verifyAndExtractRandomness(
-                progressWithData,
-                tx.origin
-            );
+            (bytes32 randomness, bytes memory innerData) =
+                _verifyAndExtractRandomness(progressWithData, tx.origin);
 
             // innerData is the original abi.encode(needsVRF, loopID, gameData)
-            (bool needsVRF, uint256 loopID, bytes memory gameData) = abi.decode(
-                innerData,
-                (bool, uint256, bytes)
-            );
+            (bool needsVRF, uint256 loopID, bytes memory gameData) =
+                abi.decode(innerData, (bool, uint256, bytes));
 
             require(needsVRF, "VRF envelope sent for non-VRF tick");
             require(loopID == _loopID, "Stale loop ID");
@@ -137,10 +129,8 @@ abstract contract AutoLoopHybridVRFCompatible is AutoLoopVRFCompatible {
             ++_loopID;
         } else {
             // Standard tick — decode directly
-            (bool needsVRF, uint256 loopID, bytes memory gameData) = abi.decode(
-                progressWithData,
-                (bool, uint256, bytes)
-            );
+            (bool needsVRF, uint256 loopID, bytes memory gameData) =
+                abi.decode(progressWithData, (bool, uint256, bytes));
 
             require(!needsVRF, "VRF required but no proof provided");
             require(loopID == _loopID, "Stale loop ID");
@@ -155,11 +145,7 @@ abstract contract AutoLoopHybridVRFCompatible is AutoLoopVRFCompatible {
     /**
      * @notice ERC165 support — advertises hybrid VRF compatibility.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override returns (bool) {
-        return
-            interfaceId == HYBRID_VRF_INTERFACE_ID ||
-            super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == HYBRID_VRF_INTERFACE_ID || super.supportsInterface(interfaceId);
     }
 }

@@ -109,29 +109,22 @@ contract AutoLoop is AutoLoopBase {
      * @param contractAddress the address of the contract receiving update
      * @param progressWithData some data to pass along with update
      */
-    function progressLoop(
-        address contractAddress,
-        bytes calldata progressWithData
-    ) external onlyRole(CONTROLLER_ROLE) nonReentrant whenNotPaused {
+    function progressLoop(address contractAddress, bytes calldata progressWithData)
+        external
+        onlyRole(CONTROLLER_ROLE)
+        nonReentrant
+        whenNotPaused
+    {
         require(
-            contractAddress.supportsInterface(
-                type(AutoLoopCompatibleInterface).interfaceId
-            ),
+            contractAddress.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId),
             "AutoLoop compatible contract required"
         );
-        require(
-            !(_hadUpdate[contractAddress][block.number]),
-            "Contract already updated this block"
-        );
-        require(
-            tx.gasprice <= maxGasPriceFor(contractAddress),
-            "Gas price too high"
-        );
+        require(!(_hadUpdate[contractAddress][block.number]), "Contract already updated this block");
+        require(tx.gasprice <= maxGasPriceFor(contractAddress), "Gas price too high");
         uint256 startGas = gasleft();
         // progress loop on contract
-        (bool success, ) = contractAddress.call(
-            abi.encodeWithSignature("progressLoop(bytes)", progressWithData)
-        );
+        (bool success,) =
+            contractAddress.call(abi.encodeWithSignature("progressLoop(bytes)", progressWithData));
         // Calculate this first to get cost of update + this function
         uint256 txGas = startGas - gasleft();
         require(success, "Unable to progress loop. Call not a success");
@@ -147,7 +140,7 @@ contract AutoLoop is AutoLoopBase {
             "AutoLoop compatible contract balance too low to run update + fee + reserve."
         );
         balance[contractAddress] -= totalCost;
-        (bool sent, ) = _msgSender().call{value: gasCost + controllerFee}("");
+        (bool sent,) = _msgSender().call{value: gasCost + controllerFee}("");
         require(sent, "Failed to repay controller");
 
         _protocolBalance += (fee - controllerFee);
@@ -155,144 +148,121 @@ contract AutoLoop is AutoLoopBase {
         _hadUpdate[contractAddress][block.number] = true;
 
         emit AutoLoopProgressed(
-            contractAddress,
-            block.timestamp,
-            _msgSender(),
-            gasUsed,
-            tx.gasprice,
-            totalCost,
-            fee
+            contractAddress, block.timestamp, _msgSender(), gasUsed, tx.gasprice, totalCost, fee
         );
     }
 
     // REGISTRAR //
-    function addController(
-        address controllerAddress
-    ) public onlyRole(REGISTRAR_ROLE) {
+    function addController(address controllerAddress) public onlyRole(REGISTRAR_ROLE) {
         _grantRole(CONTROLLER_ROLE, controllerAddress);
     }
 
-    function removeController(
-        address controllerAddress
-    ) public onlyRole(REGISTRAR_ROLE) {
+    function removeController(address controllerAddress) public onlyRole(REGISTRAR_ROLE) {
         _revokeRole(CONTROLLER_ROLE, controllerAddress);
     }
 
-    function deposit(
-        address registeredUser
-    ) external payable onlyRole(REGISTRAR_ROLE) whenNotPaused {
+    function deposit(address registeredUser)
+        external
+        payable
+        onlyRole(REGISTRAR_ROLE)
+        whenNotPaused
+    {
         balance[registeredUser] += msg.value;
     }
 
-    function requestRefund(
-        address registeredUser,
-        address toAddress
-    ) external onlyRole(REGISTRAR_ROLE) nonReentrant {
+    function requestRefund(address registeredUser, address toAddress)
+        external
+        onlyRole(REGISTRAR_ROLE)
+        nonReentrant
+    {
         require(toAddress != address(0), "Cannot refund to zero address");
         require(balance[registeredUser] > 0, "User balance is zero.");
         uint256 refundAmount = balance[registeredUser];
         balance[registeredUser] = 0;
-        (bool sent, ) = toAddress.call{value: refundAmount}("");
+        (bool sent,) = toAddress.call{value: refundAmount}("");
         require(sent, "Failed to send refund");
     }
 
-    function setMaxGas(
-        address registerdUser,
-        uint256 maxGasAmount
-    ) external onlyRole(REGISTRAR_ROLE) {
-        maxGas[registerdUser] = maxGasAmount > GAS_THRESHOLD
-            ? GAS_THRESHOLD
-            : maxGasAmount;
+    function setMaxGas(address registerdUser, uint256 maxGasAmount)
+        external
+        onlyRole(REGISTRAR_ROLE)
+    {
+        maxGas[registerdUser] = maxGasAmount > GAS_THRESHOLD ? GAS_THRESHOLD : maxGasAmount;
     }
 
-    function setMaxGasPrice(
-        address registerdUser,
-        uint256 maxGasPriceAmount
-    ) external onlyRole(REGISTRAR_ROLE) {
+    function setMaxGasPrice(address registerdUser, uint256 maxGasPriceAmount)
+        external
+        onlyRole(REGISTRAR_ROLE)
+    {
         maxGasPrice[registerdUser] = maxGasPriceAmount;
     }
 
-    function setMinBalance(
-        address registeredUser,
-        uint256 minBalanceAmount
-    ) external onlyRole(REGISTRAR_ROLE) {
+    function setMinBalance(address registeredUser, uint256 minBalanceAmount)
+        external
+        onlyRole(REGISTRAR_ROLE)
+    {
         minBalance[registeredUser] = minBalanceAmount;
     }
 
     // ADMIN //
-    function setControllerFeePortion(
-        uint256 controllerFeePercentage
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            controllerFeePercentage <= 100,
-            "Percentage should be less than or equal to 100"
-        );
+    function setControllerFeePortion(uint256 controllerFeePercentage)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        require(controllerFeePercentage <= 100, "Percentage should be less than or equal to 100");
         CONTROLLER_FEE_PORTION = controllerFeePercentage;
         PROTOCOL_FEE_PORTION = 100 - CONTROLLER_FEE_PORTION;
     }
 
-    function setProtocolFeePortion(
-        uint256 protocolFeePortion
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            protocolFeePortion <= 100,
-            "Percentage should be less than or equal to 100"
-        );
-        PROTOCOL_FEE_PORTION = protocolFeePortion;
+    function setProtocolFeePortion(uint256 protocolFeePercentage)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        require(protocolFeePercentage <= 100, "Percentage should be less than or equal to 100");
+        PROTOCOL_FEE_PORTION = protocolFeePercentage;
         CONTROLLER_FEE_PORTION = 100 - PROTOCOL_FEE_PORTION;
     }
 
-    function setMaxGasDefault(
-        uint256 maxGasDefaultValue
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMaxGasDefault(uint256 maxGasDefaultValue) public onlyRole(DEFAULT_ADMIN_ROLE) {
         MAX_GAS = maxGasDefaultValue;
     }
 
-    function setMaxGasPriceDefault(
-        uint256 maxGasPriceDefaultValue
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMaxGasPriceDefault(uint256 maxGasPriceDefaultValue)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         MAX_GAS_PRICE = maxGasPriceDefaultValue;
     }
 
-    function setGasBuffer(
-        uint256 gasBufferValue
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setGasBuffer(uint256 gasBufferValue) public onlyRole(DEFAULT_ADMIN_ROLE) {
         GAS_BUFFER = gasBufferValue;
     }
 
-    function setGasThreshold(
-        uint256 gasThresholdValue
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setGasThreshold(uint256 gasThresholdValue) public onlyRole(DEFAULT_ADMIN_ROLE) {
         GAS_THRESHOLD = gasThresholdValue;
     }
 
-    function setBaseFee(
-        uint256 baseFeePercentage
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseFee(uint256 baseFeePercentage) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(baseFeePercentage <= 100, "Percentage should be <= 100");
         BASE_FEE = baseFeePercentage;
     }
 
-    function withdrawProtocolFees(
-        uint256 amount,
-        address toAddress
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function withdrawProtocolFees(uint256 amount, address toAddress)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        nonReentrant
+    {
         require(toAddress != address(0), "Cannot withdraw to zero address");
-        require(
-            _protocolBalance >= amount,
-            "withdraw amount greater than protocol balance"
-        );
+        require(_protocolBalance >= amount, "withdraw amount greater than protocol balance");
         _protocolBalance -= amount;
-        (bool sent, ) = toAddress.call{value: amount}("");
+        (bool sent,) = toAddress.call{value: amount}("");
         require(sent, "Error withdrawing protocol fees");
     }
 
     // Internal //
 
     // returns usable amount of gas given a total gas amount (removes the fee)
-    function _usableGas(
-        uint256 totalGas
-    ) internal view returns (uint256 gasAmount) {
+    function _usableGas(uint256 totalGas) internal view returns (uint256 gasAmount) {
         gasAmount = (totalGas * 100) / (100 + BASE_FEE);
     }
 

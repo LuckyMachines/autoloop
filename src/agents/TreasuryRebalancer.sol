@@ -14,9 +14,9 @@ contract TreasuryRebalancer is AutoLoopCompatible {
     // ── Types ──────────────────────────────────────────────────────────────────
 
     struct TokenConfig {
-        address token;       // ERC20 address (address(0) = native ETH)
-        uint256 targetBps;   // target weight in basis points (sum must = 10000)
-        string  symbol;
+        address token; // ERC20 address (address(0) = native ETH)
+        uint256 targetBps; // target weight in basis points (sum must = 10000)
+        string symbol;
     }
 
     struct RebalanceRecord {
@@ -32,7 +32,7 @@ contract TreasuryRebalancer is AutoLoopCompatible {
     TokenConfig public token0;
     TokenConfig public token1;
 
-    uint256 public driftThresholdBps;   // trigger rebalance when drift > this (e.g. 500 = 5%)
+    uint256 public driftThresholdBps; // trigger rebalance when drift > this (e.g. 500 = 5%)
     uint256 public checkInterval;
     uint256 public lastCheck;
     uint256 public rebalanceCount;
@@ -74,8 +74,8 @@ contract TreasuryRebalancer is AutoLoopCompatible {
         require(_driftThreshold > 0, "TreasuryRebalancer: drift=0");
         require(_checkInterval > 0, "TreasuryRebalancer: interval=0");
 
-        token0 = TokenConfig({ token: _token0, targetBps: _token0Target, symbol: "T0" });
-        token1 = TokenConfig({ token: _token1, targetBps: 10_000 - _token0Target, symbol: "T1" });
+        token0 = TokenConfig({token: _token0, targetBps: _token0Target, symbol: "T0"});
+        token1 = TokenConfig({token: _token1, targetBps: 10_000 - _token0Target, symbol: "T1"});
         driftThresholdBps = _driftThreshold;
         checkInterval = _checkInterval;
         lastCheck = block.timestamp;
@@ -107,20 +107,24 @@ contract TreasuryRebalancer is AutoLoopCompatible {
         ++rebalanceCount;
 
         uint256 t1Bps = 10_000 - t0Bps;
-        history.push(RebalanceRecord({
-            loopID: loopID,
-            timestamp: block.timestamp,
-            token0BalanceBps: t0Bps,
-            token1BalanceBps: t1Bps,
-            driftBps: drift
-        }));
+        history.push(
+            RebalanceRecord({
+                loopID: loopID,
+                timestamp: block.timestamp,
+                token0BalanceBps: t0Bps,
+                token1BalanceBps: t1Bps,
+                driftBps: drift
+            })
+        );
 
         if (drift > driftThresholdBps) {
             // Determine direction: if token0 overweight, sell token0 for token1
-            address tokenIn  = t0Bps > token0.targetBps ? token0.token : token1.token;
+            address tokenIn = t0Bps > token0.targetBps ? token0.token : token1.token;
             address tokenOut = t0Bps > token0.targetBps ? token1.token : token0.token;
-            uint256 tgtBps   = t0Bps > token0.targetBps ? token0.targetBps : token1.targetBps;
-            emit RebalanceRequired(loopID, tokenIn, tokenOut, t0Bps > token0.targetBps ? t0Bps : t1Bps, tgtBps, drift);
+            uint256 tgtBps = t0Bps > token0.targetBps ? token0.targetBps : token1.targetBps;
+            emit RebalanceRequired(
+                loopID, tokenIn, tokenOut, t0Bps > token0.targetBps ? t0Bps : t1Bps, tgtBps, drift
+            );
         } else {
             emit DriftWithinBounds(loopID, drift);
         }
@@ -135,9 +139,7 @@ contract TreasuryRebalancer is AutoLoopCompatible {
         uint256 total = v0 + v1;
         if (total == 0) return (token0.targetBps, 0);
         t0Bps = (v0 * 10_000) / total;
-        drift = t0Bps > token0.targetBps
-            ? t0Bps - token0.targetBps
-            : token0.targetBps - t0Bps;
+        drift = t0Bps > token0.targetBps ? t0Bps - token0.targetBps : token0.targetBps - t0Bps;
     }
 
     /// @notice Returns the ETH-denominated value of a token holding.
@@ -146,9 +148,8 @@ contract TreasuryRebalancer is AutoLoopCompatible {
         if (token == address(0)) return address(this).balance;
         // For mock/demo: treat ERC20 balance as ETH-equivalent (1:1)
         // Real deployment sets priceOracle to a TWAP or Chainlink feed
-        (bool ok, bytes memory data) = token.staticcall(
-            abi.encodeWithSignature("balanceOf(address)", address(this))
-        );
+        (bool ok, bytes memory data) =
+            token.staticcall(abi.encodeWithSignature("balanceOf(address)", address(this)));
         if (!ok || data.length < 32) return 0;
         return abi.decode(data, (uint256));
     }
@@ -157,7 +158,9 @@ contract TreasuryRebalancer is AutoLoopCompatible {
         return _currentDrift();
     }
 
-    function historyLength() external view returns (uint256) { return history.length; }
+    function historyLength() external view returns (uint256) {
+        return history.length;
+    }
 
     // ── Admin ──────────────────────────────────────────────────────────────────
 

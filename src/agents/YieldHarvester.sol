@@ -13,10 +13,18 @@ contract MockVault {
     event YieldAccrued(uint256 amount);
     event Harvested(address indexed by, uint256 amount);
 
-    constructor(address _harvester) { harvester = _harvester; }
+    constructor(address _harvester) {
+        harvester = _harvester;
+    }
 
-    function deposit() external payable { shares[msg.sender] += msg.value; }
-    function accrueYield(uint256 amount) external payable { pendingYield += amount; emit YieldAccrued(amount); }
+    function deposit() external payable {
+        shares[msg.sender] += msg.value;
+    }
+
+    function accrueYield(uint256 amount) external payable {
+        pendingYield += amount;
+        emit YieldAccrued(amount);
+    }
 
     function harvest() external returns (uint256 amount) {
         require(msg.sender == harvester, "MockVault: only harvester");
@@ -42,7 +50,7 @@ contract YieldHarvester is AutoLoopCompatible {
 
     address payable public vault;
     uint256 public harvestInterval;
-    uint256 public minYieldToHarvest;   // only harvest if pending yield >= this
+    uint256 public minYieldToHarvest; // only harvest if pending yield >= this
     uint256 public lastHarvest;
     uint256 public totalHarvested;
     uint256 public harvestCount;

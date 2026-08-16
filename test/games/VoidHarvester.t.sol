@@ -93,9 +93,7 @@ contract VoidHarvesterTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -104,10 +102,7 @@ contract VoidHarvesterTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -137,15 +132,11 @@ contract VoidHarvesterTest is Test {
     // ===============================================================
 
     function test_SupportsVRFInterface() public view {
-        assertTrue(
-            game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible")))
-        );
+        assertTrue(game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible"))));
     }
 
     function test_SupportsAutoLoopInterface() public view {
-        assertTrue(
-            game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId)
-        );
+        assertTrue(game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId));
     }
 
     function test_InitialState() public view {
@@ -174,40 +165,59 @@ contract VoidHarvesterTest is Test {
     function test_ConstructorRejectsZeroInterval() public {
         vm.expectRevert("VoidHarvester: missionInterval=0");
         new VoidHarvesterHarness(
-            PROBE_FEE, MISSION_FEE, 0, PROTOCOL_RAKE_BPS,
-            INITIAL_INTEGRITY, MIN_INTEGRITY, MAX_PROBES
+            PROBE_FEE,
+            MISSION_FEE,
+            0,
+            PROTOCOL_RAKE_BPS,
+            INITIAL_INTEGRITY,
+            MIN_INTEGRITY,
+            MAX_PROBES
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("VoidHarvester: rake > 20%");
         new VoidHarvesterHarness(
-            PROBE_FEE, MISSION_FEE, MISSION_INTERVAL, 2001,
-            INITIAL_INTEGRITY, MIN_INTEGRITY, MAX_PROBES
+            PROBE_FEE,
+            MISSION_FEE,
+            MISSION_INTERVAL,
+            2001,
+            INITIAL_INTEGRITY,
+            MIN_INTEGRITY,
+            MAX_PROBES
         );
     }
 
     function test_ConstructorRejectsBadIntegrityOrdering() public {
         vm.expectRevert("VoidHarvester: integrity ordering");
         new VoidHarvesterHarness(
-            PROBE_FEE, MISSION_FEE, MISSION_INTERVAL, PROTOCOL_RAKE_BPS,
-            50, 500, MAX_PROBES
+            PROBE_FEE, MISSION_FEE, MISSION_INTERVAL, PROTOCOL_RAKE_BPS, 50, 500, MAX_PROBES
         );
     }
 
     function test_ConstructorRejectsLowMaxProbes() public {
         vm.expectRevert("VoidHarvester: maxProbes < 2");
         new VoidHarvesterHarness(
-            PROBE_FEE, MISSION_FEE, MISSION_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_INTEGRITY, MIN_INTEGRITY, 1
+            PROBE_FEE,
+            MISSION_FEE,
+            MISSION_INTERVAL,
+            PROTOCOL_RAKE_BPS,
+            INITIAL_INTEGRITY,
+            MIN_INTEGRITY,
+            1
         );
     }
 
     function test_ConstructorRejectsHighMaxProbes() public {
         vm.expectRevert("VoidHarvester: maxProbes > 16");
         new VoidHarvesterHarness(
-            PROBE_FEE, MISSION_FEE, MISSION_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_INTEGRITY, MIN_INTEGRITY, 17
+            PROBE_FEE,
+            MISSION_FEE,
+            MISSION_INTERVAL,
+            PROTOCOL_RAKE_BPS,
+            INITIAL_INTEGRITY,
+            MIN_INTEGRITY,
+            17
         );
     }
 
@@ -326,20 +336,20 @@ contract VoidHarvesterTest is Test {
         vm.prank(alice);
         game.launchMission{value: MISSION_FEE}(1);
         vm.warp(block.timestamp + MISSION_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressTrueWithTwoProbes() public {
         _enterPair();
         vm.warp(block.timestamp + MISSION_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready);
     }
 
     function test_ShouldProgressFalseBeforeInterval() public {
         _enterPair();
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
@@ -361,8 +371,7 @@ contract VoidHarvesterTest is Test {
         uint256 expectedRake = (poolBefore * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 expectedPrize = poolBefore - expectedRake;
 
-        uint256 withdrawable = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 withdrawable = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         assertEq(withdrawable, expectedPrize);
         assertEq(game.protocolFeeBalance() - PROBE_FEE * 2, expectedRake);
     }
@@ -472,9 +481,7 @@ contract VoidHarvesterTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             ts += MISSION_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("mission", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("mission", i)))));
 
             if (i < 4) {
                 vm.prank(alice);
@@ -495,15 +502,19 @@ contract VoidHarvesterTest is Test {
         for (uint256 i = 0; i < 80; i++) {
             ts += MISSION_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("decommission", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("decommission", i)))));
 
             if (game.getProbe(1).integrity > MIN_INTEGRITY && i < 79) {
                 vm.prank(alice);
-                try game.launchMission{value: MISSION_FEE}(1) {} catch { break; }
+                try game.launchMission{value: MISSION_FEE}(1) {}
+                catch {
+                    break;
+                }
                 vm.prank(bob);
-                try game.launchMission{value: MISSION_FEE}(2) {} catch { break; }
+                try game.launchMission{value: MISSION_FEE}(2) {}
+                catch {
+                    break;
+                }
             } else {
                 break;
             }
@@ -600,8 +611,7 @@ contract VoidHarvesterTest is Test {
         uint256 rake = (pool * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 prize = pool - rake;
 
-        uint256 totalPending = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 totalPending = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         uint256 feeDelta = game.protocolFeeBalance() - feeBefore;
 
         assertEq(totalPending, prize, "prize to one winner");
@@ -640,9 +650,8 @@ contract VoidHarvesterTest is Test {
         vm.warp(block.timestamp + MISSION_INTERVAL);
         game.tickForTest(randomness);
 
-        uint256 totalVictories = game.getProbe(1).victories +
-            game.getProbe(2).victories +
-            game.getProbe(3).victories;
+        uint256 totalVictories =
+            game.getProbe(1).victories + game.getProbe(2).victories + game.getProbe(3).victories;
         assertEq(totalVictories, 1, "exactly one winner");
     }
 

@@ -93,9 +93,7 @@ contract MechBrawlTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -104,10 +102,7 @@ contract MechBrawlTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -137,15 +132,11 @@ contract MechBrawlTest is Test {
     // ===============================================================
 
     function test_SupportsVRFInterface() public view {
-        assertTrue(
-            game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible")))
-        );
+        assertTrue(game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible"))));
     }
 
     function test_SupportsAutoLoopInterface() public view {
-        assertTrue(
-            game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId)
-        );
+        assertTrue(game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId));
     }
 
     function test_InitialState() public view {
@@ -174,40 +165,35 @@ contract MechBrawlTest is Test {
     function test_ConstructorRejectsZeroInterval() public {
         vm.expectRevert("MechBrawl: brawlInterval=0");
         new MechBrawlHarness(
-            DEPLOY_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS,
-            INITIAL_ARMOR, MIN_ARMOR, MAX_ENTRANTS
+            DEPLOY_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS, INITIAL_ARMOR, MIN_ARMOR, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("MechBrawl: rake > 20%");
         new MechBrawlHarness(
-            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, 2001,
-            INITIAL_ARMOR, MIN_ARMOR, MAX_ENTRANTS
+            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, 2001, INITIAL_ARMOR, MIN_ARMOR, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsBadArmorOrdering() public {
         vm.expectRevert("MechBrawl: armor ordering");
         new MechBrawlHarness(
-            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, PROTOCOL_RAKE_BPS,
-            50, 500, MAX_ENTRANTS
+            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, PROTOCOL_RAKE_BPS, 50, 500, MAX_ENTRANTS
         );
     }
 
     function test_ConstructorRejectsLowMaxEntrants() public {
         vm.expectRevert("MechBrawl: maxEntrants < 2");
         new MechBrawlHarness(
-            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_ARMOR, MIN_ARMOR, 1
+            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, PROTOCOL_RAKE_BPS, INITIAL_ARMOR, MIN_ARMOR, 1
         );
     }
 
     function test_ConstructorRejectsHighMaxEntrants() public {
         vm.expectRevert("MechBrawl: maxEntrants > 16");
         new MechBrawlHarness(
-            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_ARMOR, MIN_ARMOR, 17
+            DEPLOY_FEE, ENTRY_FEE, BRAWL_INTERVAL, PROTOCOL_RAKE_BPS, INITIAL_ARMOR, MIN_ARMOR, 17
         );
     }
 
@@ -326,20 +312,20 @@ contract MechBrawlTest is Test {
         vm.prank(alice);
         game.joinBrawl{value: ENTRY_FEE}(1);
         vm.warp(block.timestamp + BRAWL_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressTrueWithTwoMechs() public {
         _enterPair();
         vm.warp(block.timestamp + BRAWL_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready);
     }
 
     function test_ShouldProgressFalseBeforeInterval() public {
         _enterPair();
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
@@ -361,8 +347,7 @@ contract MechBrawlTest is Test {
         uint256 expectedRake = (poolBefore * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 expectedPrize = poolBefore - expectedRake;
 
-        uint256 withdrawable = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 withdrawable = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         assertEq(withdrawable, expectedPrize);
         assertEq(game.protocolFeeBalance() - DEPLOY_FEE * 2, expectedRake);
     }
@@ -472,9 +457,7 @@ contract MechBrawlTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             ts += BRAWL_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("brawl", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("brawl", i)))));
 
             if (i < 4) {
                 vm.prank(alice);
@@ -495,15 +478,19 @@ contract MechBrawlTest is Test {
         for (uint256 i = 0; i < 80; i++) {
             ts += BRAWL_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("scrap", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("scrap", i)))));
 
             if (game.getMech(1).armor > MIN_ARMOR && i < 79) {
                 vm.prank(alice);
-                try game.joinBrawl{value: ENTRY_FEE}(1) {} catch { break; }
+                try game.joinBrawl{value: ENTRY_FEE}(1) {}
+                catch {
+                    break;
+                }
                 vm.prank(bob);
-                try game.joinBrawl{value: ENTRY_FEE}(2) {} catch { break; }
+                try game.joinBrawl{value: ENTRY_FEE}(2) {}
+                catch {
+                    break;
+                }
             } else {
                 break;
             }
@@ -600,8 +587,7 @@ contract MechBrawlTest is Test {
         uint256 rake = (pool * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 prize = pool - rake;
 
-        uint256 totalPending = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 totalPending = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         uint256 feeDelta = game.protocolFeeBalance() - feeBefore;
 
         assertEq(totalPending, prize, "prize to one winner");
@@ -640,9 +626,8 @@ contract MechBrawlTest is Test {
         vm.warp(block.timestamp + BRAWL_INTERVAL);
         game.tickForTest(randomness);
 
-        uint256 totalVictories = game.getMech(1).victories +
-            game.getMech(2).victories +
-            game.getMech(3).victories;
+        uint256 totalVictories =
+            game.getMech(1).victories + game.getMech(2).victories + game.getMech(3).victories;
         assertEq(totalVictories, 1, "exactly one winner");
     }
 

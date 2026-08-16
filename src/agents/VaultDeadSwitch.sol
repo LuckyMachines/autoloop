@@ -12,9 +12,9 @@ contract VaultDeadSwitch is AutoLoopCompatible {
 
     address public owner;
     address public beneficiary;
-    uint256 public checkInInterval;   // seconds between required check-ins
-    uint256 public lastCheckIn;       // timestamp of last owner check-in
-    bool    public triggered;         // true once the switch has fired
+    uint256 public checkInInterval; // seconds between required check-ins
+    uint256 public lastCheckIn; // timestamp of last owner check-in
+    bool public triggered; // true once the switch has fired
 
     uint256 public protocolFeeBalance;
     uint256 public constant PROTOCOL_FEE_BPS = 200; // 2%

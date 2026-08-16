@@ -37,9 +37,7 @@ contract Deploy is Script {
 
         // Deploy proxies (M7: use abi.encodeCall for type safety)
         TransparentUpgradeableProxy autoLoopProxy = new TransparentUpgradeableProxy(
-            address(autoLoopImpl),
-            proxyAdminAddress,
-            abi.encodeCall(AutoLoop.initialize, ("0.1.0"))
+            address(autoLoopImpl), proxyAdminAddress, abi.encodeCall(AutoLoop.initialize, ("0.1.0"))
         );
 
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(

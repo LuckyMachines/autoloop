@@ -43,16 +43,8 @@ contract MechBrawl is AutoLoopVRFCompatible {
     //  Events
     // ===============================================================
 
-    event MechDeployed(
-        uint256 indexed mechId,
-        address indexed owner,
-        uint32 initialArmor
-    );
-    event MechJoined(
-        uint256 indexed brawlId,
-        uint256 indexed mechId,
-        address indexed owner
-    );
+    event MechDeployed(uint256 indexed mechId, address indexed owner, uint32 initialArmor);
+    event MechJoined(uint256 indexed brawlId, uint256 indexed mechId, address indexed owner);
     event BrawlResolved(
         uint256 indexed brawlId,
         uint256 indexed winningMechId,
@@ -62,10 +54,7 @@ contract MechBrawl is AutoLoopVRFCompatible {
         bytes32 randomness
     );
     event HullDamaged(
-        uint256 indexed brawlId,
-        uint256 indexed mechId,
-        uint32 oldArmor,
-        uint32 newArmor
+        uint256 indexed brawlId, uint256 indexed mechId, uint32 oldArmor, uint32 newArmor
     );
     event WinningsClaimed(address indexed to, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
@@ -156,17 +145,12 @@ contract MechBrawl is AutoLoopVRFCompatible {
         require(msg.value >= deployFee, "MechBrawl: insufficient deploy fee");
 
         mechId = nextMechId++;
-        _mechs[mechId] = Mech({
-            owner: _msgSender(),
-            armor: initialArmor,
-            victories: 0,
-            brawls: 0
-        });
+        _mechs[mechId] = Mech({owner: _msgSender(), armor: initialArmor, victories: 0, brawls: 0});
         protocolFeeBalance += deployFee;
 
         uint256 overpayment = msg.value - deployFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "MechBrawl: refund failed");
         }
 
@@ -179,14 +163,8 @@ contract MechBrawl is AutoLoopVRFCompatible {
         Mech storage m = _mechs[mechId];
         require(m.owner == _msgSender(), "MechBrawl: not owner");
         require(m.armor >= minArmor, "MechBrawl: mech scrapped");
-        require(
-            !enteredInCurrentBrawl[mechId],
-            "MechBrawl: already entered"
-        );
-        require(
-            currentEntrants.length < maxEntrantsPerBrawl,
-            "MechBrawl: brawl full"
-        );
+        require(!enteredInCurrentBrawl[mechId], "MechBrawl: already entered");
+        require(currentEntrants.length < maxEntrantsPerBrawl, "MechBrawl: brawl full");
 
         currentEntrants.push(mechId);
         enteredInCurrentBrawl[mechId] = true;
@@ -194,7 +172,7 @@ contract MechBrawl is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - entryFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "MechBrawl: refund failed");
         }
 
@@ -206,7 +184,7 @@ contract MechBrawl is AutoLoopVRFCompatible {
         uint256 amount = pendingWithdrawals[_msgSender()];
         require(amount > 0, "MechBrawl: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "MechBrawl: withdraw failed");
         emit WinningsClaimed(_msgSender(), amount);
     }
@@ -221,31 +199,22 @@ contract MechBrawl is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady =
-            (block.timestamp >= lastBrawlAt + brawlInterval) &&
-            (currentEntrants.length >= 2);
+        loopIsReady = (block.timestamp >= lastBrawlAt + brawlInterval)
+            && (currentEntrants.length >= 2);
         progressWithData = abi.encode(_loopID);
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
 
     function _progressInternal(bytes32 randomness, uint256 loopID) internal {
-        require(
-            block.timestamp >= lastBrawlAt + brawlInterval,
-            "MechBrawl: too soon"
-        );
+        require(block.timestamp >= lastBrawlAt + brawlInterval, "MechBrawl: too soon");
         require(loopID == _loopID, "MechBrawl: stale loop id");
-        require(
-            currentEntrants.length >= 2,
-            "MechBrawl: not enough entrants"
-        );
+        require(currentEntrants.length >= 2, "MechBrawl: not enough entrants");
 
         // ---- Pick winner weighted by armor ----
         uint256 totalArmor = 0;
@@ -274,14 +243,7 @@ contract MechBrawl is AutoLoopVRFCompatible {
         pendingWithdrawals[winner.owner] += prize;
         winner.victories++;
 
-        emit BrawlResolved(
-            currentBrawlId,
-            winnerId,
-            winner.owner,
-            prize,
-            protocolCut,
-            randomness
-        );
+        emit BrawlResolved(currentBrawlId, winnerId, winner.owner, prize, protocolCut, randomness);
 
         // ---- Apply hull damage to all entrants ----
         for (uint256 i = 0; i < currentEntrants.length; i++) {
@@ -289,9 +251,8 @@ contract MechBrawl is AutoLoopVRFCompatible {
             Mech storage m = _mechs[entrantId];
             m.brawls++;
 
-            uint256 damageRoll = uint256(
-                keccak256(abi.encodePacked(randomness, entrantId, "damage"))
-            );
+            uint256 damageRoll =
+                uint256(keccak256(abi.encodePacked(randomness, entrantId, "damage")));
             uint32 damageRange = DAMAGE_MAX - DAMAGE_MIN + 1;
             uint32 damageAmount = uint32(DAMAGE_MIN + (damageRoll % damageRange));
 
@@ -338,14 +299,14 @@ contract MechBrawl is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "MechBrawl: zero address");
         require(amount <= protocolFeeBalance, "MechBrawl: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "MechBrawl: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

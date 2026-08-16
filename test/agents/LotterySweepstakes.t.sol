@@ -5,8 +5,7 @@ import "forge-std/Test.sol";
 import "../../src/agents/LotterySweepstakes.sol";
 
 contract LotterySweepstakesHarness is LotterySweepstakes {
-    constructor(uint256 _price, uint256 _interval)
-        LotterySweepstakes(_price, _interval) {}
+    constructor(uint256 _price, uint256 _interval) LotterySweepstakes(_price, _interval) {}
 
     function tickForTest(bytes32 randomness) external {
         require(currentEntrants.length > 0, "LotterySweepstakes: no entrants");
@@ -48,7 +47,9 @@ contract LotterySweepstakesHarness is LotterySweepstakes {
             loopID: currentLoopID
         });
 
-        for (uint256 i = 0; i < currentEntrants.length; i++) ticketCount[currentEntrants[i]] = 0;
+        for (uint256 i = 0; i < currentEntrants.length; i++) {
+            ticketCount[currentEntrants[i]] = 0;
+        }
         delete currentEntrants;
 
         (bool ok,) = winner.call{value: prize}("");
@@ -63,13 +64,13 @@ contract LotterySweepstakesTest is Test {
     uint256 public roundInterval = 7 days;
 
     address public alice = address(0xA1);
-    address public bob   = address(0xB2);
+    address public bob = address(0xB2);
     address public carol = address(0xC3);
 
     function setUp() public {
         lottery = new LotterySweepstakesHarness(ticketPrice, roundInterval);
         vm.deal(alice, 1 ether);
-        vm.deal(bob,   1 ether);
+        vm.deal(bob, 1 ether);
         vm.deal(carol, 1 ether);
     }
 
@@ -249,7 +250,7 @@ contract LotterySweepstakesTest is Test {
         _buyTickets(carol, 1);
         vm.warp(block.timestamp + roundInterval);
         lottery.tickForTest(seed);
-        (,address winner,,,,) = lottery.rounds(0);
+        (, address winner,,,,) = lottery.rounds(0);
         assertTrue(winner == alice || winner == bob || winner == carol);
     }
 

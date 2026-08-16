@@ -21,9 +21,9 @@ contract MatchmakingEngineTest is Test {
     uint256 public interval = 1 hours;
 
     address public alice = address(0xA1);
-    address public bob   = address(0xB2);
+    address public bob = address(0xB2);
     address public carol = address(0xC3);
-    address public dave  = address(0xD4);
+    address public dave = address(0xD4);
 
     function setUp() public {
         mm = new MatchmakingEngineHarness(interval);
@@ -67,23 +67,29 @@ contract MatchmakingEngineTest is Test {
     }
 
     function test_RegisterMultiplePlayers() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
-        vm.prank(carol); mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
+        vm.prank(carol);
+        mm.register();
         assertEq(mm.poolSize(), 3);
     }
 
     // ── deregister ────────────────────────────────────────────────────────────
 
     function test_Deregister() public {
-        vm.prank(alice); mm.register();
-        vm.prank(alice); mm.deregister();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(alice);
+        mm.deregister();
         assertEq(mm.poolSize(), 0);
         assertFalse(mm.registered(alice));
     }
 
     function test_DeregisterEmitsEvent() public {
-        vm.prank(alice); mm.register();
+        vm.prank(alice);
+        mm.register();
         vm.prank(alice);
         vm.expectEmit(true, false, false, false);
         emit MatchmakingEngine.PlayerDeregistered(alice);
@@ -97,10 +103,14 @@ contract MatchmakingEngineTest is Test {
     }
 
     function test_DeregisterMidPoolPreservesOthers() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
-        vm.prank(carol); mm.register();
-        vm.prank(bob);   mm.deregister();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
+        vm.prank(carol);
+        mm.register();
+        vm.prank(bob);
+        mm.deregister();
         assertEq(mm.poolSize(), 2);
         assertFalse(mm.registered(bob));
         assertTrue(mm.registered(alice));
@@ -110,22 +120,27 @@ contract MatchmakingEngineTest is Test {
     // ── shouldProgressLoop ────────────────────────────────────────────────────
 
     function test_NotReadyTooFewPlayers() public {
-        vm.prank(alice); mm.register();
+        vm.prank(alice);
+        mm.register();
         vm.warp(block.timestamp + interval);
         (bool ready,) = mm.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_NotReadyBeforeInterval() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         (bool ready,) = mm.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ReadyTwoPlayersAfterInterval() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.warp(block.timestamp + interval);
         (bool ready,) = mm.shouldProgressLoop();
         assertTrue(ready);
@@ -134,16 +149,20 @@ contract MatchmakingEngineTest is Test {
     // ── tickForTest ───────────────────────────────────────────────────────────
 
     function test_TickCreatesMatch() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.warp(block.timestamp + interval);
         mm.tickForTest(keccak256("seed1"));
         assertEq(mm.matchCount(), 1);
     }
 
     function test_TickEmitsMatchMade() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.warp(block.timestamp + interval);
         // We can't predict which way the shuffle goes — just verify event fires
         vm.recordLogs();
@@ -159,8 +178,10 @@ contract MatchmakingEngineTest is Test {
     }
 
     function test_TickUpdatesLastMatch() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         uint256 ts = block.timestamp + interval;
         vm.warp(ts);
         mm.tickForTest(keccak256("seed1"));
@@ -168,50 +189,64 @@ contract MatchmakingEngineTest is Test {
     }
 
     function test_FourPlayersProducesTwoMatches() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
-        vm.prank(carol); mm.register();
-        vm.prank(dave);  mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
+        vm.prank(carol);
+        mm.register();
+        vm.prank(dave);
+        mm.register();
         vm.warp(block.timestamp + interval);
         mm.tickForTest(keccak256("seed1"));
         assertEq(mm.matchCount(), 2);
     }
 
     function test_ThreePlayersProducesOneMatch() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
-        vm.prank(carol); mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
+        vm.prank(carol);
+        mm.register();
         vm.warp(block.timestamp + interval);
         mm.tickForTest(keccak256("seed1"));
         assertEq(mm.matchCount(), 1); // odd player out — pairs of 2
     }
 
     function test_MatchPlayersAreFromPool() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.warp(block.timestamp + interval);
         mm.tickForTest(keccak256("seed1"));
-        (,address p1, address p2,,) = mm.matches(0);
+        (, address p1, address p2,,) = mm.matches(0);
         assertTrue((p1 == alice && p2 == bob) || (p1 == bob && p2 == alice));
     }
 
     function test_TooSoonReverts() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.expectRevert("MatchmakingEngine: too soon");
         mm.tickForTest(keccak256("seed1"));
     }
 
     function test_NotEnoughPlayersReverts() public {
-        vm.prank(alice); mm.register();
+        vm.prank(alice);
+        mm.register();
         vm.warp(block.timestamp + interval);
         vm.expectRevert("MatchmakingEngine: not enough players");
         mm.tickForTest(keccak256("seed1"));
     }
 
     function test_MultipleTicksWork() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.warp(block.timestamp + interval);
         mm.tickForTest(keccak256("a"));
         vm.warp(block.timestamp + interval);
@@ -240,19 +275,23 @@ contract MatchmakingEngineTest is Test {
     // ── determinism / shuffle ─────────────────────────────────────────────────
 
     function test_SameSeedProducesSameMatch() public {
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         vm.warp(block.timestamp + interval);
         mm.tickForTest(bytes32(uint256(42)));
-        (,address p1a,,, ) = mm.matches(0);
+        (, address p1a,,,) = mm.matches(0);
 
         // Re-deploy and replay
         MatchmakingEngineHarness mm2 = new MatchmakingEngineHarness(interval);
-        vm.prank(alice); mm2.register();
-        vm.prank(bob);   mm2.register();
+        vm.prank(alice);
+        mm2.register();
+        vm.prank(bob);
+        mm2.register();
         vm.warp(block.timestamp + interval);
         mm2.tickForTest(bytes32(uint256(42)));
-        (,address p1b,,, ) = mm2.matches(0);
+        (, address p1b,,,) = mm2.matches(0);
 
         assertEq(p1a, p1b);
     }
@@ -261,11 +300,16 @@ contract MatchmakingEngineTest is Test {
 
     function testFuzz_MatchCountEqualsHalfPoolSize(uint8 extraPlayers) public {
         vm.assume(extraPlayers <= 14); // keep pool size reasonable (2 + extra)
-        vm.prank(alice); mm.register();
-        vm.prank(bob);   mm.register();
+        vm.prank(alice);
+        mm.register();
+        vm.prank(bob);
+        mm.register();
         for (uint256 i = 0; i < extraPlayers; i++) {
+            // The test loop bounds make this value far smaller than uint160 max.
+            // forge-lint: disable-next-line(unsafe-typecast)
             address p = address(uint160(0x1000 + i));
-            vm.prank(p); mm.register();
+            vm.prank(p);
+            mm.register();
         }
         uint256 poolBefore = mm.poolSize();
         vm.warp(block.timestamp + interval);

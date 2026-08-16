@@ -93,9 +93,7 @@ contract SorcererDuelTest is Test {
 
         AutoLoopRegistry registryImpl = new AutoLoopRegistry();
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
-            address(registryImpl),
-            proxyAdmin,
-            abi.encodeWithSignature("initialize(address)", admin)
+            address(registryImpl), proxyAdmin, abi.encodeWithSignature("initialize(address)", admin)
         );
         registry = AutoLoopRegistry(address(registryProxy));
 
@@ -104,10 +102,7 @@ contract SorcererDuelTest is Test {
             address(registrarImpl),
             proxyAdmin,
             abi.encodeWithSignature(
-                "initialize(address,address,address)",
-                address(autoLoop),
-                address(registry),
-                admin
+                "initialize(address,address,address)", address(autoLoop), address(registry), admin
             )
         );
         registrar = AutoLoopRegistrar(address(registrarProxy));
@@ -137,15 +132,11 @@ contract SorcererDuelTest is Test {
     // ===============================================================
 
     function test_SupportsVRFInterface() public view {
-        assertTrue(
-            game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible")))
-        );
+        assertTrue(game.supportsInterface(bytes4(keccak256("AutoLoopVRFCompatible"))));
     }
 
     function test_SupportsAutoLoopInterface() public view {
-        assertTrue(
-            game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId)
-        );
+        assertTrue(game.supportsInterface(type(AutoLoopCompatibleInterface).interfaceId));
     }
 
     function test_InitialState() public view {
@@ -174,40 +165,35 @@ contract SorcererDuelTest is Test {
     function test_ConstructorRejectsZeroInterval() public {
         vm.expectRevert("SorcererDuel: duelInterval=0");
         new SorcererDuelHarness(
-            SUMMON_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS,
-            INITIAL_MANA, MIN_MANA, MAX_DUELISTS
+            SUMMON_FEE, ENTRY_FEE, 0, PROTOCOL_RAKE_BPS, INITIAL_MANA, MIN_MANA, MAX_DUELISTS
         );
     }
 
     function test_ConstructorRejectsHighRake() public {
         vm.expectRevert("SorcererDuel: rake > 20%");
         new SorcererDuelHarness(
-            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, 2001,
-            INITIAL_MANA, MIN_MANA, MAX_DUELISTS
+            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, 2001, INITIAL_MANA, MIN_MANA, MAX_DUELISTS
         );
     }
 
     function test_ConstructorRejectsBadManaOrdering() public {
         vm.expectRevert("SorcererDuel: mana ordering");
         new SorcererDuelHarness(
-            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, PROTOCOL_RAKE_BPS,
-            50, 500, MAX_DUELISTS
+            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, PROTOCOL_RAKE_BPS, 50, 500, MAX_DUELISTS
         );
     }
 
     function test_ConstructorRejectsLowMaxDuelists() public {
         vm.expectRevert("SorcererDuel: maxEntrants < 2");
         new SorcererDuelHarness(
-            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_MANA, MIN_MANA, 1
+            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, PROTOCOL_RAKE_BPS, INITIAL_MANA, MIN_MANA, 1
         );
     }
 
     function test_ConstructorRejectsHighMaxDuelists() public {
         vm.expectRevert("SorcererDuel: maxEntrants > 16");
         new SorcererDuelHarness(
-            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, PROTOCOL_RAKE_BPS,
-            INITIAL_MANA, MIN_MANA, 17
+            SUMMON_FEE, ENTRY_FEE, DUEL_INTERVAL, PROTOCOL_RAKE_BPS, INITIAL_MANA, MIN_MANA, 17
         );
     }
 
@@ -326,20 +312,20 @@ contract SorcererDuelTest is Test {
         vm.prank(alice);
         game.enterDuel{value: ENTRY_FEE}(1);
         vm.warp(block.timestamp + DUEL_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
     function test_ShouldProgressTrueWithTwoSorcerers() public {
         _enterPair();
         vm.warp(block.timestamp + DUEL_INTERVAL);
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertTrue(ready);
     }
 
     function test_ShouldProgressFalseBeforeInterval() public {
         _enterPair();
-        (bool ready, ) = game.shouldProgressLoop();
+        (bool ready,) = game.shouldProgressLoop();
         assertFalse(ready);
     }
 
@@ -361,8 +347,7 @@ contract SorcererDuelTest is Test {
         uint256 expectedRake = (poolBefore * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 expectedPrize = poolBefore - expectedRake;
 
-        uint256 withdrawable = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 withdrawable = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         assertEq(withdrawable, expectedPrize);
         assertEq(game.protocolFeeBalance() - SUMMON_FEE * 2, expectedRake);
     }
@@ -472,9 +457,7 @@ contract SorcererDuelTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             ts += DUEL_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("duel", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("duel", i)))));
 
             if (i < 4) {
                 vm.prank(alice);
@@ -495,15 +478,19 @@ contract SorcererDuelTest is Test {
         for (uint256 i = 0; i < 80; i++) {
             ts += DUEL_INTERVAL;
             vm.warp(ts);
-            game.tickForTest(
-                bytes32(uint256(keccak256(abi.encodePacked("banish", i))))
-            );
+            game.tickForTest(bytes32(uint256(keccak256(abi.encodePacked("banish", i)))));
 
             if (game.getSorcerer(1).mana > MIN_MANA && i < 79) {
                 vm.prank(alice);
-                try game.enterDuel{value: ENTRY_FEE}(1) {} catch { break; }
+                try game.enterDuel{value: ENTRY_FEE}(1) {}
+                catch {
+                    break;
+                }
                 vm.prank(bob);
-                try game.enterDuel{value: ENTRY_FEE}(2) {} catch { break; }
+                try game.enterDuel{value: ENTRY_FEE}(2) {}
+                catch {
+                    break;
+                }
             } else {
                 break;
             }
@@ -600,8 +587,7 @@ contract SorcererDuelTest is Test {
         uint256 rake = (pool * PROTOCOL_RAKE_BPS) / 10_000;
         uint256 prize = pool - rake;
 
-        uint256 totalPending = game.pendingWithdrawals(alice) +
-            game.pendingWithdrawals(bob);
+        uint256 totalPending = game.pendingWithdrawals(alice) + game.pendingWithdrawals(bob);
         uint256 feeDelta = game.protocolFeeBalance() - feeBefore;
 
         assertEq(totalPending, prize, "prize to one winner");
@@ -640,9 +626,8 @@ contract SorcererDuelTest is Test {
         vm.warp(block.timestamp + DUEL_INTERVAL);
         game.tickForTest(randomness);
 
-        uint256 totalVictories = game.getSorcerer(1).victories +
-            game.getSorcerer(2).victories +
-            game.getSorcerer(3).victories;
+        uint256 totalVictories = game.getSorcerer(1).victories + game.getSorcerer(2).victories
+            + game.getSorcerer(3).victories;
         assertEq(totalVictories, 1, "exactly one winner");
     }
 

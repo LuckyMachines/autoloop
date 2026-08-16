@@ -43,15 +43,9 @@ contract SorcererDuel is AutoLoopVRFCompatible {
     //  Events
     // ===============================================================
 
-    event SorcererSummoned(
-        uint256 indexed sorcererId,
-        address indexed owner,
-        uint32 initialMana
-    );
+    event SorcererSummoned(uint256 indexed sorcererId, address indexed owner, uint32 initialMana);
     event SorcererEntered(
-        uint256 indexed duelId,
-        uint256 indexed sorcererId,
-        address indexed owner
+        uint256 indexed duelId, uint256 indexed sorcererId, address indexed owner
     );
     event DuelResolved(
         uint256 indexed duelId,
@@ -62,10 +56,7 @@ contract SorcererDuel is AutoLoopVRFCompatible {
         bytes32 randomness
     );
     event ManaDrained(
-        uint256 indexed duelId,
-        uint256 indexed sorcererId,
-        uint32 oldMana,
-        uint32 newMana
+        uint256 indexed duelId, uint256 indexed sorcererId, uint32 oldMana, uint32 newMana
     );
     event WinningsClaimed(address indexed to, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
@@ -156,17 +147,13 @@ contract SorcererDuel is AutoLoopVRFCompatible {
         require(msg.value >= summonFee, "SorcererDuel: insufficient summon fee");
 
         sorcererId = nextSorcererId++;
-        _sorcerers[sorcererId] = Sorcerer({
-            owner: _msgSender(),
-            mana: initialMana,
-            victories: 0,
-            duels: 0
-        });
+        _sorcerers[sorcererId] =
+            Sorcerer({owner: _msgSender(), mana: initialMana, victories: 0, duels: 0});
         protocolFeeBalance += summonFee;
 
         uint256 overpayment = msg.value - summonFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "SorcererDuel: refund failed");
         }
 
@@ -179,14 +166,8 @@ contract SorcererDuel is AutoLoopVRFCompatible {
         Sorcerer storage s = _sorcerers[sorcererId];
         require(s.owner == _msgSender(), "SorcererDuel: not owner");
         require(s.mana >= minMana, "SorcererDuel: sorcerer banished");
-        require(
-            !enteredInCurrentDuel[sorcererId],
-            "SorcererDuel: already entered"
-        );
-        require(
-            currentEntrants.length < maxDuelists,
-            "SorcererDuel: duel full"
-        );
+        require(!enteredInCurrentDuel[sorcererId], "SorcererDuel: already entered");
+        require(currentEntrants.length < maxDuelists, "SorcererDuel: duel full");
 
         currentEntrants.push(sorcererId);
         enteredInCurrentDuel[sorcererId] = true;
@@ -194,7 +175,7 @@ contract SorcererDuel is AutoLoopVRFCompatible {
 
         uint256 overpayment = msg.value - entryFee;
         if (overpayment > 0) {
-            (bool sent, ) = _msgSender().call{value: overpayment}("");
+            (bool sent,) = _msgSender().call{value: overpayment}("");
             require(sent, "SorcererDuel: refund failed");
         }
 
@@ -206,7 +187,7 @@ contract SorcererDuel is AutoLoopVRFCompatible {
         uint256 amount = pendingWithdrawals[_msgSender()];
         require(amount > 0, "SorcererDuel: nothing to claim");
         pendingWithdrawals[_msgSender()] = 0;
-        (bool sent, ) = _msgSender().call{value: amount}("");
+        (bool sent,) = _msgSender().call{value: amount}("");
         require(sent, "SorcererDuel: withdraw failed");
         emit WinningsClaimed(_msgSender(), amount);
     }
@@ -222,30 +203,21 @@ contract SorcererDuel is AutoLoopVRFCompatible {
         returns (bool loopIsReady, bytes memory progressWithData)
     {
         loopIsReady =
-            (block.timestamp >= lastDuelAt + duelInterval) &&
-            (currentEntrants.length >= 2);
+            (block.timestamp >= lastDuelAt + duelInterval) && (currentEntrants.length >= 2);
         progressWithData = abi.encode(_loopID);
     }
 
     function progressLoop(bytes calldata progressWithData) external override {
-        (bytes32 randomness, bytes memory gameData) = _verifyAndExtractRandomness(
-            progressWithData,
-            tx.origin
-        );
+        (bytes32 randomness, bytes memory gameData) =
+            _verifyAndExtractRandomness(progressWithData, tx.origin);
         uint256 loopID = abi.decode(gameData, (uint256));
         _progressInternal(randomness, loopID);
     }
 
     function _progressInternal(bytes32 randomness, uint256 loopID) internal {
-        require(
-            block.timestamp >= lastDuelAt + duelInterval,
-            "SorcererDuel: too soon"
-        );
+        require(block.timestamp >= lastDuelAt + duelInterval, "SorcererDuel: too soon");
         require(loopID == _loopID, "SorcererDuel: stale loop id");
-        require(
-            currentEntrants.length >= 2,
-            "SorcererDuel: not enough entrants"
-        );
+        require(currentEntrants.length >= 2, "SorcererDuel: not enough entrants");
 
         // ---- Pick winner weighted by mana ----
         uint256 totalMana = 0;
@@ -274,14 +246,7 @@ contract SorcererDuel is AutoLoopVRFCompatible {
         pendingWithdrawals[winner.owner] += prize;
         winner.victories++;
 
-        emit DuelResolved(
-            currentDuelId,
-            winnerId,
-            winner.owner,
-            prize,
-            protocolCut,
-            randomness
-        );
+        emit DuelResolved(currentDuelId, winnerId, winner.owner, prize, protocolCut, randomness);
 
         // ---- Drain mana from all entrants ----
         for (uint256 i = 0; i < currentEntrants.length; i++) {
@@ -289,9 +254,7 @@ contract SorcererDuel is AutoLoopVRFCompatible {
             Sorcerer storage s = _sorcerers[entrantId];
             s.duels++;
 
-            uint256 drainRoll = uint256(
-                keccak256(abi.encodePacked(randomness, entrantId, "drain"))
-            );
+            uint256 drainRoll = uint256(keccak256(abi.encodePacked(randomness, entrantId, "drain")));
             uint32 drainRange = DRAIN_MAX - DRAIN_MIN + 1;
             uint32 drainAmount = uint32(DRAIN_MIN + (drainRoll % drainRange));
 
@@ -338,14 +301,14 @@ contract SorcererDuel is AutoLoopVRFCompatible {
     //  Admin
     // ===============================================================
 
-    function withdrawProtocolFees(
-        address to,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawProtocolFees(address to, uint256 amount)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(to != address(0), "SorcererDuel: zero address");
         require(amount <= protocolFeeBalance, "SorcererDuel: exceeds balance");
         protocolFeeBalance -= amount;
-        (bool sent, ) = to.call{value: amount}("");
+        (bool sent,) = to.call{value: amount}("");
         require(sent, "SorcererDuel: withdraw failed");
         emit ProtocolFeesWithdrawn(to, amount);
     }

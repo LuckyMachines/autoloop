@@ -35,7 +35,9 @@ contract MatchmakingEngine is AutoLoopVRFCompatible {
 
     event PlayerRegistered(address indexed player);
     event PlayerDeregistered(address indexed player);
-    event MatchMade(address indexed player1, address indexed player2, uint256 indexed matchId, bytes32 seed);
+    event MatchMade(
+        address indexed player1, address indexed player2, uint256 indexed matchId, bytes32 seed
+    );
 
     // ── Construction ───────────────────────────────────────────────────────────
 
@@ -77,8 +79,7 @@ contract MatchmakingEngine is AutoLoopVRFCompatible {
         override
         returns (bool loopIsReady, bytes memory progressWithData)
     {
-        loopIsReady = pool.length >= 2
-            && (block.timestamp - lastMatch) >= matchInterval;
+        loopIsReady = pool.length >= 2 && (block.timestamp - lastMatch) >= matchInterval;
         progressWithData = abi.encode(_loopID, pool.length);
     }
 
@@ -101,7 +102,9 @@ contract MatchmakingEngine is AutoLoopVRFCompatible {
         // Copy pool to memory for shuffling
         uint256 n = pool.length;
         address[] memory shuffled = new address[](n);
-        for (uint256 i = 0; i < n; i++) shuffled[i] = pool[i];
+        for (uint256 i = 0; i < n; i++) {
+            shuffled[i] = pool[i];
+        }
 
         // Fisher-Yates in-place shuffle
         for (uint256 i = n - 1; i > 0; i--) {
@@ -116,10 +119,10 @@ contract MatchmakingEngine is AutoLoopVRFCompatible {
             bytes32 seed = keccak256(abi.encodePacked(randomness, matchCount));
             uint256 matchId = matchCount++;
             matches[matchId] = Match({
-                matchId:   matchId,
-                player1:   shuffled[i],
-                player2:   shuffled[i + 1],
-                seed:      seed,
+                matchId: matchId,
+                player1: shuffled[i],
+                player2: shuffled[i + 1],
+                seed: seed,
                 timestamp: block.timestamp
             });
             emit MatchMade(shuffled[i], shuffled[i + 1], matchId, seed);

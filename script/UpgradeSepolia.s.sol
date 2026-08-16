@@ -43,18 +43,16 @@ contract UpgradeSepolia is Script {
         console.log("New Registrar impl:", address(newRegistrarImpl));
 
         // Upgrade AutoLoop proxy
-        ProxyAdmin(AUTO_LOOP_PROXY_ADMIN).upgradeAndCall(
-            ITransparentUpgradeableProxy(AUTO_LOOP_PROXY),
-            address(newAutoLoopImpl),
-            ""
-        );
+        ProxyAdmin(AUTO_LOOP_PROXY_ADMIN)
+            .upgradeAndCall(
+                ITransparentUpgradeableProxy(AUTO_LOOP_PROXY), address(newAutoLoopImpl), ""
+            );
 
         // Upgrade Registrar proxy
-        ProxyAdmin(REGISTRAR_PROXY_ADMIN).upgradeAndCall(
-            ITransparentUpgradeableProxy(REGISTRAR_PROXY),
-            address(newRegistrarImpl),
-            ""
-        );
+        ProxyAdmin(REGISTRAR_PROXY_ADMIN)
+            .upgradeAndCall(
+                ITransparentUpgradeableProxy(REGISTRAR_PROXY), address(newRegistrarImpl), ""
+            );
 
         vm.stopBroadcast();
 

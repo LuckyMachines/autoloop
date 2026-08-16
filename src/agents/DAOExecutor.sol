@@ -15,23 +15,23 @@ contract DAOExecutor is AutoLoopCompatible {
     struct Proposal {
         uint256 id;
         address target;
-        bytes   callData;
-        uint256 eta;          // earliest execution timestamp
-        bool    executed;
-        bool    cancelled;
-        string  description;
+        bytes callData;
+        uint256 eta; // earliest execution timestamp
+        bool executed;
+        bool cancelled;
+        string description;
     }
 
     // ── State ──────────────────────────────────────────────────────────────────
 
     uint256 public nextProposalId;
-    uint256 public checkInterval;   // how often AutoLoop checks for ready proposals
+    uint256 public checkInterval; // how often AutoLoop checks for ready proposals
     uint256 public lastCheck;
     uint256 public executedCount;
     uint256 public protocolFeeBalance;
 
     mapping(uint256 => Proposal) public proposals;
-    uint256[] public proposalQueue;  // ids of pending proposals
+    uint256[] public proposalQueue; // ids of pending proposals
 
     // ── Events ─────────────────────────────────────────────────────────────────
 
