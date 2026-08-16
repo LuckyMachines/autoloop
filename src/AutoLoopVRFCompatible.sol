@@ -43,9 +43,13 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
     /// @notice Emitted when a controller's existing key is revoked/overwritten (M3)
     event ControllerKeyRevoked(address indexed controller, uint256 oldPkX, uint256 oldPkY);
 
-    /// @notice Emitted when VRF randomness is verified and consumed
+    /// @notice Emitted when VRF randomness is verified and consumed.
+    ///         `vrfOutput` is the raw ECVRF output (keccak256 of gamma).
+    ///         `randomness` is the final value delivered to the game —
+    ///         vrfOutput mixed with block.prevrandao for additional entropy.
     event VRFRandomnessVerified(
         uint256 indexed loopID,
+        bytes32 vrfOutput,
         bytes32 randomness,
         address indexed controller
     );
@@ -123,10 +127,18 @@ abstract contract AutoLoopVRFCompatible is AutoLoopCompatible {
         bool valid = VRFVerifier.fastVerify(publicKey, proof, seed, uPoint, vComponents);
         require(valid, "VRF proof verification failed");
 
-        // Derive the random output from the verified gamma point
-        randomness = VRFVerifier.gammaToHash(proof[0], proof[1]);
+        // Derive the raw VRF output from the verified gamma point.
+        bytes32 vrfOutput = VRFVerifier.gammaToHash(proof[0], proof[1]);
 
-        emit VRFRandomnessVerified(_loopID, randomness, controller);
+        // Mix with block.prevrandao (the RANDAO output accumulated by the current
+        // block's PoS validator) to add block-level entropy independent of any
+        // single keeper's private key. The keeper knows vrfOutput before submitting
+        // but cannot guarantee which block — and thus which prevrandao — their
+        // transaction lands in. This makes the final randomness unknowable at
+        // submission time unless the keeper is also the block proposer.
+        randomness = keccak256(abi.encodePacked(vrfOutput, block.prevrandao));
+
+        emit VRFRandomnessVerified(_loopID, vrfOutput, randomness, controller);
 
         return (randomness, innerGameData);
     }

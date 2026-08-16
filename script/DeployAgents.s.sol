@@ -11,6 +11,12 @@ import "../src/agents/TreasuryRebalancer.sol";
 import "../src/agents/AirdropDistributor.sol";
 import "../src/agents/NFTReveal.sol";
 import "../src/agents/LotterySweepstakes.sol";
+import "../src/agents/ParameterAlerter.sol";
+import "../src/agents/SupplyGovernanceModule.sol";
+import "../src/agents/NFTRegistry.sol";
+import "../src/agents/MatchmakingEngine.sol";
+import "../src/agents/BreedingMutationEngine.sol";
+import "../src/agents/TournamentBracket.sol";
 
 /**
  * @title DeployAgents
@@ -28,8 +34,8 @@ import "../src/agents/LotterySweepstakes.sol";
  *   TOKEN1_ADDRESS         — address of token1 for TreasuryRebalancer
  *                            (default: Sepolia WETH 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9)
  *
- * Deploys 8 agent contracts + 1 MockVault helper (for YieldHarvester):
- *   5 AutoLoopCompatible + 3 AutoLoopVRFCompatible
+ * Deploys 14 agent contracts + 1 MockVault helper (for YieldHarvester):
+ *   8 AutoLoopCompatible + 6 AutoLoopVRFCompatible
  */
 contract DeployAgents is Script {
     function run() external {
@@ -77,9 +83,9 @@ contract DeployAgents is Script {
             0          // no minimum yield threshold
         );
         MockVault mockVault = new MockVault(address(yieldHarvester));
-        (bool _ok2,) = address(mockVault).call{value: 0.05 ether}("");
+        (bool _ok2,) = address(mockVault).call{value: 0.01 ether}("");
         require(_ok2, "MockVault fund failed");
-        mockVault.accrueYield(0.04 ether); // set pendingYield so first harvest fires
+        mockVault.accrueYield(0.008 ether); // set pendingYield so first harvest fires
         yieldHarvester.setVault(address(mockVault));
         registrar.registerAutoLoopFor{value: fundAmount}(address(yieldHarvester), maxGas);
 
@@ -106,18 +112,18 @@ contract DeployAgents is Script {
             500,         // 5% drift threshold
             86400        // 1-day check interval
         );
-        (bool _ok3,) = address(treasuryRebalancer).call{value: 0.1 ether}("");
+        (bool _ok3,) = address(treasuryRebalancer).call{value: 0.01 ether}("");
         require(_ok3, "TreasuryRebalancer fund failed");
         registrar.registerAutoLoopFor{value: fundAmount}(address(treasuryRebalancer), maxGas);
 
         // ── AirdropDistributor (VRF) ───────────────────────────────────────────
-        // Pre-fund so prize payouts work: 3 winners × 0.01 ETH × 10 draws = 0.3 ETH
+        // Pre-fund so prize payouts work: 3 winners × 0.001 ETH × 10 draws = 0.03 ETH
         AirdropDistributor airdropDistributor = new AirdropDistributor(
-            3600,       // 1hr draw interval (testnet)
-            3,          // 3 winners per draw
-            0.01 ether  // 0.01 ETH prize per winner
+            3600,        // 1hr draw interval (testnet)
+            3,           // 3 winners per draw
+            0.001 ether  // 0.001 ETH prize per winner (testnet-sized)
         );
-        (bool _ok4,) = address(airdropDistributor).call{value: 0.3 ether}("");
+        (bool _ok4,) = address(airdropDistributor).call{value: 0.03 ether}("");
         require(_ok4, "AirdropDistributor fund failed");
         registrar.registerAutoLoopFor{value: fundAmount}(address(airdropDistributor), maxGas);
 
@@ -146,6 +152,53 @@ contract DeployAgents is Script {
         );
         registrar.registerAutoLoopFor{value: fundAmount}(address(lotterySweepstakes), maxGas);
 
+        // ── ParameterAlerter ───────────────────────────────────────────────────
+        ParameterAlerter parameterAlerter = new ParameterAlerter(
+            3600  // 1hr snapshot interval
+        );
+        // Seed a couple of parameters for the demo
+        parameterAlerter.addTrackedParam("dropRate", 1000);   // 10%
+        parameterAlerter.addTrackedParam("xpMultiplier", 100); // 1.0x
+        registrar.registerAutoLoopFor{value: fundAmount}(address(parameterAlerter), maxGas);
+
+        // ── SupplyGovernanceModule ─────────────────────────────────────────────
+        SupplyGovernanceModule supplyGovernance = new SupplyGovernanceModule(
+            3600  // 1hr check interval
+        );
+        // Seed an item type for the demo
+        supplyGovernance.createItemType("Gold Sword", 1000);
+        // Queue a supply increase with 30min timelock
+        supplyGovernance.queueSupplyChange(0, 100, "Initial supply", 1800);
+        registrar.registerAutoLoopFor{value: fundAmount}(address(supplyGovernance), maxGas);
+
+        // ── NFTRegistry ────────────────────────────────────────────────────────
+        NFTRegistry nftRegistry = new NFTRegistry(deployer); // treasury = deployer for demo
+        // Seed a collection with a near-future release for demo visibility
+        nftRegistry.createCollection("AutoLoop Genesis", 100, 0.001 ether);
+        nftRegistry.scheduleRelease(0, 10, block.timestamp + 120); // release in 2min
+        registrar.registerAutoLoopFor{value: fundAmount}(address(nftRegistry), maxGas);
+
+        // ── MatchmakingEngine (VRF) ────────────────────────────────────────────
+        MatchmakingEngine matchmakingEngine = new MatchmakingEngine(
+            3600  // 1hr match interval
+        );
+        registrar.registerAutoLoopFor{value: fundAmount}(address(matchmakingEngine), maxGas);
+
+        // ── BreedingMutationEngine (VRF) ───────────────────────────────────────
+        BreedingMutationEngine breedingEngine = new BreedingMutationEngine(
+            3600,        // 1hr breeding cooldown
+            0.001 ether  // breeding fee
+        );
+        registrar.registerAutoLoopFor{value: fundAmount}(address(breedingEngine), maxGas);
+
+        // ── TournamentBracket (VRF) ────────────────────────────────────────────
+        TournamentBracket tournamentBracket = new TournamentBracket(
+            3600,          // 1hr round interval
+            4,             // 4-player bracket (easiest to fill on testnet)
+            0.001 ether    // entry fee
+        );
+        registrar.registerAutoLoopFor{value: fundAmount}(address(tournamentBracket), maxGas);
+
         vm.stopBroadcast();
 
         // ── Console output ─────────────────────────────────────────────────────
@@ -158,5 +211,11 @@ contract DeployAgents is Script {
         console.log("AirdropDistributor:      ", address(airdropDistributor));
         console.log("NFTReveal:               ", address(nftReveal));
         console.log("LotterySweepstakes:      ", address(lotterySweepstakes));
+        console.log("ParameterAlerter:        ", address(parameterAlerter));
+        console.log("SupplyGovernance:        ", address(supplyGovernance));
+        console.log("NFTRegistry:             ", address(nftRegistry));
+        console.log("MatchmakingEngine:       ", address(matchmakingEngine));
+        console.log("BreedingEngine:          ", address(breedingEngine));
+        console.log("TournamentBracket:       ", address(tournamentBracket));
     }
 }

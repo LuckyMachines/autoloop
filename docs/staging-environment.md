@@ -27,7 +27,7 @@ This will:
 |--------|-----------|---------|
 | Worker keys | `.env.worker-keys` | `.env.staging-keys` |
 | Railway project | autoloop-production | autoloop-staging |
-| Worker URLs | `*-production.up.railway.app` | `*-staging.up.railway.app` |
+| Worker URLs | `production.example.com` | `staging.example.com` |
 
 ## Teardown
 
