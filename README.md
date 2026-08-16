@@ -18,6 +18,20 @@ Start here:
 3. Extract latest ABI bundle with `npm run extract-abi`
 4. Pair with `autoloop-worker` for loop execution and VRF proof delivery
 
+## Workspace Local CI
+
+The canonical multi-repository workspace does not use GitHub Actions. From Git
+Bash in this repository, run the versioned workspace check in the current
+terminal:
+
+```bash
+./scripts/workspace-ci.sh
+```
+
+It verifies core contracts, dashboard and mock API, MCP, SDK, site, worker,
+production dependency audits, diff integrity, and the worker Docker image. Pass
+`-SkipDocker` when Docker is intentionally unavailable.
+
 ## Installation
 
 AutoLoop is published to the Lucky Machines Verdaccio registry.
