@@ -18,3 +18,8 @@ sepolia = "${SEPOLIA_RPC_URL}"
 line_length = 100
 tab_width = 4
 bracket_spacing = false
+
+# Time comparisons are fundamental to scheduled AutoLoop contracts. Keep local
+# CI focused on actionable high/medium diagnostics; those severities are denied.
+[lint]
+severity = ["high", "medium"]
